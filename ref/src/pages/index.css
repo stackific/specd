@@ -1,0 +1,12 @@
+/* =================================================================
+   Home page (index.astro)
+   ================================================================= */
+
+.home-hero {
+  max-width: min(100%, 1760px);
+}
+
+/* Plain element selector — intentionally global for the page footer */
+footer ul {
+  list-style: none;
+}

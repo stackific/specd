@@ -1,0 +1,12 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -tags dev -o tmp/specd ."
+  bin = "tmp/specd"
+  include_ext = ["go"]
+  exclude_dir = ["tmp", "dist", "web", "vendor"]
+  delay = 500
+
+[misc]
+  clean_on_exit = true

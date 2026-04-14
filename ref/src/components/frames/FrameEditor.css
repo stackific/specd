@@ -1,0 +1,157 @@
+/* ── FrameEditor — phone-frame demo ─────────────────────────────
+   Light + dark variants. Tokens scoped to .c-editor. Dark mode
+   follows BeerCSS's `body.dark` class. Font-sizes live on utility
+   classes in the markup; this file owns colors, layout, dimensions,
+   weight, and the per-mood CSS filters. */
+
+.c-editor {
+  --ed-bg:           var(--c-neutral-99);
+  --ed-fg:           var(--c-neutral-10);
+  --ed-fg-muted:     var(--c-neutral-50);
+  --ed-fg-subtle:    var(--c-neutral-40);
+  --ed-bar-line:     var(--c-neutral-90);
+
+  background: var(--ed-bg);
+  color: var(--ed-fg);
+}
+
+body.dark .c-editor {
+  --ed-bg:           var(--c-neutral-10);
+  --ed-fg:           var(--c-neutral-95);
+  --ed-fg-muted:     var(--c-neutral-60);
+  --ed-fg-subtle:    var(--c-neutral-70);
+  --ed-bar-line:     var(--c-neutral-25);
+}
+
+/* ── Stage (the photo) ───────────────────────────────────────── */
+
+.c-editor .ed-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.c-editor .ed-stage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* The glassy ribbon over the photo. Stays dark in both modes
+   because it sits on top of an image and needs to stay legible. */
+.c-editor .ed-ribbon {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(20, 12, 30, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #fff;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+.c-editor .ed-ribbon .ms { color: #c8a2ff; }
+
+/* ── Mood label + filter strip ───────────────────────────────── */
+
+.c-editor .ed-mood-label {
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--ed-fg-muted);
+  font-weight: 600;
+  padding: 12px 16px 0;
+}
+
+.c-editor .ed-thumb-wrap { position: relative; }
+
+/* Mood variant CSS filters — these stand in for AI re-rendering. */
+.c-editor .fx-honest    { filter: none; }
+.c-editor .fx-nostalgic { filter: sepia(0.55) contrast(0.92) brightness(0.95); }
+.c-editor .fx-tender    { filter: saturate(1.15) hue-rotate(-8deg) brightness(1.08); }
+.c-editor .fx-hopeful   { filter: brightness(1.18) saturate(1.25) contrast(0.95); }
+.c-editor .fx-cinematic { filter: contrast(1.25) saturate(0.85) hue-rotate(180deg) brightness(0.85); }
+
+.c-editor .ed-filters {
+  display: flex;
+  gap: 8px;
+  padding: 14px 14px 8px;
+}
+.c-editor .ed-filter {
+  text-align: center;
+  flex-shrink: 0;
+}
+.c-editor .ed-thumb {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 2.5px solid transparent;
+}
+.c-editor .ed-filter.active .ed-thumb {
+  border-color: var(--sc-purple-mid);
+}
+.c-editor .ed-filter .ed-check {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 26px;
+  height: 26px;
+  background: rgba(124, 77, 255, 0.55);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.c-editor .ed-fname {
+  color: var(--ed-fg-muted);
+  margin-top: 4px;
+}
+
+/* ── Tools row ───────────────────────────────────────────────── */
+
+.c-editor .ed-tools {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  padding: 10px 0;
+}
+.c-editor .ed-tool {
+  color: var(--ed-fg-muted);
+}
+.c-editor .ed-tool.active {
+  color: var(--sc-purple-mid);
+  background: var(--sc-purple-container);
+  padding: 6px;
+  margin: -6px;
+  border-radius: 12px;
+}
+
+/* ── Bottom bar ──────────────────────────────────────────────── */
+
+.c-editor .ed-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  margin-top: auto;
+  border-top: 1px solid var(--ed-bar-line);
+}
+.c-editor .ed-cancel {
+  color: var(--ed-fg-subtle);
+}
+.c-editor .ed-save {
+  background: var(--sc-purple-container);
+  color: var(--sc-purple-mid);
+  padding: 8px 22px;
+  border-radius: 20px;
+  font-weight: 600;
+}

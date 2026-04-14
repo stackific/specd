@@ -1,0 +1,34 @@
+/* =================================================================
+   Services page (services.astro)
+   ================================================================= */
+
+.svc-lede {
+  max-width: 60ch;
+  color: var(--on-surface-variant);
+}
+
+.svc-card {
+  background: var(--surface-container-low);
+}
+
+.svc-eyebrow {
+  letter-spacing: var(--ls-3);
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.svc-sub {
+  color: var(--on-surface-variant);
+  max-width: 60ch;
+}
+
+.svc-fit {
+  background: var(--surface-container-high);
+  height: 100%;
+}
+
+.svc-fit-label {
+  letter-spacing: var(--ls-2);
+  text-transform: uppercase;
+  color: var(--primary);
+}

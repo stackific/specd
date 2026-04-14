@@ -1,0 +1,358 @@
+/* =================================================================
+   Custom design tokens
+   =================================================================
+   Pure CSS custom properties. No selectors, no rules — only values.
+   These extend BeerCSS's Material Design 3 tokens with our own
+   project-specific scales.
+
+   Naming convention
+   -----------------
+   --<scale>-<step>          positive step    e.g. --size-3, --space-7
+   --<scale>--<step>         negative step    e.g. --size--1 = -0.25rem
+   --<scale>-<n>-<unit>      qualified scale  e.g. --size-px-3, --size-fluid-2
+
+   Step numbers always go up = bigger / heavier / further. Step 0 is
+   the neutral / baseline value. Steps with a leading "-" mean a
+   negative version of the same scale (only relevant for spacing
+   and a few sizes).
+   ================================================================= */
+
+:root {
+  /* ── Default font family — overrides BeerCSS's --font ─────────── */
+  --font: "Geist Variable", sans-serif !important;
+
+  /* ──────────────────────────────────────────────────────────────
+     SIZE / SPACE — the master scale.
+
+     --scale is the global density dial. Bumping it scales every
+     rem-based size up or down at once. Pixel-snapped sizes,
+     content widths in ch, and breakpoint widths are NOT scaled
+     because they are anchored to absolute device dimensions.
+     ────────────────────────────────────────────────────────────── */
+  --scale: 1;
+
+  /* rem-based size scale (scaled by --scale) */
+  --size--2: calc(-0.5rem  * var(--scale));
+  --size--1: calc(-0.25rem * var(--scale));
+  --size-0:  0;
+  --size-1:  calc(0.25rem  * var(--scale));
+  --size-2:  calc(0.5rem   * var(--scale));
+  --size-3:  calc(1rem     * var(--scale));
+  --size-4:  calc(1.25rem  * var(--scale));
+  --size-5:  calc(1.5rem   * var(--scale));
+  --size-6:  calc(1.75rem  * var(--scale));
+  --size-7:  calc(2rem     * var(--scale));
+  --size-8:  calc(3rem     * var(--scale));
+  --size-9:  calc(4rem     * var(--scale));
+  --size-10: calc(5rem     * var(--scale));
+  --size-11: calc(7.5rem   * var(--scale));
+  --size-12: calc(10rem    * var(--scale));
+  --size-13: calc(15rem    * var(--scale));
+  --size-14: calc(20rem    * var(--scale));
+  --size-15: calc(30rem    * var(--scale));
+  --size-16: calc(36rem    * var(--scale));
+
+  /* px-snapped size scale (NOT scaled — anchored to device pixels) */
+  --size-px--2: -8px;
+  --size-px--1: -4px;
+  --size-px-0:  0;
+  --size-px-1:  4px;
+  --size-px-2:  8px;
+  --size-px-3:  16px;
+  --size-px-4:  20px;
+  --size-px-5:  24px;
+  --size-px-6:  28px;
+  --size-px-7:  32px;
+  --size-px-8:  48px;
+  --size-px-9:  64px;
+  --size-px-10: 80px;
+  --size-px-11: 120px;
+  --size-px-12: 160px;
+  --size-px-13: 240px;
+  --size-px-14: 320px;
+  --size-px-15: 480px;
+
+  /* Fluid (clamped) sizes — viewport-responsive, NOT scaled. */
+  --size-fluid-1:  clamp(0.5rem, 1vw,  1rem);
+  --size-fluid-2:  clamp(1rem,   2vw,  1.5rem);
+  --size-fluid-3:  clamp(1.5rem, 3vw,  2rem);
+  --size-fluid-4:  clamp(2rem,   4vw,  3rem);
+  --size-fluid-5:  clamp(4rem,   5vw,  5rem);
+  --size-fluid-6:  clamp(5rem,   7vw,  7.5rem);
+  --size-fluid-7:  clamp(7.5rem, 10vw, 10rem);
+  --size-fluid-8:  clamp(10rem,  20vw, 15rem);
+  --size-fluid-9:  clamp(15rem,  30vw, 20rem);
+  --size-fluid-10: clamp(20rem,  40vw, 30rem);
+
+  /* Content widths — measured in ch so they scale with body font. */
+  --size-content-1: 20ch;
+  --size-content-2: 45ch;
+  --size-content-3: 60ch;
+
+  /* Headline widths — for hero/headline max-widths. */
+  --size-header-1: 20ch;
+  --size-header-2: 25ch;
+  --size-header-3: 35ch;
+
+  /* Relative (ch-based) size scale — scales with the local font. */
+  --size-rel--2: -0.5ch;
+  --size-rel--1: -0.25ch;
+  --size-rel-0:  0;
+  --size-rel-1:  0.25ch;
+  --size-rel-2:  0.5ch;
+  --size-rel-3:  1ch;
+  --size-rel-4:  1.25ch;
+  --size-rel-5:  1.5ch;
+  --size-rel-6:  1.75ch;
+  --size-rel-7:  2ch;
+  --size-rel-8:  3ch;
+  --size-rel-9:  4ch;
+  --size-rel-10: 5ch;
+  --size-rel-11: 7.5ch;
+  --size-rel-12: 10ch;
+  --size-rel-13: 15ch;
+  --size-rel-14: 20ch;
+  --size-rel-15: 30ch;
+
+  /* ──────────────────────────────────────────────────────────────
+     SPACE — semantic alias of --size-* for margin/padding/gap.
+     Same values, different name so intent is obvious in code.
+     ────────────────────────────────────────────────────────────── */
+  --space--2: var(--size--2);
+  --space--1: var(--size--1);
+  --space-0:  var(--size-0);
+  --space-1:  var(--size-1);
+  --space-2:  var(--size-2);
+  --space-3:  var(--size-3);
+  --space-4:  var(--size-4);
+  --space-5:  var(--size-5);
+  --space-6:  var(--size-6);
+  --space-7:  var(--size-7);
+  --space-8:  var(--size-8);
+  --space-9:  var(--size-9);
+  --space-10: var(--size-10);
+  --space-11: var(--size-11);
+  --space-12: var(--size-12);
+  --space-13: var(--size-13);
+  --space-14: var(--size-14);
+  --space-15: var(--size-15);
+  --space-16: var(--size-16);
+
+  /* ──────────────────────────────────────────────────────────────
+     CONTAINER widths — page-level max-width caps.
+     Aligned with the breakpoint scale below.
+     ────────────────────────────────────────────────────────────── */
+  --container-xxs:  240px;
+  --container-xs:   360px;
+  --container-sm:   480px;
+  --container-md:   768px;
+  --container-lg:   1024px;
+  --container-xl:   1200px;
+  --container-xxl:  1440px;
+  --container-xxxl: 1920px;
+
+  /* Breakpoint widths — match BeerCSS's s/m/l. Read-only reference;
+     the actual @media queries live in media.css as @custom-media. */
+  --bp-tablet:  601px;
+  --bp-desktop: 993px;
+
+  /* ──────────────────────────────────────────────────────────────
+     TYPOGRAPHY
+     ────────────────────────────────────────────────────────────── */
+
+  /* Font size scale — step 0 is the body baseline (1rem). */
+  --text--2: 0.5rem;
+  --text--1: 0.75rem;
+  --text-0:  1rem;
+  --text-1:  1.1rem;
+  --text-2:  1.25rem;
+  --text-3:  1.5rem;
+  --text-4:  2rem;
+  --text-5:  2.5rem;
+  --text-6:  3rem;
+  --text-7:  3.5rem;
+  --text-8:  4rem;
+
+  /* Fluid font sizes — viewport-responsive. */
+  --text-fluid-0: clamp(0.75rem, 2vw, 1rem);
+  --text-fluid-1: clamp(1rem,    4vw, 1.5rem);
+  --text-fluid-2: clamp(1.5rem,  6vw, 2.5rem);
+  --text-fluid-3: clamp(2rem,    9vw, 3.5rem);
+
+  /* Font weights */
+  --fw-1: 100;
+  --fw-2: 200;
+  --fw-3: 300;
+  --fw-4: 400;
+  --fw-5: 500;
+  --fw-6: 600;
+  --fw-7: 700;
+  --fw-8: 800;
+  --fw-9: 900;
+
+  /* Line heights — step 0 is `1` (matches BeerCSS's no-line),
+     step 4 is the body baseline (1.5). */
+  --lh--1: 0.95;
+  --lh-0:  1;
+  --lh-1:  1.1;
+  --lh-2:  1.25;
+  --lh-3:  1.375;
+  --lh-4:  1.5;
+  --lh-5:  1.75;
+  --lh-6:  2;
+
+  /* Letter-spacing — step 0 is no tracking (replaces old --tracking-*). */
+  --ls--1: -0.05em;
+  --ls-0:  0;
+  --ls-1:  0.025em;
+  --ls-2:  0.05em;
+  --ls-3:  0.075em;
+  --ls-4:  0.15em;
+  --ls-5:  0.5em;
+  --ls-6:  0.75em;
+  --ls-7:  1em;
+
+  /* ──────────────────────────────────────────────────────────────
+     ASPECT RATIO
+     ────────────────────────────────────────────────────────────── */
+  --ratio-square:    1;
+  --ratio-landscape: 4 / 3;
+  --ratio-portrait:  3 / 4;
+  --ratio-16-9:      16 / 9;
+  --ratio-18-5:      18 / 5;
+  --ratio-golden:    1.618 / 1;
+
+  /* ──────────────────────────────────────────────────────────────
+     COLOR — custom tonal palettes.
+
+     Generated from seed #1447E6 via @material/material-color-utilities
+     (the same engine BeerCSS uses for its dynamic theme). These are
+     RAW tonal palettes — they do NOT replace BeerCSS's role tokens
+     (--primary, --on-primary, etc.). Use them when you need a
+     specific tone for an illustration, gradient, or non-component
+     surface that the role tokens don't cover.
+
+     To regenerate after a brand color change:
+       node scripts/gen-colors.mjs <hex>
+     ────────────────────────────────────────────────────────────── */
+
+  /* Primary palette — derived from #1447E6 */
+  --c-primary-0:   #000000;
+  --c-primary-5:   #000a3c;
+  --c-primary-10:  #001356;
+  --c-primary-15:  #001b6f;
+  --c-primary-20:  #002388;
+  --c-primary-25:  #002ca3;
+  --c-primary-30:  #0035be;
+  --c-primary-35:  #003edb;
+  --c-primary-40:  #1c4bea;
+  --c-primary-50:  #4368ff;
+  --c-primary-60:  #6e88ff;
+  --c-primary-70:  #94a6ff;
+  --c-primary-80:  #b9c3ff;
+  --c-primary-90:  #dde1ff;
+  --c-primary-95:  #f0efff;
+  --c-primary-98:  #fbf8ff;
+  --c-primary-99:  #fefbff;
+  --c-primary-100: #ffffff;
+
+  /* Secondary palette */
+  --c-secondary-0:   #000000;
+  --c-secondary-5:   #0c1021;
+  --c-secondary-10:  #171b2c;
+  --c-secondary-15:  #212537;
+  --c-secondary-20:  #2c2f42;
+  --c-secondary-25:  #373a4d;
+  --c-secondary-30:  #424659;
+  --c-secondary-35:  #4e5165;
+  --c-secondary-40:  #5a5d72;
+  --c-secondary-50:  #73768b;
+  --c-secondary-60:  #8d8fa6;
+  --c-secondary-70:  #a7aac1;
+  --c-secondary-80:  #c3c5dd;
+  --c-secondary-90:  #dfe1f9;
+  --c-secondary-95:  #f0efff;
+  --c-secondary-98:  #fbf8ff;
+  --c-secondary-99:  #fefbff;
+  --c-secondary-100: #ffffff;
+
+  /* Tertiary palette */
+  --c-tertiary-0:   #000000;
+  --c-tertiary-5:   #20071d;
+  --c-tertiary-10:  #2c1229;
+  --c-tertiary-15:  #381c33;
+  --c-tertiary-20:  #44263e;
+  --c-tertiary-25:  #50314a;
+  --c-tertiary-30:  #5c3c56;
+  --c-tertiary-35:  #694862;
+  --c-tertiary-40:  #76546e;
+  --c-tertiary-50:  #906c87;
+  --c-tertiary-60:  #ac85a2;
+  --c-tertiary-70:  #c89fbd;
+  --c-tertiary-80:  #e5bad9;
+  --c-tertiary-90:  #ffd7f3;
+  --c-tertiary-95:  #ffebf7;
+  --c-tertiary-98:  #fff7f9;
+  --c-tertiary-99:  #fffbff;
+  --c-tertiary-100: #ffffff;
+
+  /* Neutral palette — for surfaces, backgrounds, body text */
+  --c-neutral-0:   #000000;
+  --c-neutral-5:   #101114;
+  --c-neutral-10:  #1b1b1f;
+  --c-neutral-15:  #252529;
+  --c-neutral-20:  #303034;
+  --c-neutral-25:  #3b3b3f;
+  --c-neutral-30:  #47464a;
+  --c-neutral-35:  #525256;
+  --c-neutral-40:  #5f5e62;
+  --c-neutral-50:  #77767a;
+  --c-neutral-60:  #919094;
+  --c-neutral-70:  #acaaaf;
+  --c-neutral-80:  #c8c6ca;
+  --c-neutral-90:  #e4e1e6;
+  --c-neutral-95:  #f3f0f4;
+  --c-neutral-98:  #fbf8fd;
+  --c-neutral-99:  #fefbff;
+  --c-neutral-100: #ffffff;
+
+  /* Neutral-variant palette — for outlines, dividers, subdued text */
+  --c-neutral-variant-0:   #000000;
+  --c-neutral-variant-5:   #0f1118;
+  --c-neutral-variant-10:  #1a1b23;
+  --c-neutral-variant-15:  #24252d;
+  --c-neutral-variant-20:  #2f3038;
+  --c-neutral-variant-25:  #3a3b43;
+  --c-neutral-variant-30:  #45464f;
+  --c-neutral-variant-35:  #51525b;
+  --c-neutral-variant-40:  #5d5e67;
+  --c-neutral-variant-50:  #767680;
+  --c-neutral-variant-60:  #90909a;
+  --c-neutral-variant-70:  #abaab4;
+  --c-neutral-variant-80:  #c6c5d0;
+  --c-neutral-variant-90:  #e2e1ec;
+  --c-neutral-variant-95:  #f1effa;
+  --c-neutral-variant-98:  #fbf8ff;
+  --c-neutral-variant-99:  #fefbff;
+  --c-neutral-variant-100: #ffffff;
+
+  /* Error palette — destructive / warning */
+  --c-error-0:   #000000;
+  --c-error-5:   #2d0001;
+  --c-error-10:  #410002;
+  --c-error-15:  #540003;
+  --c-error-20:  #690005;
+  --c-error-25:  #7e0007;
+  --c-error-30:  #93000a;
+  --c-error-35:  #a80710;
+  --c-error-40:  #ba1a1a;
+  --c-error-50:  #de3730;
+  --c-error-60:  #ff5449;
+  --c-error-70:  #ff897d;
+  --c-error-80:  #ffb4ab;
+  --c-error-90:  #ffdad6;
+  --c-error-95:  #ffedea;
+  --c-error-98:  #fff8f7;
+  --c-error-99:  #fffbff;
+  --c-error-100: #ffffff;
+}

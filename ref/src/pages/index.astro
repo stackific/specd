@@ -1,0 +1,74 @@
+---
+import "./index.css";
+import Layout from "$/layouts/Layout.astro";
+import Showcase from "$/components/Showcase.astro";
+import CardImplement from "$/components/home/CardImplement.astro";
+import CardAdvise from "$/components/home/CardAdvise.astro";
+import CardTeach from "$/components/home/CardTeach.astro";
+import CardDrivesWork1 from "$/components/home/CardDrivesWork1.astro";
+import CardDrivesWork2 from "$/components/home/CardDrivesWork2.astro";
+---
+
+<Layout>
+  <main id="main">
+    <section class="grid center home-hero" aria-labelledby="hero-heading">
+      <div class="s12 m6 l6">
+        <div>
+          <article class="no-elevate round h-16 middle-align p-5">
+            <div class="p-5">
+              <h1 id="hero-heading" class="text-5 l:text-8 lh--1 fw-7">Build what the world deserves.</h1>
+              <p class="text-2 l:text-3 fw-4 lh-1 ls-0 my-6">Purposeful AI. From products to implementation to education.</p>
+              <button type="button" data-ui="#contact-dialog" class="h-10 w-12 text-2 l:text-3">Work with us</button>
+            </div>
+          </article>
+        </div>
+      </div>
+      <div class="s12 m6 l6">
+        <div>
+          <div class="round h-16 p-0">
+            <Showcase />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="container-xl mt-10 p-1 m:p-2 l:p-5" aria-labelledby="approach-heading">
+      <h2 id="approach-heading" class="text-5 m:text-6 fw-7">Everyone is talking about AI. Very few are building it well.</h2>
+      <p class="text-2 m:text-3 mt-3">
+        Between hype and reality, there is a shortage of practitioners who can ship AI systems that are drive useful business outcomes. That is where we come in. Three ways we work with you.
+      </p>
+
+      <div class="grid mt-10 m:mt-11">
+        <div class="s12 m6 l4"><CardImplement /></div>
+        <div class="s12 m6 l4"><CardAdvise /></div>
+        <div class="s12 m6 l4"><CardTeach /></div>
+      </div>
+    </section>
+
+    <section class="container-xl mt-10 p-1 m:p-2 l:p-5" aria-labelledby="commitments-heading">
+      <h2 id="commitments-heading" class="text-4 lh-2 fw-7">Hard questions, honest practice.</h2>
+      <p class="text-2 mt-3">
+        Two commitments shape everything we do.
+      </p>
+
+      <div class="grid mt-7">
+        <div class="s12 m6 l6"><CardDrivesWork1 /></div>
+        <div class="s12 m6 l6"><CardDrivesWork2 /></div>
+      </div>
+    </section>
+
+    <section class="container-xl mt-10 p-1 m:p-2 l:p-5" aria-labelledby="cta-heading">
+      <h2 id="cta-heading" class="text-4 lh-2 fw-7">Let's build something worth building.</h2>
+      <p class="text-2 mt-3">
+        We would like to hear what you are working on.
+      </p>
+
+      <article class="no-elevate round middle-align p-5 mt-7 secondary-container">
+        <div class="p-5">
+          <p class="text-3 fw-3 my-5">Tell us what you are trying to build, where you are stuck, or what you want your team to learn. We will listen carefully and tell you honestly whether we can help.</p>
+          <button type="button" data-ui="#contact-dialog" class="h-8 w-12 text-1 l:text-2">Work with us</button>
+        </div>
+      </article>
+    </section>
+  </main>
+</Layout>

@@ -1,0 +1,46 @@
+/* =================================================================
+   Stackific custom CSS bundle — entrypoint
+   =================================================================
+   Imported by src/layouts/Layout.astro. Vite/LightningCSS inlines
+   every @import below into a single bundled output file (because
+   `vite.build.cssCodeSplit` is `false`).
+
+   BeerCSS is NOT imported here on purpose — it's served as a
+   separate <link> from public/vendor/beer.min.css so its cache is
+   independent of our custom styles.
+
+   Cascade order (earlier = lower precedence at equal specificity):
+
+     1. Vendor fonts
+     2. Modern CSS reset
+     3. @custom-media definitions
+     4. Custom design tokens (CSS custom properties)
+     5. Element-level base rules
+     6. Custom utility classes (atomic helpers, generated)
+     7. Layout chrome globals
+     8. Component & page styles (imported by their own .astro files,
+        not from this entrypoint, so cascade order between them is
+        non-deterministic — every component must namespace its
+        classes to avoid collisions)
+   ================================================================= */
+
+/* 1. Vendor fonts */
+@import "@fontsource-variable/geist/wght.css";
+
+/* 2. Modern CSS reset */
+@import "./reset.css";
+
+/* 3. @custom-media query helpers */
+@import "./media.css";
+
+/* 4. Custom design tokens */
+@import "./tokens.css";
+
+/* 5. Element-level base rules */
+@import "./base.css";
+
+/* 6. Custom utility classes */
+@import "./utilities.css";
+
+/* 7. Layout chrome globals */
+@import "./layout.css";

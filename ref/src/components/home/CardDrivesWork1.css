@@ -1,0 +1,37 @@
+@import "./_card-base.css";
+
+
+/* Constellation of question nodes */
+.gfx-questions {
+  background: linear-gradient(150deg, var(--secondary-container), var(--surface-container-low));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gfx-questions svg {
+  width: 88%;
+  height: 88%;
+  overflow: visible;
+}
+.gfx-questions line {
+  stroke: var(--secondary);
+  stroke-width: 1.2;
+  opacity: 0.28;
+}
+.gfx-questions .node {
+  fill: var(--secondary);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: gfx-q-pulse 3.6s ease-in-out infinite;
+}
+.gfx-questions .n1 { animation-delay: 0s; }
+.gfx-questions .n2 { animation-delay: 0.7s; }
+.gfx-questions .n3 { animation-delay: 1.4s; }
+.gfx-questions .n4 { animation-delay: 2.1s; }
+.gfx-questions .n5 { animation-delay: 2.8s; }
+
+@keyframes gfx-q-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.5); }
+}
+

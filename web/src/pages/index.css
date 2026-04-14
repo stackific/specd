@@ -1,0 +1,8 @@
+/* =================================================================
+   Home page (index.astro)
+   ================================================================= */
+
+/* Plain element selector — intentionally global for the page footer */
+footer ul {
+  list-style: none;
+}

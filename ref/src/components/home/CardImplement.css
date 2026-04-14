@@ -1,0 +1,62 @@
+@import "./_card-base.css";
+
+
+/* Isometric wireframe cube assembling itself edge by edge.
+   12 SVG <line> edges with pathLength normalized to 100 each, so
+   the dashoffset animation produces the same draw speed regardless
+   of an edge's true length. Each edge runs the same draw → hold →
+   fade keyframe with a staggered delay so the cube traces in,
+   stays whole for a beat, then fades out and rebuilds.
+
+   Aesthetically twins gfx-questions / gfx-cycle (thin stroked
+   lines, no fills) but rectilinear instead of circular — the only
+   angular graphic on the page. */
+
+.gfx-implement {
+  background: linear-gradient(160deg, var(--primary-container), var(--surface-container-low));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gfx-implement svg {
+  width: 88%;
+  height: 88%;
+  overflow: visible;
+}
+
+.gfx-implement .edge {
+  stroke: var(--primary);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  fill: none;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  opacity: 0;
+  animation: gfx-build 5.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Stagger order: front face, then back face, then connectors —
+   visually reads like building the front, then the back, then
+   joining them. */
+.gfx-implement .e1  { animation-delay: 0s; }
+.gfx-implement .e2  { animation-delay: 0.08s; }
+.gfx-implement .e3  { animation-delay: 0.16s; }
+.gfx-implement .e4  { animation-delay: 0.24s; }
+.gfx-implement .e5  { animation-delay: 0.32s; }
+.gfx-implement .e6  { animation-delay: 0.40s; }
+.gfx-implement .e7  { animation-delay: 0.48s; }
+.gfx-implement .e8  { animation-delay: 0.56s; }
+.gfx-implement .e9  { animation-delay: 0.64s; }
+.gfx-implement .e10 { animation-delay: 0.72s; }
+.gfx-implement .e11 { animation-delay: 0.80s; }
+.gfx-implement .e12 { animation-delay: 0.88s; }
+
+@keyframes gfx-build {
+  0%   { stroke-dashoffset: 100; opacity: 0; }
+  4%   { opacity: 1; }
+  25%  { stroke-dashoffset: 0;   opacity: 1; }
+  75%  { stroke-dashoffset: 0;   opacity: 1; }
+  92%  { stroke-dashoffset: 0;   opacity: 0; }
+  100% { stroke-dashoffset: 100; opacity: 0; }
+}

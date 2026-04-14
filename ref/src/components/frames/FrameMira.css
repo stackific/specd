@@ -1,0 +1,179 @@
+/* ── FrameMira — phone-frame demo ───────────────────────────────
+   Light + dark variants. Color tokens are scoped to .c-mira so they
+   don't leak. Dark mode follows BeerCSS's `body.dark` class — same
+   pattern as FrameEvent / FrameChat.
+
+   Mira's brand is a playful pastel gradient (cyan → lavender →
+   pink). Dark mode keeps the same hues at much lower lightness so
+   the personality survives. Brand accents (hot pink spark label,
+   pill icon backgrounds, gold mascot) stay constant across modes
+   because they're hue-pure and read on both surfaces.
+
+   Typography sizing (font-size, line-height) is applied via utility
+   classes from the framework on the markup itself, not here. This
+   file owns: color tokens, layout, dimensions, font-weight, the few
+   font-sizes that have to live on `::before` / `::after` pseudo-
+   elements (utility classes can't reach those). */
+
+.c-mira {
+  --mi-fg:               #2b1a4a;
+  --mi-fg-muted:         #5d4992;
+  --mi-spark-bg:         #fff;
+  --mi-spark-shadow:     rgba(80, 40, 160, 0.12);
+  --mi-reply-bg:         rgba(255, 255, 255, 0.7);
+  --mi-foot-streak-bg:   rgba(255, 255, 255, 0.6);
+  --mi-bg-stop-1:        #c5e7ff;
+  --mi-bg-stop-2:        #e2d4ff;
+  --mi-bg-stop-3:        #ffd8ec;
+  --mi-mascot-eye:       #2b1a4a;
+  --sc-home-bar-bg:      rgba(93, 73, 146, 0.35);
+
+  background: linear-gradient(
+    165deg,
+    var(--mi-bg-stop-1) 0%,
+    var(--mi-bg-stop-2) 55%,
+    var(--mi-bg-stop-3) 100%
+  );
+  color: var(--mi-fg);
+}
+
+body.dark .c-mira {
+  --mi-fg:               #f0e8ff;
+  --mi-fg-muted:         #b8a8e0;
+  --mi-spark-bg:         #1f1638;
+  --mi-spark-shadow:     rgba(0, 0, 0, 0.4);
+  --mi-reply-bg:         rgba(255, 255, 255, 0.06);
+  --mi-foot-streak-bg:   rgba(255, 255, 255, 0.08);
+  --mi-bg-stop-1:        #102338;
+  --mi-bg-stop-2:        #1d1438;
+  --mi-bg-stop-3:        #2a1428;
+  --mi-mascot-eye:       #1a0a2a;
+  --sc-home-bar-bg:      rgba(220, 200, 255, 0.45);
+}
+
+/* ── Header (mascot + greeting) ──────────────────────────────── */
+
+.c-mira .mi-header {
+  padding: 6px 18px 4px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.c-mira .mi-mascot {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff5b3 0%, #ffd24a 60%, #ff9b3a 100%);
+  box-shadow: 0 4px 14px rgba(255, 155, 58, 0.4);
+  position: relative;
+  flex-shrink: 0;
+}
+.c-mira .mi-mascot::before,
+.c-mira .mi-mascot::after {
+  content: "";
+  position: absolute;
+  width: 5px;
+  height: 7px;
+  background: var(--mi-mascot-eye);
+  border-radius: 50%;
+  top: 17px;
+}
+.c-mira .mi-mascot::before { left: 14px; }
+.c-mira .mi-mascot::after { right: 14px; }
+
+.c-mira .mi-greet {
+  color: var(--mi-fg-muted);
+}
+.c-mira .mi-name {
+  font-weight: 700;
+  color: var(--mi-fg);
+  margin-top: 2px;
+}
+
+/* ── Spark card (the prompt) ─────────────────────────────────── */
+
+.c-mira .mi-spark {
+  margin: 14px 16px 0;
+  padding: 18px 18px 16px;
+  background: var(--mi-spark-bg);
+  border-radius: 22px;
+  box-shadow: 0 6px 22px var(--mi-spark-shadow);
+  position: relative;
+}
+.c-mira .mi-spark::before {
+  content: "✨";
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  font-size: 22px;
+}
+.c-mira .mi-spark::after {
+  content: "✨";
+  position: absolute;
+  top: -6px;
+  right: 16px;
+  font-size: 16px;
+}
+.c-mira .mi-spark-label {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #ff7eb6;
+}
+.c-mira .mi-spark-text {
+  color: var(--mi-fg);
+  margin-top: 6px;
+}
+
+/* ── Reply pills ─────────────────────────────────────────────── */
+
+.c-mira .mi-replies {
+  margin: 14px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.c-mira .mi-reply {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--mi-reply-bg);
+  border-radius: 18px;
+  color: var(--mi-fg);
+  backdrop-filter: blur(6px);
+}
+.c-mira .mi-reply-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+.c-mira .mi-reply.draw .mi-reply-icon { background: #ff7eb6; }
+.c-mira .mi-reply.tell .mi-reply-icon { background: #6ec6ff; }
+.c-mira .mi-reply.sing .mi-reply-icon { background: #b88aff; }
+
+/* ── Foot ────────────────────────────────────────────────────── */
+
+.c-mira .mi-foot {
+  margin: auto 18px 0;
+  padding-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--mi-fg-muted);
+}
+.c-mira .mi-foot-streak {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--mi-foot-streak-bg);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}

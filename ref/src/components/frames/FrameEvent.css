@@ -1,0 +1,73 @@
+/* ── FrameEvent — phone-frame demo ──────────────────────────────
+   Light + dark variants. Color tokens are scoped to .c-event so
+   they don't leak. Dark mode follows BeerCSS's `body.dark` class
+   (the same toggle the dark/light button in Layout.astro flips
+   via ui("mode", ...)). We deliberately do NOT key off
+   `prefers-color-scheme: dark` because BeerCSS doesn't either, and
+   mixing the two would let the manual toggle disagree with the
+   system preference. */
+
+.c-event {
+  --ev-bg:        var(--c-neutral-99);
+  --ev-fg:        var(--c-neutral-10);
+  --ev-label:     var(--c-neutral-50);
+  --ev-card-bg:   var(--c-neutral-95);
+  --ev-card-line: var(--c-neutral-90);
+
+  background: var(--ev-bg);
+  color: var(--ev-fg);
+}
+
+body.dark .c-event {
+  --ev-bg:        var(--c-neutral-10);
+  --ev-fg:        var(--c-neutral-95);
+  --ev-label:     var(--c-neutral-60);
+  --ev-card-bg:   var(--c-neutral-15);
+  --ev-card-line: var(--c-neutral-25);
+}
+
+.c-event img.ev-photo {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+}
+
+.c-event .ev-details {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  background: var(--ev-bg);
+}
+
+.c-event .ev-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.c-event .ev-label {
+  font-weight: 500;
+  color: var(--ev-label);
+}
+
+.c-event .ev-value {
+  font-weight: 400;
+  color: var(--ev-fg);
+}
+
+/* The inner status / agent card — uses the slightly elevated tone
+   so it stays distinct from the frame background in both modes. */
+.c-event .ev-details > article {
+  background: var(--ev-card-bg);
+  border-color: var(--ev-card-line);
+  color: var(--ev-fg);
+}
+
+.c-event .ev-actions {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--ev-bg);
+}

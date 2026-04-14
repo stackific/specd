@@ -1,0 +1,22 @@
+/* =================================================================
+   Home card graphic — shared base
+   =================================================================
+   Imported by every Card*.css via @import. Defines the .gfx
+   container shape that wraps each card's pure-CSS visual, plus the
+   project-wide reduced-motion rule for any animated children.
+   ================================================================= */
+
+.gfx {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gfx * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

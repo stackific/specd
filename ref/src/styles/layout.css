@@ -1,0 +1,19 @@
+/* =================================================================
+   Layout chrome — globals owned by Layout.astro
+   =================================================================
+   Page-level globals that apply across every route: light/dark
+   logo swap, anything else that lives at the chrome level.
+   ================================================================= */
+
+/* Logo light/dark swap — toggled via body.dark from Layout's UI script */
+.logo-dark {
+  display: none;
+}
+
+body.dark .logo-light {
+  display: none;
+}
+
+body.dark .logo-dark {
+  display: inline;
+}

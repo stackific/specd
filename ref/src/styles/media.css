@@ -1,0 +1,32 @@
+/* =================================================================
+   Media query helpers — @custom-media
+   =================================================================
+   Logical breakpoint and preference names that can be referenced
+   anywhere in the project. Resolved at build time by LightningCSS
+   (configured in astro.config.mjs via vite.css.lightningcss.drafts.
+   customMedia = true).
+
+   Usage in any .css file:
+
+     @media (--desktop) {
+       .my-class { padding: var(--space-7); }
+     }
+
+   Breakpoint values match BeerCSS's s/m/l so the mental model is
+   shared with the component library.
+   ================================================================= */
+
+/* ── Viewport-width breakpoints (mobile-first, min-width) ──────── */
+@custom-media --mobile  (max-width: 600px);
+@custom-media --tablet  (min-width: 601px);
+@custom-media --desktop (min-width: 993px);
+
+/* ── User preferences ──────────────────────────────────────────── */
+@custom-media --motion-ok (prefers-reduced-motion: no-preference);
+@custom-media --motion-reduce (prefers-reduced-motion: reduce);
+@custom-media --dark   (prefers-color-scheme: dark);
+@custom-media --light  (prefers-color-scheme: light);
+
+/* ── Pointer & hover capability ────────────────────────────────── */
+@custom-media --hover (hover: hover);
+@custom-media --touch (hover: none);

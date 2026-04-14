@@ -1,0 +1,67 @@
+---
+import "./FrameChat.css";
+import { Image } from "astro:assets";
+import avatar1 from "$/assets/avatar1.jpg";
+import avatar2 from "$/assets/avatar2.jpg";
+import avatar3 from "$/assets/avatar3.jpg";
+import avatar4 from "$/assets/avatar4.jpg";
+import avatar5 from "$/assets/avatar5.jpg";
+---
+
+<div class="sc-card c-chat">
+  <div class="sc-status">
+    <span class="sc-live-time"></span>
+    <div class="sc-dot"></div>
+    <div class="sc-status-icons">
+      <span class="ms sc-status-ms">wifi</span>
+      <span class="ms sc-status-ms">battery_full</span>
+    </div>
+  </div>
+  <div class="ch-header text--1">
+    <span class="ms text-2">arrow_back</span>
+    <div class="ch-avatars">
+      <Image src={avatar1} alt="" width={40} height={40} />
+      <Image src={avatar2} alt="" width={40} height={40} />
+      <Image src={avatar3} alt="" width={40} height={40} />
+      <Image src={avatar4} alt="" width={40} height={40} />
+      <Image src={avatar5} alt="" width={40} height={40} />
+    </div>
+    <div class="ch-ja text--1">AB</div>
+    <div class="ch-actions">
+      <span class="ms text-2">videocam</span>
+      <span class="ms text-2">call</span>
+    </div>
+  </div>
+  <div class="ch-group-name text--1">Friends for life &#9662;</div>
+  <div class="ch-messages text-0">
+    <div>
+      <div class="ch-sender text--1 lh-0">Adam Bot</div>
+      <div class="ch-recv-row">
+        <div class="ch-ja text--1">AB</div>
+        <div class="ch-bubble recv lh-2">For sure! What else do you want me to remember or do for you now?</div>
+      </div>
+    </div>
+    <div class="ch-sent-row">
+      <div class="ch-bubble sent lh-2"><strong>@Adam Bot</strong>, encourage Maya weekly on her weight loss journey</div>
+      <Image src={avatar2} alt="" width={26} height={26} class="ch-sent-avatar" />
+    </div>
+    <div>
+      <div class="ch-sender text--1 lh-0">Adam Bot</div>
+      <div class="ch-recv-row">
+        <div class="ch-ja text--1">AB</div>
+        <div class="ch-bubble recv lh-2">You've got it!</div>
+      </div>
+    </div>
+    <div class="ch-sent-row">
+      <div class="ch-bubble sent lh-2">Ooo. Merci.</div>
+      <Image src={avatar1} alt="" width={26} height={26} class="ch-sent-avatar" />
+    </div>
+  </div>
+  <div class="ch-input text--1">
+    <span class="ms ch-input-icon text-2">add_circle</span>
+    <div class="ch-input-field">Message</div>
+    <span class="ms ch-input-icon text-2">photo_camera</span>
+    <span class="ms ch-input-icon text-2">mic</span>
+  </div>
+  <div class="sc-home-bar"></div>
+</div>

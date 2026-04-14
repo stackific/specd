@@ -1,0 +1,71 @@
+---
+/**
+ * Site footer.
+ *
+ * Two-column layout: brand + intro on the left, three sub-columns of
+ * navigation links on the right (Social / Products / Legal).
+ *
+ * Social URLs are pulled from `siteConfig.social` so adding a new
+ * profile only requires editing site.config.ts.
+ */
+import { siteConfig } from "$/site.config";
+
+const social = [
+  { label: "GitHub", href: siteConfig.social.github },
+  { label: "LinkedIn", href: siteConfig.social.linkedin },
+  { label: "X / Twitter", href: siteConfig.social.twitter },
+  { label: "Facebook", href: siteConfig.social.facebook },
+  { label: "Instagram", href: siteConfig.social.instagram },
+  { label: "TikTok", href: siteConfig.social.tiktok },
+  { label: "YouTube", href: siteConfig.social.youtube },
+].filter((link): link is { label: string; href: string } => Boolean(link.href));
+---
+
+<footer class="container-xl mb-10 mt-10 p-3 m:p-2 l:p-5" aria-labelledby="footer-heading">
+  <h2 id="footer-heading" class="visually-hidden">Site footer</h2>
+  <hr />
+  <div class="grid top-align mt-5">
+    <div class="s12 l6">
+      <a href="/" aria-label={`${siteConfig.name} home`}>
+        <img class="logo-light" alt="" width="60" src={siteConfig.logo.light} />
+        <img class="logo-dark" alt="" width="60" src={siteConfig.logo.dark} />
+      </a>
+      <p class="mt-3">
+        Stackific Inc. is a software engineering practice focused on making AI genuinely useful. Stackific builds own products, works with startups and enterprises for shaping the AI architectures and implementation and AI engineering efficiency. Stackific also teaches real insight from work through <a href="https://stackdemy.com" target="_blank">Stackdemy</a>, their technical education platform.
+      </p>
+    </div>
+    <nav class="s12 l6 mt-5 l:mt-0" aria-label="Footer">
+      <div class="grid lh-5">
+        <div class="s4">
+          <h3 class="text-2 fw-7">Social</h3>
+          <ul class="p-0 mt-2" role="list">
+            {social.map((link) => (
+              <li>
+                <a class="link" href={link.href} target="_blank" rel="noopener noreferrer">
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div class="s4">
+          <h3 class="text-2 fw-7">Learn</h3>
+          <ul class="p-0 mt-2" role="list">
+            <li>
+              <a class="link" href="https://stackdemy.com" target="_blank" rel="noopener noreferrer">
+                Stackdemy
+              </a>
+            </li>
+          </ul>
+        </div>
+        <div class="s4">
+          <h3 class="text-2 fw-7">Legal</h3>
+          <ul class="p-0 mt-2" role="list">
+            <li><a class="link" href="https://stackific.com/privacy">Privacy Policy</a></li>
+            <li><a class="link" href="https://stackific.com/terms">Terms of Service</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </div>
+</footer>

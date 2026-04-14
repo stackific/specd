@@ -1,0 +1,159 @@
+/* ── FrameChat — phone-frame demo ───────────────────────────────
+   Light + dark variants. Color tokens are scoped to .c-chat so they
+   don't leak. Dark mode follows BeerCSS's `body.dark` class — same
+   pattern as FrameEvent.
+
+   Typography sizing (font-size, line-height) is applied via utility
+   classes from the framework on the markup itself, not here. This
+   file owns: color tokens, layout, dimensions, font-weight. */
+
+.c-chat {
+  --ch-bg:            var(--c-neutral-99);
+  --ch-fg:            var(--c-neutral-10);
+  --ch-fg-muted:      var(--c-neutral-30);
+  --ch-fg-subtle:     var(--c-neutral-50);
+  --ch-bubble-recv:   var(--c-primary-95);
+  --ch-input-bg:      var(--c-neutral-95);
+  --ch-placeholder:   var(--c-neutral-60);
+  --ch-avatar-ring:   var(--ch-bg);
+
+  background: var(--ch-bg);
+  color: var(--ch-fg);
+}
+
+body.dark .c-chat {
+  --ch-bg:            var(--c-neutral-10);
+  --ch-fg:            var(--c-neutral-95);
+  --ch-fg-muted:      var(--c-neutral-70);
+  --ch-fg-subtle:     var(--c-neutral-60);
+  --ch-bubble-recv:   var(--c-primary-20);
+  --ch-input-bg:      var(--c-neutral-15);
+  --ch-placeholder:   var(--c-neutral-50);
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+
+.c-chat .ch-header {
+  display: flex;
+  align-items: center;
+  padding: 4px 12px;
+  gap: 4px;
+}
+
+/* All ms icons that are direct children of the header (back arrow
+   today, anything else later) inherit the muted foreground colour. */
+.c-chat .ch-header > .ms {
+  color: var(--ch-fg-muted);
+}
+
+.c-chat .ch-avatars { display: flex; }
+.c-chat .ch-avatars img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--ch-avatar-ring);
+  margin-left: -5px;
+  object-fit: cover;
+}
+.c-chat .ch-avatars img:first-child { margin-left: 0; }
+
+.c-chat .ch-ja {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--sc-purple-mid);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  margin-left: -5px;
+  border: 2px solid var(--ch-avatar-ring);
+}
+
+.c-chat .ch-actions {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+  color: var(--ch-fg-muted);
+}
+
+.c-chat .ch-group-name {
+  text-align: center;
+  font-weight: 500;
+  padding: 2px 0 10px;
+  color: var(--ch-fg-muted);
+}
+
+/* ── Messages ────────────────────────────────────────────────── */
+
+.c-chat .ch-messages {
+  padding: 6px 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.c-chat .ch-sender {
+  color: var(--ch-fg-subtle);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.c-chat .ch-bubble {
+  padding: 12px 16px;
+  border-radius: 20px;
+  max-width: 80%;
+}
+.c-chat .ch-bubble.recv {
+  background: var(--ch-bubble-recv);
+  color: var(--ch-fg);
+  border-bottom-left-radius: 6px;
+}
+.c-chat .ch-bubble.sent {
+  background: var(--sc-cyan);
+  color: #003333;
+  border-bottom-right-radius: 6px;
+  align-self: flex-end;
+}
+
+.c-chat .ch-recv-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.c-chat .ch-sent-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  align-self: flex-end;
+}
+.c-chat .ch-sent-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* ── Input bar ───────────────────────────────────────────────── */
+
+.c-chat .ch-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 0 10px 4px;
+  border-radius: 24px;
+  background: var(--ch-input-bg);
+}
+.c-chat .ch-input-field {
+  flex: 1;
+  color: var(--ch-placeholder);
+}
+.c-chat .ch-input-icon {
+  color: var(--ch-fg-muted);
+  flex-shrink: 0;
+}

@@ -1,0 +1,90 @@
+---
+import Layout from "$/layouts/Layout.astro";
+
+const beliefs = [
+  {
+    title: "Intention before execution.",
+    body: "Every engagement begins with a question: what is this meant to accomplish, and for whom? We do not build for the sake of building. We do not adopt AI because it is expected. We begin with purpose and let that shape every technical decision that follows.",
+  },
+  {
+    title: "Outcomes over outputs.",
+    body: "A deployed model is not a solved problem. A documented strategy is not a transformed culture. We hold ourselves accountable to what our work makes possible, not what it looks like at delivery.",
+  },
+  {
+    title: "Excellence as a standard, not a slogan.",
+    body: "We believe in raising the bar. Not because it is marketable, but because careful, beautiful work has a way of reaching people differently than work that is merely functional. What is crafted with care is received with trust.",
+  },
+  {
+    title: "Best fit, not better than.",
+    body: "We do not position ourselves as superior to alternatives. We are honest about what we do well and where someone else may be a better choice. If we are the right fit for your problem, we will tell you clearly and then focus entirely on your benefit, not ours.",
+  },
+];
+---
+
+<Layout title="About" description="About Stackific — a software engineering practice building purposeful AI.">
+  <main id="main">
+    <section class="container-xl mt-10 p-1 m:p-2 l:p-5" aria-labelledby="about-heading">
+      <h1 id="about-heading" class="text-5 m:text-7 l:text-8 lh--1 fw-7">About Stackific</h1>
+      <p class="text-3 m:text-4 fw-4 lh-4 mt-5">
+        We started Stackific because we noticed a gap.
+      </p>
+      <p class="text-2 m:text-3 lh-4 mt-3">
+        Organizations everywhere are asking how to adopt AI. But the answers they get tend to fall into two categories: hype that overpromises, or caution that underdelivers. Very few people are doing the patient, principled work of asking the harder questions: What makes AI useful? What makes it reliable? What creates positive impact that will outlive us?
+      </p>
+      <p class="text-2 m:text-3 lh-4 mt-3 fw-6">
+        That is the work we chose.
+      </p>
+      <p class="text-2 m:text-3 lh-4 mt-3">
+        Stackific is a software engineering practice. We build products, we consult, and we teach. We are not an agency scaling through volume. We are practitioners, and our craft is purposeful engineering: technology built with clear intention, held to high standards, and measured by the outcomes it creates for the people it serves. What we learn by building becomes what we teach through Stackdemy, our education platform. The cycle is deliberate: real work produces real insight, and sharing that insight makes the next generation of work sharper.
+      </p>
+    </section>
+
+    <section class="container-xl mt-10 p-1 m:p-2 l:p-5" aria-labelledby="beliefs-heading">
+      <h2 id="beliefs-heading" class="text-4 m:text-5 lh-2 fw-7">What We Believe</h2>
+      <div class="grid mt-7">
+        {beliefs.map((b) => (
+          <div class="s12 m6">
+            <article class="no-elevate round p-5 h-full secondary-container">
+              <div class="p-3">
+                <h3 class="text-3 m:text-4 lh-3 fw-7 m-0">{b.title}</h3>
+                <p class="text-1 m:text-2 lh-4 mt-3">{b.body}</p>
+              </div>
+            </article>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="container-xl mt-10 p-1 m:p-2 l:p-5" aria-labelledby="how-heading">
+      <h2 id="how-heading" class="text-4 m:text-5 lh-2 fw-7">How We Work</h2>
+      <p class="text-2 m:text-3 lh-4 mt-5">
+        We are a small practice by design. We value depth over breadth and trust over scale. Our engagements are selective, our attention is undivided, and our commitment to each client's success is personal.
+      </p>
+      <p class="text-2 m:text-3 lh-4 mt-3">
+        When a problem calls for more hands or different expertise, we bring in collaborators we trust: people who share our values and our standard of care. This means you always get the right team for the work, not whoever happens to be on the bench.
+      </p>
+    </section>
+
+    <section class="container-xl mt-10 p-1 m:p-2 l:p-5" aria-labelledby="clever-heading">
+      <h2 id="clever-heading" class="text-4 m:text-5 lh-2 fw-7">Clever and Kind</h2>
+      <p class="text-2 m:text-3 lh-4 mt-5">
+        We have found that the best work happens among people who are both sharp and generous. People who care about getting it right, who ask good questions, and who treat the people around them well. We seek collaborators and clients who hold themselves to that standard, and we hold ourselves to it first.
+      </p>
+      <p class="text-2 m:text-3 lh-4 mt-3">
+        If that sounds like the kind of relationship you are looking for, we would like to hear from you.
+      </p>
+    </section>
+
+    <section class="container-xl mt-10 mb-10 p-1 m:p-2 l:p-5" aria-labelledby="about-cta-heading">
+      <article class="no-elevate round middle-align p-5 secondary-container">
+        <div class="p-5">
+          <h2 id="about-cta-heading" class="text-4 lh-2 fw-7 m-0">Let's build something worth building.</h2>
+          <p class="text-3 fw-3 lh-4 my-5">Tell us what you are trying to build, where you are stuck, or what you want your team to learn. We will listen carefully and tell you honestly whether we can help.</p>
+          <button type="button" data-ui="#contact-dialog" class="h-8 w-12 text-1 l:text-2">Work with us</button>
+        </div>
+      </article>
+    </section>
+  </main>
+</Layout>
+</content>
+</invoke>

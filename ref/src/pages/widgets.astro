@@ -1,0 +1,1081 @@
+---
+import Layout from "$/layouts/Layout.astro";
+---
+
+<Layout title="Widgets" description="Sample widgets built with BeerCSS and the Stackific custom CSS framework.">
+  <main id="main">
+    <section id="top" class="container-lg mt-9 p-1 m:p-2 l:p-5">
+      <h1 class="text-6 m:text-7 lh--1 fw-7">Widgets</h1>
+      <p class="text-2 mt-3">Sample widgets built with BeerCSS and our utility classes.</p>
+
+      <nav class="wrap mt-5">
+        <a class="chip" href="#cmp-flank">Flank</a>
+        <a class="chip" href="#cmp-empty-centered">Empty — centered</a>
+        <a class="chip" href="#cmp-empty-actions">Empty — action grid</a>
+        <a class="chip" href="#cmp-empty-invite">Empty — invite list</a>
+        <a class="chip" href="#cmp-leaderboard">Leaderboard — single</a>
+        <a class="chip" href="#cmp-leaderboard2">Leaderboard — split</a>
+        <a class="chip" href="#cmp-action-panels">Action panels</a>
+        <a class="chip" href="#cmp-order-history">Order history</a>
+        <a class="chip" href="#cmp-invoice-table">Invoice table</a>
+        <a class="chip" href="#cmp-shopping-cart">Shopping cart</a>
+      </nav>
+    </section>
+
+    <section class="container-lg mt-9 p-1 m:p-2 l:p-5" aria-labelledby="cmp-flank">
+      <nav><h2 id="cmp-flank" class="text-4 fw-7 max">Flank</h2><a class="chip small" href="#top"><i>arrow_upward</i><span>Top</span></a></nav>
+      <p class="text-1 mt-2">Leading avatar flanked by a stack of text. BeerCSS <code>ul.list</code> with leading media, sized and spaced with our utilities.</p>
+
+      <div class="tabs right-align mt-5">
+        <a class="active" data-ui="#flank-preview">Preview</a>
+        <a data-ui="#flank-code">Code</a>
+      </div>
+
+      <div class="page active" id="flank-preview">
+        <ul class="list border round mt-3">
+          <li class="py-4 top-align">
+            <img class="circle" src="https://images.unsplash.com/photo-1553284966-19b8815c7817?q=20" alt="" />
+            <div class="max">
+              <strong class="text-2 fw-7">Gandalf</strong>
+              <p class="text-1 mt-1">All we have to decide is what to do with the time that is given to us. There are other forces at work in this world, Frodo, besides the will of evil.</p>
+            </div>
+          </li>
+          <li class="py-4 top-align">
+            <img class="circle" src="https://images.unsplash.com/photo-1553284966-19b8815c7817?q=20" alt="" />
+            <div class="max">
+              <strong class="text-2 fw-7">Boromir</strong>
+              <p class="text-1 mt-1">One does not simply walk into Mordor. Its Black Gates are guarded by more than just Orcs. There is evil there that does not sleep, and the Great Eye is ever watchful.</p>
+            </div>
+          </li>
+          <li class="py-4 top-align">
+            <img class="circle" src="https://images.unsplash.com/photo-1553284966-19b8815c7817?q=20" alt="" />
+            <div class="max">
+              <strong class="text-2 fw-7">Galadriel</strong>
+              <p class="text-1 mt-1">The world is changed. I feel it in the water. I feel it in the earth. I smell it in the air. Much that once was is lost, for none now live who remember it.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="page" id="flank-code">
+        <pre class="border round mt-3 p-4"><code>{`<ul class="list border round">
+  <li class="py-4 top-align">
+    <img class="circle" src="/avatar.jpg" alt="" />
+    <div class="max">
+      <strong class="text-2 fw-7">Gandalf</strong>
+      <p class="text-1 mt-1">All we have to decide is what to do with the time that is given to us...</p>
+    </div>
+  </li>
+  <!-- more <li> rows -->
+</ul>`}</code></pre>
+      </div>
+    </section>
+
+    <section class="container-lg mt-9 p-1 m:p-2 l:p-5" aria-labelledby="cmp-empty-centered">
+      <nav><h2 id="cmp-empty-centered" class="text-4 fw-7 max">Empty state — centered</h2><a class="chip small" href="#top"><i>arrow_upward</i><span>Top</span></a></nav>
+      <p class="text-1 mt-2">Icon, headline, supporting text, and a single primary action. BeerCSS <code>article</code> + <code>center-align</code>.</p>
+
+      <div class="tabs right-align mt-5">
+        <a class="active" data-ui="#empty1-preview">Preview</a>
+        <a data-ui="#empty1-code">Code</a>
+      </div>
+
+      <div class="page active" id="empty1-preview">
+        <article class="no-elevate border round center-align py-9 mt-3">
+          <i class="extra">backpack</i>
+          <h3 class="text-3 fw-7 mt-3">No Kits</h3>
+          <p class="text-1 mt-2">Manage all of your project's icons in a kit.</p>
+          <nav class="center-align mt-4">
+            <button><i>add</i><span>Add Kit</span></button>
+          </nav>
+        </article>
+      </div>
+
+      <div class="page" id="empty1-code">
+        <pre class="border round mt-3 p-4"><code>{`<article class="no-elevate border round center-align py-9">
+  <i class="extra">backpack</i>
+  <h3 class="text-3 fw-7 mt-3">No Kits</h3>
+  <p class="text-1 mt-2">Manage all of your project's icons in a kit.</p>
+  <nav class="center-align mt-4">
+    <button><i>add</i><span>Add Kit</span></button>
+  </nav>
+</article>`}</code></pre>
+      </div>
+    </section>
+
+    <section class="container-lg mt-9 p-1 m:p-2 l:p-5" aria-labelledby="cmp-empty-actions">
+      <nav><h2 id="cmp-empty-actions" class="text-4 fw-7 max">Empty state — action grid</h2><a class="chip small" href="#top"><i>arrow_upward</i><span>Top</span></a></nav>
+      <p class="text-1 mt-2">Card with a header, a grid of "create" actions, and a divider footer link. BeerCSS <code>article</code> + <code>grid</code>.</p>
+
+      <div class="tabs right-align mt-5">
+        <a class="active" data-ui="#empty2-preview">Preview</a>
+        <a data-ui="#empty2-code">Code</a>
+      </div>
+
+      <div class="page active" id="empty2-preview">
+        <article class="no-elevate border round p-0 mt-3">
+          <header class="p-5"><h3 class="text-3 fw-7">Projects</h3></header>
+          <div class="px-5 pb-5">
+            <p class="text-1">You haven't created a project yet. Get started by selecting a template or start with a blank canvas.</p>
+            <div class="grid mt-5">
+              <div class="s12 m6">
+                <nav class="top-align">
+                  <button class="circle large yellow"><i>sticky_note_2</i></button>
+                  <div class="max">
+                    <strong class="text-2 fw-7">Create a Quick Note <i class="text-1">arrow_forward</i></strong>
+                    <p class="text-1 mt-1">Jot down any idea. Will it make sense later? Who knows.</p>
+                  </div>
+                </nav>
+              </div>
+              <div class="s12 m6">
+                <nav class="top-align">
+                  <button class="circle large red"><i>checklist</i></button>
+                  <div class="max">
+                    <strong class="text-2 fw-7">Create a Checklist <i class="text-1">arrow_forward</i></strong>
+                    <p class="text-1 mt-1">The ultimate tool for looking busy.</p>
+                  </div>
+                </nav>
+              </div>
+              <div class="s12 m6">
+                <nav class="top-align">
+                  <button class="circle large purple"><i>grid_on</i></button>
+                  <div class="max">
+                    <strong class="text-2 fw-7">Create a Spreadsheet <i class="text-1">arrow_forward</i></strong>
+                    <p class="text-1 mt-1">Endless rows and columns of tiny, soul-crushing numbers.</p>
+                  </div>
+                </nav>
+              </div>
+              <div class="s12 m6">
+                <nav class="top-align">
+                  <button class="circle large orange"><i>slideshow</i></button>
+                  <div class="max">
+                    <strong class="text-2 fw-7">Create a Slideshow <i class="text-1">arrow_forward</i></strong>
+                    <p class="text-1 mt-1">Dramatic transitions make everything seem more official.</p>
+                  </div>
+                </nav>
+              </div>
+              <div class="s12 m6">
+                <nav class="top-align">
+                  <button class="circle large green"><i>edit_note</i></button>
+                  <div class="max">
+                    <strong class="text-2 fw-7">Create a Form <i class="text-1">arrow_forward</i></strong>
+                    <p class="text-1 mt-1">Collect the deepest personal details and darkest secrets.</p>
+                  </div>
+                </nav>
+              </div>
+              <div class="s12 m6">
+                <nav class="top-align">
+                  <button class="circle large blue"><i>image</i></button>
+                  <div class="max">
+                    <strong class="text-2 fw-7">Create a Photo Album <i class="text-1">arrow_forward</i></strong>
+                    <p class="text-1 mt-1">Curate your best memories or most basic food pictures.</p>
+                  </div>
+                </nav>
+              </div>
+            </div>
+          </div>
+          <footer class="p-5"><a href="#" class="text-1 fw-6">Or start with a blank canvas <i class="text-1">arrow_forward</i></a></footer>
+        </article>
+      </div>
+
+      <div class="page" id="empty2-code">
+        <pre class="border round mt-3 p-4"><code>{`<article class="no-elevate border round p-0">
+  <header class="p-5"><h3 class="text-3 fw-7">Projects</h3></header>
+  <div class="px-5 pb-5">
+    <p class="text-1">You haven't created a project yet...</p>
+    <div class="grid mt-5">
+      <div class="s12 m6">
+        <nav class="top-align">
+          <button class="circle large yellow"><i>sticky_note_2</i></button>
+          <div class="max">
+            <strong class="text-2 fw-7">Create a Quick Note <i class="text-1">arrow_forward</i></strong>
+            <p class="text-1 mt-1">Jot down any idea...</p>
+          </div>
+        </nav>
+      </div>
+      <!-- more s12 m6 cells -->
+    </div>
+  </div>
+  <footer class="p-5"><a href="#" class="text-1 fw-6">Or start with a blank canvas →</a></footer>
+</article>`}</code></pre>
+      </div>
+    </section>
+
+    <section class="container-lg mt-9 mb-10 p-1 m:p-2 l:p-5" aria-labelledby="cmp-empty-invite">
+      <nav><h2 id="cmp-empty-invite" class="text-4 fw-7 max">Empty state — invite list</h2><a class="chip small" href="#top"><i>arrow_upward</i><span>Top</span></a></nav>
+      <p class="text-1 mt-2">Card with a header, an inline invite field, and a list of suggested members. BeerCSS <code>field</code> + <code>ul.list</code>.</p>
+
+      <div class="tabs right-align mt-5">
+        <a class="active" data-ui="#empty3-preview">Preview</a>
+        <a data-ui="#empty3-code">Code</a>
+      </div>
+
+      <div class="page active" id="empty3-preview">
+        <article class="no-elevate border round p-5 mt-3">
+          <h3 class="text-3 fw-7">Add team members</h3>
+          <p class="text-1 mt-2">This project is awful lonely. Invite some team members to liven up the joint.</p>
+
+          <nav class="mt-4">
+            <div class="field border max">
+              <input type="email" placeholder="name@company.com" />
+            </div>
+            <button>Invite</button>
+          </nav>
+
+          <p class="text-0 italic mt-5">Team members previously added to projects</p>
+
+          <ul class="list border round mt-3">
+            <li class="py-4">
+              <img class="circle" src="https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?q=20" alt="" />
+              <div class="max">
+                <strong class="text-2 fw-7">Earl Upton</strong>
+                <p class="text-1">DevOps</p>
+              </div>
+              <a href="#" class="text-1"><i>person_add</i><span>Invite</span></a>
+            </li>
+            <li class="py-4">
+              <img class="circle" src="https://images.unsplash.com/photo-1546182990-dffeafbe841d?q=20" alt="" />
+              <div class="max">
+                <strong class="text-2 fw-7">Steamboat Willie</strong>
+                <p class="text-1">Captain</p>
+              </div>
+              <a href="#" class="text-1"><i>person_add</i><span>Invite</span></a>
+            </li>
+            <li class="py-4">
+              <img class="circle" src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?q=20" alt="" />
+              <div class="max">
+                <strong class="text-2 fw-7">Melissa Eckers</strong>
+                <p class="text-1">Cloud Engineer</p>
+              </div>
+              <a href="#" class="text-1"><i>person_add</i><span>Invite</span></a>
+            </li>
+            <li class="py-4">
+              <img class="circle" src="https://images.unsplash.com/photo-1502980426475-b83966705988?q=20" alt="" />
+              <div class="max">
+                <strong class="text-2 fw-7">Devin Shears</strong>
+                <p class="text-1">UX Writer</p>
+              </div>
+              <a href="#" class="text-1"><i>person_add</i><span>Invite</span></a>
+            </li>
+          </ul>
+        </article>
+      </div>
+
+      <div class="page" id="empty3-code">
+        <pre class="border round mt-3 p-4"><code>{`<article class="no-elevate border round p-5">
+  <h3 class="text-3 fw-7">Add team members</h3>
+  <p class="text-1 mt-2">This project is awful lonely...</p>
+
+  <nav class="mt-4">
+    <div class="field border max">
+      <input type="email" placeholder="name@company.com" />
+    </div>
+    <button>Invite</button>
+  </nav>
+
+  <p class="text-0 italic mt-5">Team members previously added to projects</p>
+
+  <ul class="list border round mt-3">
+    <li class="py-4">
+      <img class="circle" src="/avatar.jpg" alt="" />
+      <div class="max">
+        <strong class="text-2 fw-7">Earl Upton</strong>
+        <p class="text-1">DevOps</p>
+      </div>
+      <a href="#" class="text-1"><i>person_add</i><span>Invite</span></a>
+    </li>
+    <!-- more rows -->
+  </ul>
+</article>`}</code></pre>
+      </div>
+    </section>
+
+    <section class="container-lg mt-9 p-1 m:p-2 l:p-5" aria-labelledby="cmp-leaderboard">
+      <nav><h2 id="cmp-leaderboard" class="text-4 fw-7 max">Leaderboard — single</h2><a class="chip small" href="#top"><i>arrow_upward</i><span>Top</span></a></nav>
+      <p class="text-1 mt-2">Title, two stat tiles, and a ranked list. Tiles stack on mobile via <code>grid s12 m6</code>.</p>
+
+      <div class="tabs right-align mt-5">
+        <a class="active" data-ui="#lb1-preview">Preview</a>
+        <a data-ui="#lb1-code">Code</a>
+      </div>
+
+      <div class="page active" id="lb1-preview">
+        <article class="no-elevate border round p-5 mt-3">
+          <h3 class="text-3 fw-7">Daily Crossword</h3>
+
+          <div class="grid mt-4">
+            <div class="s12 m6">
+              <article class="no-elevate yellow round">
+                <nav class="top-align">
+                  <i class="extra">timer</i>
+                  <div class="max">
+                    <strong class="text-3 fw-7">11h 54m 52s</strong>
+                    <p class="text-0">until play ends</p>
+                  </div>
+                </nav>
+              </article>
+            </div>
+            <div class="s12 m6">
+              <article class="no-elevate round">
+                <nav class="top-align">
+                  <i class="extra">group</i>
+                  <div class="max">
+                    <strong class="text-3 fw-7">304</strong>
+                    <p class="text-0">players on this leaderboard</p>
+                  </div>
+                </nav>
+              </article>
+            </div>
+          </div>
+
+          <ul class="list border round mt-5">
+            <li class="py-3">
+              <span class="text-2 fw-3">1</span>
+              <button class="circle"><i>auto_fix_high</i></button>
+              <div class="max"><strong class="text-1 fw-6">wordwiz</strong></div>
+              <span class="text-1">00:01:41</span>
+            </li>
+            <li class="py-3">
+              <span class="text-2 fw-3">2</span>
+              <button class="circle">A</button>
+              <div class="max"><strong class="text-1 fw-6">acrossNdown</strong></div>
+              <span class="text-1">00:01:58</span>
+            </li>
+            <li class="py-3">
+              <span class="text-2 fw-3">3</span>
+              <button class="circle">X</button>
+              <div class="max"><strong class="text-1 fw-6">XwordChamp</strong></div>
+              <span class="text-1">00:02:14</span>
+            </li>
+            <li class="py-3">
+              <span class="text-2 fw-3">4</span>
+              <button class="circle"><i>chess</i></button>
+              <div class="max"><strong class="text-1 fw-6">puzzlepoet</strong></div>
+              <span class="text-1">00:02:16</span>
+            </li>
+            <li class="py-3">
+              <span class="text-2 fw-3">5</span>
+              <button class="circle">R</button>
+              <div class="max"><strong class="text-1 fw-6">RiddleMeThis</strong></div>
+              <span class="text-1">00:02:34</span>
+            </li>
+          </ul>
+
+          <a href="#" class="text-1 fw-6 mt-4"><span>View all standings</span> <i>arrow_forward</i></a>
+        </article>
+      </div>
+
+      <div class="page" id="lb1-code">
+        <pre class="border round mt-3 p-4"><code>{`<article class="no-elevate border round p-5">
+  <h3 class="text-3 fw-7">Daily Crossword</h3>
+
+  <div class="grid mt-4">
+    <div class="s12 m6">
+      <article class="no-elevate yellow round">
+        <nav class="top-align">
+          <i class="extra">timer</i>
+          <div class="max">
+            <strong class="text-3 fw-7">11h 54m 52s</strong>
+            <p class="text-0">until play ends</p>
+          </div>
+        </nav>
+      </article>
+    </div>
+    <div class="s12 m6">
+      <article class="no-elevate round">
+        <nav class="top-align">
+          <i class="extra">group</i>
+          <div class="max">
+            <strong class="text-3 fw-7">304</strong>
+            <p class="text-0">players on this leaderboard</p>
+          </div>
+        </nav>
+      </article>
+    </div>
+  </div>
+
+  <ul class="list border round mt-5">
+    <li class="py-3">
+      <span class="text-2 fw-3">1</span>
+      <button class="circle"><i>auto_fix_high</i></button>
+      <div class="max"><strong class="text-1 fw-6">wordwiz</strong></div>
+      <span class="text-1">00:01:41</span>
+    </li>
+    <!-- more rows -->
+  </ul>
+
+  <a href="#" class="text-1 fw-6 mt-4"><span>View all standings</span> <i>arrow_forward</i></a>
+</article>`}</code></pre>
+      </div>
+    </section>
+
+    <section class="container-lg mt-9 mb-10 p-1 m:p-2 l:p-5" aria-labelledby="cmp-leaderboard2">
+      <nav><h2 id="cmp-leaderboard2" class="text-4 fw-7 max">Leaderboard — split</h2><a class="chip small" href="#top"><i>arrow_upward</i><span>Top</span></a></nav>
+      <p class="text-1 mt-2">Title, three stat tiles (<code>s12 m6 l4</code>), and two side-by-side leaderboards (<code>s12 l6</code>). Stacks on mobile and tablet.</p>
+
+      <div class="tabs right-align mt-5">
+        <a class="active" data-ui="#lb2-preview">Preview</a>
+        <a data-ui="#lb2-code">Code</a>
+      </div>
+
+      <div class="page active" id="lb2-preview">
+        <h3 class="text-3 fw-7 mt-3">Collective Activity for Yesterday</h3>
+
+        <div class="grid mt-4">
+          <div class="s12 m6 l4">
+            <article class="no-elevate round">
+              <nav class="top-align">
+                <i class="extra">menu_book</i>
+                <div class="max">
+                  <p class="text-0">Items Studied</p>
+                  <strong class="text-4 fw-7">482,813</strong>
+                </div>
+              </nav>
+            </article>
+          </div>
+          <div class="s12 m6 l4">
+            <article class="no-elevate round secondary-container">
+              <nav class="top-align">
+                <i class="extra">psychology</i>
+                <div class="max">
+                  <p class="text-0">Items Mastered</p>
+                  <strong class="text-4 fw-7">67,106</strong>
+                </div>
+              </nav>
+            </article>
+          </div>
+          <div class="s12 m6 l4">
+            <article class="no-elevate round tertiary-container">
+              <nav class="top-align">
+                <i class="extra">auto_fix_high</i>
+                <div class="max">
+                  <p class="text-0">Items Created</p>
+                  <strong class="text-4 fw-7">2,080</strong>
+                </div>
+              </nav>
+            </article>
+          </div>
+        </div>
+
+        <div class="grid mt-5">
+          <div class="s12 l6">
+            <article class="no-elevate border round p-5">
+              <nav class="top-align">
+                <i class="extra">school</i>
+                <div class="max">
+                  <strong class="text-3 fw-7">Study Leaders</strong>
+                  <p class="text-0">Items mastered in the last 7 days</p>
+                </div>
+              </nav>
+              <ul class="list mt-3">
+                <li class="py-3">
+                  <span class="text-2 fw-3">1</span>
+                  <button class="circle">M</button>
+                  <div class="max"><strong class="text-1 fw-6">mitsuwo</strong></div>
+                  <span class="text-1">2,753</span>
+                </li>
+                <li class="py-3">
+                  <span class="text-2 fw-3">2</span>
+                  <button class="circle">K</button>
+                  <div class="max"><strong class="text-1 fw-6">knowledgeninja</strong></div>
+                  <span class="text-1">2,298</span>
+                </li>
+                <li class="py-3">
+                  <span class="text-2 fw-3">3</span>
+                  <button class="circle">N</button>
+                  <div class="max"><strong class="text-1 fw-6">NxtLvl</strong></div>
+                  <span class="text-1">2,008</span>
+                </li>
+                <li class="py-3">
+                  <span class="text-2 fw-3">4</span>
+                  <button class="circle">B</button>
+                  <div class="max"><strong class="text-1 fw-6">brainiac</strong></div>
+                  <span class="text-1">1,954</span>
+                </li>
+                <li class="py-3">
+                  <span class="text-2 fw-3">5</span>
+                  <button class="circle">E</button>
+                  <div class="max"><strong class="text-1 fw-6">eduexplorer</strong></div>
+                  <span class="text-1">1,897</span>
+                </li>
+              </ul>
+            </article>
+          </div>
+          <div class="s12 l6">
+            <article class="no-elevate border round p-5">
+              <nav class="top-align">
+                <i class="extra">auto_fix_high</i>
+                <div class="max">
+                  <strong class="text-3 fw-7">Creation Leaders</strong>
+                  <p class="text-0">Items created in the last 7 days</p>
+                </div>
+              </nav>
+              <ul class="list mt-3">
+                <li class="py-3">
+                  <span class="text-2 fw-3">1</span>
+                  <button class="circle">B</button>
+                  <div class="max"><strong class="text-1 fw-6">brainiac</strong></div>
+                  <span class="text-1">134</span>
+                </li>
+                <li class="py-3">
+                  <span class="text-2 fw-3">2</span>
+                  <button class="circle">L</button>
+                  <div class="max"><strong class="text-1 fw-6">LessonLegend</strong></div>
+                  <span class="text-1">115</span>
+                </li>
+                <li class="py-3">
+                  <span class="text-2 fw-3">3</span>
+                  <button class="circle">M</button>
+                  <div class="max"><strong class="text-1 fw-6">mitsuwo</strong></div>
+                  <span class="text-1">98</span>
+                </li>
+                <li class="py-3">
+                  <span class="text-2 fw-3">4</span>
+                  <button class="circle">W</button>
+                  <div class="max"><strong class="text-1 fw-6">wiswiz</strong></div>
+                  <span class="text-1">79</span>
+                </li>
+                <li class="py-3">
+                  <span class="text-2 fw-3">5</span>
+                  <button class="circle">K</button>
+                  <div class="max"><strong class="text-1 fw-6">knowledgeninja</strong></div>
+                  <span class="text-1">77</span>
+                </li>
+              </ul>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="lb2-code">
+        <pre class="border round mt-3 p-4"><code>{`<h3 class="text-3 fw-7">Collective Activity for Yesterday</h3>
+
+<div class="grid mt-4">
+  <div class="s12 m6 l4">
+    <article class="no-elevate round">
+      <nav class="top-align">
+        <i class="extra">menu_book</i>
+        <div class="max">
+          <p class="text-0">Items Studied</p>
+          <strong class="text-4 fw-7">482,813</strong>
+        </div>
+      </nav>
+    </article>
+  </div>
+  <div class="s12 m6 l4">
+    <article class="no-elevate round secondary-container">…Items Mastered…</article>
+  </div>
+  <div class="s12 m6 l4">
+    <article class="no-elevate round tertiary-container">…Items Created…</article>
+  </div>
+</div>
+
+<div class="grid mt-5">
+  <div class="s12 l6">
+    <article class="no-elevate border round p-5">
+      <nav class="top-align">
+        <i class="extra">school</i>
+        <div class="max">
+          <strong class="text-3 fw-7">Study Leaders</strong>
+          <p class="text-0">Items mastered in the last 7 days</p>
+        </div>
+      </nav>
+      <ul class="list mt-3">
+        <li class="py-3">
+          <span class="text-2 fw-3">1</span>
+          <button class="circle">M</button>
+          <div class="max"><strong class="text-1 fw-6">mitsuwo</strong></div>
+          <span class="text-1">2,753</span>
+        </li>
+        <!-- more rows -->
+      </ul>
+    </article>
+  </div>
+  <div class="s12 l6">
+    <article class="no-elevate border round p-5">…Creation Leaders…</article>
+  </div>
+</div>`}</code></pre>
+      </div>
+    </section>
+
+    <section class="container-lg mt-9 mb-10 p-1 m:p-2 l:p-5" aria-labelledby="cmp-action-panels">
+      <nav><h2 id="cmp-action-panels" class="text-4 fw-7 max">Action panels</h2><a class="chip small" href="#top"><i>arrow_upward</i><span>Top</span></a></nav>
+      <p class="text-1 mt-2">Cards that pair a brief explanation with a single control: a button, a switch, or a row of icon buttons.</p>
+
+      <div class="tabs right-align mt-5">
+        <a class="active" data-ui="#ap-preview">Preview</a>
+        <a data-ui="#ap-code">Code</a>
+      </div>
+
+      <div class="page active" id="ap-preview">
+        <article class="no-elevate border round p-5 mt-3">
+          <h3 class="text-3 fw-7">New Dashboard</h3>
+          <p class="text-1 mt-2">Arrange your data into a single view to monitor trends and track performance.</p>
+          <button class="mt-4">Build Dashboard</button>
+        </article>
+
+        <article class="no-elevate border round p-5 mt-4">
+          <nav class="top-align">
+            <div class="max">
+              <h3 class="text-3 fw-7">Query with SQL Runner</h3>
+              <p class="text-1 mt-2">Access your database to run ad hoc queries.</p>
+            </div>
+            <button>New Query</button>
+          </nav>
+        </article>
+
+        <article class="no-elevate border round p-5 mt-4">
+          <nav class="top-align">
+            <div class="max">
+              <h3 class="text-3 fw-7">Auto-renew</h3>
+              <p class="text-1 mt-2">Automatically renew your subscription using your preferred payment method. We'll send you a reminder 30 days before we draft your account.</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" />
+              <span></span>
+            </label>
+          </nav>
+        </article>
+
+        <article class="no-elevate border round p-5 mt-4">
+          <nav>
+            <img class="circle large" src="https://images.unsplash.com/photo-1558788353-f76d92427f16?q=20" alt="" />
+            <div class="max">
+              <strong class="text-2 fw-7">Super Dog</strong>
+              <p class="text-1">Online <i class="text-1 green-text">circle</i></p>
+            </div>
+            <button class="circle transparent"><i>mic</i></button>
+            <button class="circle transparent"><i>headphones</i></button>
+            <button class="circle transparent"><i>settings</i></button>
+          </nav>
+        </article>
+      </div>
+
+      <div class="page" id="ap-code">
+        <pre class="border round mt-3 p-4"><code>{`<!-- Stacked: title + body + button below -->
+<article class="no-elevate border round p-5">
+  <h3 class="text-3 fw-7">New Dashboard</h3>
+  <p class="text-1 mt-2">Arrange your data into a single view…</p>
+  <button class="mt-4">Build Dashboard</button>
+</article>
+
+<!-- Inline: title + body left, button right -->
+<article class="no-elevate border round p-5">
+  <nav class="top-align">
+    <div class="max">
+      <h3 class="text-3 fw-7">Query with SQL Runner</h3>
+      <p class="text-1 mt-2">Access your database to run ad hoc queries.</p>
+    </div>
+    <button>New Query</button>
+  </nav>
+</article>
+
+<!-- Inline with switch -->
+<article class="no-elevate border round p-5">
+  <nav class="top-align">
+    <div class="max">
+      <h3 class="text-3 fw-7">Auto-renew</h3>
+      <p class="text-1 mt-2">Automatically renew your subscription…</p>
+    </div>
+    <label class="switch">
+      <input type="checkbox" />
+      <span></span>
+    </label>
+  </nav>
+</article>
+
+<!-- Avatar + status + trailing icon buttons -->
+<article class="no-elevate border round p-5">
+  <nav>
+    <img class="circle large" src="/avatar.jpg" alt="" />
+    <div class="max">
+      <strong class="text-2 fw-7">Super Dog</strong>
+      <p class="text-1">Online <i class="text-1 green-text">circle</i></p>
+    </div>
+    <button class="circle transparent"><i>mic</i></button>
+    <button class="circle transparent"><i>headphones</i></button>
+    <button class="circle transparent"><i>settings</i></button>
+  </nav>
+</article>`}</code></pre>
+      </div>
+    </section>
+
+    <section class="container-lg mt-9 p-1 m:p-2 l:p-5" aria-labelledby="cmp-order-history">
+      <nav><h2 id="cmp-order-history" class="text-4 fw-7 max">Order history</h2><a class="chip small" href="#top"><i>arrow_upward</i><span>Top</span></a></nav>
+      <p class="text-1 mt-2">Order summary header followed by a stack of product cards. Each card stacks image + content on mobile via <code>grid s12 m4 / m8</code>.</p>
+
+      <div class="tabs right-align mt-5">
+        <a class="active" data-ui="#oh-preview">Preview</a>
+        <a data-ui="#oh-code">Code</a>
+      </div>
+
+      <div class="page active" id="oh-preview">
+        <h3 class="text-3 fw-7 mt-3">Order History</h3>
+        <p class="text-1 mt-2">Check the status of recent orders, manage returns, and download invoices.</p>
+
+        <div class="grid mt-5 middle-align">
+          <div class="s12 m6 l3">
+            <strong class="text-1 fw-7">Order number</strong>
+            <p class="text-1">WU88191111</p>
+          </div>
+          <div class="s12 m6 l3">
+            <strong class="text-1 fw-7">Date placed</strong>
+            <p class="text-1">January 22, 2021</p>
+          </div>
+          <div class="s12 m6 l3">
+            <strong class="text-1 fw-7">Total amount</strong>
+            <p class="text-1">$590.00</p>
+          </div>
+          <div class="s12 m6 l3">
+            <nav class="right-align wrap">
+              <button class="border">View Order</button>
+              <button class="border">View Invoice</button>
+            </nav>
+          </div>
+        </div>
+
+        <article class="no-elevate border round mt-5 p-0">
+          <div class="grid no-space">
+            <div class="s12 m4">
+              <img class="responsive top-round m:left-round m:no-top-round" src="https://picsum.photos/seed/lights/640/480" alt="" />
+            </div>
+            <div class="s12 m8">
+              <div class="p-5">
+                <nav class="top-align">
+                  <strong class="text-2 fw-7 max">Dome Light Fixtures</strong>
+                  <span class="text-2 fw-7">$215.00</span>
+                </nav>
+                <p class="text-1 mt-3">Illuminate your space with elegance and style with stunning Dome Light Fixtures. The shape of these lights complements both modern and traditional interiors.</p>
+                <nav class="mt-5">
+                  <a class="chip green5"><span>Delivered</span></a>
+                  <div class="max"></div>
+                  <a href="#" class="text-1 fw-6">View Product</a>
+                  <button>Buy Again</button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="no-elevate border round mt-4 p-0">
+          <div class="grid no-space">
+            <div class="s12 m4">
+              <img class="responsive top-round m:left-round m:no-top-round" src="https://picsum.photos/seed/chair/640/480" alt="" />
+            </div>
+            <div class="s12 m8">
+              <div class="p-5">
+                <nav class="top-align">
+                  <strong class="text-2 fw-7 max">Reading Chair</strong>
+                  <span class="text-2 fw-7">$115.00</span>
+                </nav>
+                <p class="text-1 mt-3">Add a pop of color and a touch of elegance to any room with our Reading Chair featuring vibrant yellow fabric upholstery.</p>
+                <nav class="mt-5">
+                  <a class="chip purple5"><span>Out for delivery</span></a>
+                  <div class="max"></div>
+                  <a href="#" class="text-1 fw-6">View Product</a>
+                  <button>Buy Again</button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="no-elevate border round mt-4 p-0">
+          <div class="grid no-space">
+            <div class="s12 m4">
+              <img class="responsive top-round m:left-round m:no-top-round" src="https://picsum.photos/seed/sofa/640/480" alt="" />
+            </div>
+            <div class="s12 m8">
+              <div class="p-5">
+                <nav class="top-align">
+                  <strong class="text-2 fw-7 max">Custom Sofa</strong>
+                  <span class="text-2 fw-7">$260.00</span>
+                </nav>
+                <p class="text-1 mt-3">Experience luxury and comfort like never before with our Custom Sofa, designed to elevate any living space. This sofa features exquisite velvet upholstery for an air of sophistication.</p>
+                <nav class="mt-5">
+                  <a class="chip"><span>Preparing to ship</span></a>
+                  <div class="max"></div>
+                  <a href="#" class="text-1 fw-6">View Product</a>
+                  <button>Buy Again</button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="page" id="oh-code">
+        <pre class="border round mt-3 p-4"><code>{`<div class="grid mt-5">
+  <div class="s12 m6 l3"><strong>Order number</strong><p>WU88191111</p></div>
+  <div class="s12 m6 l3"><strong>Date placed</strong><p>January 22, 2021</p></div>
+  <div class="s12 m6 l3"><strong>Total amount</strong><p>$590.00</p></div>
+  <div class="s12 m6 l3">
+    <nav class="right-align wrap">
+      <button class="border">View Order</button>
+      <button class="border">View Invoice</button>
+    </nav>
+  </div>
+</div>
+
+<article class="no-elevate border round p-0">
+  <div class="grid no-space">
+    <div class="s12 m4">
+      <img class="responsive top-round m:left-round m:no-top-round"
+           src="https://picsum.photos/seed/lights/640/480" alt="" />
+    </div>
+    <div class="s12 m8">
+      <div class="p-5">
+        <nav class="top-align">
+          <strong class="text-2 fw-7 max">Dome Light Fixtures</strong>
+          <span class="text-2 fw-7">$215.00</span>
+        </nav>
+        <p class="text-1 mt-3">Illuminate your space…</p>
+        <nav class="mt-5">
+          <a class="chip green5"><span>Delivered</span></a>
+          <div class="max"></div>
+          <a href="#" class="text-1 fw-6">View Product</a>
+          <button>Buy Again</button>
+        </nav>
+      </div>
+    </div>
+  </div>
+</article>`}</code></pre>
+      </div>
+    </section>
+
+    <section class="container-lg mt-9 mb-10 p-1 m:p-2 l:p-5" aria-labelledby="cmp-invoice-table">
+      <nav><h2 id="cmp-invoice-table" class="text-4 fw-7 max">Invoice table</h2><a class="chip small" href="#top"><i>arrow_upward</i><span>Top</span></a></nav>
+      <p class="text-1 mt-2">Filled summary card on top, line-item table below. BeerCSS <code>article</code> + <code>table.border</code>.</p>
+
+      <div class="tabs right-align mt-5">
+        <a class="active" data-ui="#it-preview">Preview</a>
+        <a data-ui="#it-code">Code</a>
+      </div>
+
+      <div class="page active" id="it-preview">
+        <article class="no-elevate fill round p-5 mt-3">
+          <div class="grid middle-align">
+            <div class="s12 m6 l4">
+              <strong class="text-2 fw-7">Date Placed</strong>
+              <p class="text-1">January 21, 2021</p>
+            </div>
+            <div class="s12 m6 l3">
+              <strong class="text-2 fw-7">Order Number</strong>
+              <p class="text-1">WU88191111</p>
+            </div>
+            <div class="s12 m6 l3">
+              <strong class="text-2 fw-7">Total Amount</strong>
+              <p class="text-1">$590.00</p>
+            </div>
+            <div class="s12 m6 l2 right-align">
+              <button>View Invoice</button>
+            </div>
+          </div>
+        </article>
+
+        <table class="border no-space mt-5">
+          <thead>
+            <tr>
+              <th class="left-align">Product</th>
+              <th class="left-align">Price</th>
+              <th class="left-align">Status</th>
+              <th class="left-align">Info</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <nav class="top-align">
+                  <img class="round" style="block-size:3rem;inline-size:3rem;object-fit:cover" src="https://picsum.photos/seed/lights/200/200" alt="" />
+                  <strong class="text-1 fw-6">Dome Light Fixtures</strong>
+                </nav>
+              </td>
+              <td>$215.00</td>
+              <td>Delivered Jan 25, 2021</td>
+              <td><a href="#" class="text-1 fw-6">View</a></td>
+            </tr>
+            <tr>
+              <td>
+                <nav class="top-align">
+                  <img class="round" style="block-size:3rem;inline-size:3rem;object-fit:cover" src="https://picsum.photos/seed/chair/200/200" alt="" />
+                  <strong class="text-1 fw-6">Reading Chair</strong>
+                </nav>
+              </td>
+              <td>$115.00</td>
+              <td>Delivered Jan 25, 2021</td>
+              <td><a href="#" class="text-1 fw-6">View</a></td>
+            </tr>
+            <tr>
+              <td>
+                <nav class="top-align">
+                  <img class="round" style="block-size:3rem;inline-size:3rem;object-fit:cover" src="https://picsum.photos/seed/sofa/200/200" alt="" />
+                  <strong class="text-1 fw-6">Custom Sofa</strong>
+                </nav>
+              </td>
+              <td>$260.00</td>
+              <td>Delivered Jan 25, 2021</td>
+              <td><a href="#" class="text-1 fw-6">View</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="page" id="it-code">
+        <pre class="border round mt-3 p-4"><code>{`<article class="no-elevate fill round p-5">
+  <div class="grid middle-align">
+    <div class="s12 m6 l4"><strong>Date Placed</strong><p>January 21, 2021</p></div>
+    <div class="s12 m6 l3"><strong>Order Number</strong><p>WU88191111</p></div>
+    <div class="s12 m6 l3"><strong>Total Amount</strong><p>$590.00</p></div>
+    <div class="s12 m6 l2 right-align"><button>View Invoice</button></div>
+  </div>
+</article>
+
+<table class="border no-space mt-5">
+  <thead>
+    <tr>
+      <th class="left-align">Product</th>
+      <th class="left-align">Price</th>
+      <th class="left-align">Status</th>
+      <th class="left-align">Info</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <nav class="top-align">
+          <img class="round" src="https://picsum.photos/seed/lights/200/200" alt="" />
+          <strong class="text-1 fw-6">Dome Light Fixtures</strong>
+        </nav>
+      </td>
+      <td>$215.00</td>
+      <td>Delivered Jan 25, 2021</td>
+      <td><a href="#" class="text-1 fw-6">View</a></td>
+    </tr>
+    <!-- more rows -->
+  </tbody>
+</table>`}</code></pre>
+      </div>
+    </section>
+
+    <section class="container-lg mt-9 mb-10 p-1 m:p-2 l:p-5" aria-labelledby="cmp-shopping-cart">
+      <nav><h2 id="cmp-shopping-cart" class="text-4 fw-7 max">Shopping cart</h2><a class="chip small" href="#top"><i>arrow_upward</i><span>Top</span></a></nav>
+      <p class="text-1 mt-2">Line items on the left, sticky-feeling order summary card on the right. Stacks below desktop via <code>grid s12 l8 / l4</code>.</p>
+
+      <div class="tabs right-align mt-5">
+        <a class="active" data-ui="#sc-preview">Preview</a>
+        <a data-ui="#sc-code">Code</a>
+      </div>
+
+      <div class="page active" id="sc-preview">
+        <h3 class="text-3 fw-7 mt-3">Shopping Cart</h3>
+
+        <div class="grid mt-5">
+          <div class="s12 l8">
+            <ul class="list">
+              <li class="py-4 top-align">
+                <img class="round" style="block-size:6rem;inline-size:6rem;object-fit:cover" src="https://picsum.photos/seed/tee1/240/240" alt="" />
+                <div class="max">
+                  <strong class="text-2 fw-7">Classic Tee</strong>
+                  <p class="text-1">Sage Green</p>
+                  <p class="text-1">Large</p>
+                  <p class="text-1 fw-6 mt-2">$20.00</p>
+                </div>
+                <button class="circle transparent"><i>close</i></button>
+              </li>
+              <li class="py-4 top-align">
+                <img class="round" style="block-size:6rem;inline-size:6rem;object-fit:cover" src="https://picsum.photos/seed/tee2/240/240" alt="" />
+                <div class="max">
+                  <strong class="text-2 fw-7">RVCA Graphic</strong>
+                  <p class="text-1">White</p>
+                  <p class="text-1">Large</p>
+                  <p class="text-1 fw-6 mt-2">$25.00</p>
+                </div>
+                <button class="circle transparent"><i>close</i></button>
+              </li>
+              <li class="py-4 top-align">
+                <img class="round" style="block-size:6rem;inline-size:6rem;object-fit:cover" src="https://picsum.photos/seed/tee3/240/240" alt="" />
+                <div class="max">
+                  <strong class="text-2 fw-7">Stay Wild Graphic</strong>
+                  <p class="text-1">Black</p>
+                  <p class="text-1">Large</p>
+                  <p class="text-1 fw-6 mt-2">$18.00</p>
+                </div>
+                <button class="circle transparent"><i>close</i></button>
+              </li>
+            </ul>
+          </div>
+
+          <div class="s12 l4">
+            <article class="no-elevate border round p-0">
+              <header class="p-5"><h4 class="text-3 fw-7">Order Summary</h4></header>
+              <ul class="list border-none px-5">
+                <li class="py-3">
+                  <div class="max"><span class="text-1">Subtotal</span></div>
+                  <strong class="text-1 fw-7">$63.00</strong>
+                </li>
+                <li class="py-3">
+                  <div class="max"><span class="text-1">Shipping</span></div>
+                  <strong class="text-1 fw-7">$5.00</strong>
+                </li>
+                <li class="py-3">
+                  <div class="max"><span class="text-1">Tax</span></div>
+                  <strong class="text-1 fw-7">$5.50</strong>
+                </li>
+                <li class="py-3">
+                  <div class="max"><span class="text-2">Total</span></div>
+                  <strong class="text-2 fw-7">$73.50</strong>
+                </li>
+              </ul>
+              <footer class="p-5"><button class="responsive">Checkout</button></footer>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="sc-code">
+        <pre class="border round mt-3 p-4"><code>{`<div class="grid mt-5">
+  <div class="s12 l8">
+    <ul class="list">
+      <li class="py-4 top-align">
+        <img class="round" src="https://picsum.photos/seed/tee1/240/240" alt="" />
+        <div class="max">
+          <strong class="text-2 fw-7">Classic Tee</strong>
+          <p class="text-1">Sage Green</p>
+          <p class="text-1">Large</p>
+          <p class="text-1 fw-6 mt-2">$20.00</p>
+        </div>
+        <button class="circle transparent"><i>close</i></button>
+      </li>
+      <!-- more line items -->
+    </ul>
+  </div>
+
+  <div class="s12 l4">
+    <article class="no-elevate border round p-0">
+      <header class="p-5"><h4 class="text-3 fw-7">Order Summary</h4></header>
+      <ul class="list px-5">
+        <li class="py-3">
+          <div class="max"><span class="text-1">Subtotal</span></div>
+          <strong class="text-1 fw-7">$63.00</strong>
+        </li>
+        <li class="py-3">
+          <div class="max"><span class="text-1">Shipping</span></div>
+          <strong class="text-1 fw-7">$5.00</strong>
+        </li>
+        <li class="py-3">
+          <div class="max"><span class="text-1">Tax</span></div>
+          <strong class="text-1 fw-7">$5.50</strong>
+        </li>
+        <li class="py-3">
+          <div class="max"><span class="text-2">Total</span></div>
+          <strong class="text-2 fw-7">$73.50</strong>
+        </li>
+      </ul>
+      <footer class="p-5"><button class="responsive">Checkout</button></footer>
+    </article>
+  </div>
+</div>`}</code></pre>
+      </div>
+    </section>
+  </main>
+</Layout>

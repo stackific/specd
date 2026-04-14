@@ -1,0 +1,72 @@
+---
+import "./FrameTrust.css";
+---
+
+<!--
+  Trust Ledger frame.
+  Wicked problems addressed:
+    • How can AI be experienced as a reliable actor?
+    • What makes AI useful?
+  A signed audit log of every action AI took on the user's behalf
+  today. Each row carries a confidence %, a status (verified /
+  review / rolled-back), and a one-tap explain.
+-->
+<div class="sc-card c-trust">
+  <div class="sc-status">
+    <span class="sc-live-time"></span>
+    <div class="sc-dot"></div>
+    <div class="sc-status-icons">
+      <span class="ms sc-status-ms">wifi</span>
+      <span class="ms sc-status-ms">battery_full</span>
+    </div>
+  </div>
+  <div class="tr-header">
+    <div>
+      <div class="tr-eyebrow text--2">Today, on your behalf</div>
+      <div class="tr-title text-3 lh-0">Trust Ledger</div>
+    </div>
+    <div class="tr-score">
+      <div class="tr-score-num text-4 lh-0">98<span class="text--1">%</span></div>
+      <div class="tr-score-label text--2">verified</div>
+    </div>
+  </div>
+  <div class="tr-list text--1">
+    <div class="tr-row tr-ok">
+      <div class="tr-row-icon"><span class="ms text-1">event_available</span></div>
+      <div class="tr-row-body">
+        <div class="tr-row-title">Booked dentist · Tue 4:30 PM</div>
+        <div class="tr-row-meta text--2">09:14 · confidence 99%</div>
+      </div>
+      <div class="tr-row-status tr-ok-dot"></div>
+    </div>
+    <div class="tr-row tr-warn">
+      <div class="tr-row-icon"><span class="ms text-1">drafts</span></div>
+      <div class="tr-row-body">
+        <div class="tr-row-title">Drafted reply to Faatima</div>
+        <div class="tr-row-meta text--2">10:02 · awaits your review</div>
+      </div>
+      <div class="tr-row-status tr-warn-dot"></div>
+    </div>
+    <div class="tr-row tr-ok">
+      <div class="tr-row-icon"><span class="ms text-1">payments</span></div>
+      <div class="tr-row-body">
+        <div class="tr-row-title">Paid hydro · $84.20</div>
+        <div class="tr-row-meta text--2">11:31 · confidence 100%</div>
+      </div>
+      <div class="tr-row-status tr-ok-dot"></div>
+    </div>
+    <div class="tr-row tr-bad">
+      <div class="tr-row-icon"><span class="ms text-1">undo</span></div>
+      <div class="tr-row-body">
+        <div class="tr-row-title">Rolled back: wrong contact</div>
+        <div class="tr-row-meta text--2 lh-0">12:08 · just learned from a mistake</div>
+      </div>
+      <div class="tr-row-status tr-bad-dot"></div>
+    </div>
+  </div>
+  <div class="tr-foot text--1">
+    <span class="ms text-0">verified</span>
+    <span>Every action signed &amp; reversible</span>
+  </div>
+  <div class="sc-home-bar"></div>
+</div>

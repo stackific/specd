@@ -1,0 +1,37 @@
+{
+  "name": "specd-web",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "gen:utilities": "node scripts/gen-utilities.mjs",
+    "gen:colors": "node scripts/gen-colors.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.2.8",
+    "astro": "^6.1.4",
+    "beercss": "^4.0.20",
+    "material-dynamic-colors": "^1.1.4",
+    "sharp": "^0.34.5"
+  },
+  "overrides": {
+    "vite": "^7"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "sharp"]
+  },
+  "devDependencies": {
+    "@material/material-color-utilities": "0.3.0",
+    "lightningcss": "^1.32.0",
+    "prettier": "^3.8.1",
+    "prettier-plugin-astro": "^0.14.1",
+    "purgecss": "^8.0.0"
+  }
+}

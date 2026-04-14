@@ -1,0 +1,302 @@
+---
+import "./Showcase.css";
+import FrameEvent from "$/components/frames/FrameEvent.astro";
+import FrameChat from "$/components/frames/FrameChat.astro";
+import FrameTrust from "$/components/frames/FrameTrust.astro";
+import FrameMira from "$/components/frames/FrameMira.astro";
+import FrameEditor from "$/components/frames/FrameEditor.astro";
+import FrameEcho from "$/components/frames/FrameEcho.astro";
+---
+
+<!-- ================================================================
+     Showcase.astro — Phone frame slideshow
+     ================================================================
+     Displays phone frame cards one at a time with random dramatic
+     entrance, idle, and exit animations.
+
+     USAGE:
+       import Showcase from "$/components/Showcase.astro";
+       <Showcase />
+
+     HOW TO ADD A NEW PHONE FRAME:
+       1. Create a new component in src/components/frames/ (see
+          PHONE_FRAME_PROMPT.md for the contract).
+       2. Import it in this file's frontmatter and drop a tag inside
+          <div class="sc-stage">. The engine auto-discovers all
+          .sc-card elements at runtime.
+
+     HOW TO ADD A NEW ANIMATION:
+       1. Define a @keyframes in Showcase.css
+          (prefix: sc-enter-, sc-idle-, or sc-exit-).
+       2. Push its name into the matching array in the <script> block.
+     ================================================================ -->
+<article class="showcase round no-elevate p-0">
+  <div class="sc-stage">
+    <FrameChat />
+    <FrameEvent />
+    <FrameTrust />
+    <FrameMira />    
+    <FrameEditor />
+    <FrameEcho />
+  </div>
+</article>
+
+
+<!-- ================================================================
+     ANIMATION ENGINE
+     ================================================================
+     A self-contained, config-driven slideshow engine.
+
+     HOW IT WORKS:
+     1. Auto-discovers all .sc-card elements inside .sc-stage.
+     2. Shuffles the order randomly. On each full cycle, reshuffles.
+     3. For each card: picks a random ENTER, IDLE, and EXIT animation
+        from the pools below.
+     4. Sequence: enter → idle (looping) → exit → next card.
+
+     HOW TO CUSTOMIZE:
+     - Adjust timing in the CONFIG object.
+     - Add/remove animation names in the ENTER/IDLE/EXIT arrays.
+       Each name must match a @keyframes defined in Showcase.css.
+     - To add a new @keyframes animation:
+       1. Define the keyframe in Showcase.css.
+       2. Push its name into the appropriate array below.
+     ================================================================ -->
+
+<script>
+  (function () {
+    /* ──────────────────────────────────────────────────────────────
+       CONFIG — Adjust these values to change the feel of the show.
+       ────────────────────────────────────────────────────────────── */
+    const CONFIG = {
+      /* How long (ms) the card stays on screen (enter + idle + exit) */
+      showDuration: 3500,
+
+      /* Duration (ms) of the enter animation */
+      enterDuration: 900,
+
+      /* Duration (ms) of the exit animation */
+      exitDuration: 500,
+
+      /* Delay (ms) after enter finishes before idle kicks in */
+      idleDelay: 150,
+
+      /* Easing for enter animations (CSS cubic-bezier) */
+      enterEasing: "cubic-bezier(0.16, 1, 0.3, 1)",
+
+      /* Easing for exit animations */
+      exitEasing: "cubic-bezier(0.55, 0, 1, 0.45)",
+    };
+
+    /* ──────────────────────────────────────────────────────────────
+       ANIMATION POOLS
+       Each entry is a @keyframes name from the <style> block.
+       Add or remove entries freely — the engine picks randomly.
+       ────────────────────────────────────────────────────────────── */
+
+    /* Dramatic entrances */
+    const ENTER_ANIMATIONS = [
+      "sc-enter-from-bottom",
+      "sc-enter-from-top",
+      "sc-enter-from-left",
+      "sc-enter-from-right",
+      "sc-enter-zoom",
+      "sc-enter-flip",
+      "sc-enter-flip-x",
+      "sc-enter-drop",
+      "sc-enter-spiral",
+      "sc-enter-slide-rotate",
+      "sc-enter-rise",
+      //'sc-enter-unfold',
+    ];
+
+    /* Smooth idle loops (played while card is visible) */
+    const IDLE_ANIMATIONS = [
+      "sc-idle-breathe",
+      "sc-idle-sway",
+      "sc-idle-pulse",
+      "sc-idle-drift",
+      "sc-idle-tilt",
+      "sc-idle-hover",
+      "sc-idle-wobble",
+      "sc-idle-float",
+    ];
+
+    /* Exit animations */
+    const EXIT_ANIMATIONS = [
+      "sc-exit-shrink",
+      "sc-exit-fall",
+      "sc-exit-fly-up",
+      "sc-exit-slide-left",
+      "sc-exit-slide-right",
+      "sc-exit-zoom-out",
+      "sc-exit-spin",
+      "sc-exit-flip",
+      "sc-exit-fade-blur",
+    ];
+
+    /* ──────────────────────────────────────────────────────────────
+       ENGINE
+       ────────────────────────────────────────────────────────────── */
+
+    /** Pick a random item from an array. */
+    function pickRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    /** Fisher-Yates shuffle (returns new array). */
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    /**
+     * Build a shuffle-bag picker over a fixed pool.
+     *
+     * Maintains an internal shuffled "bag" of pool indices and pops
+     * one per call. When the bag is empty it is re-shuffled from
+     * scratch and the next pop is checked against the previously
+     * popped index — if they match (cycle-boundary collision), the
+     * top of the new bag is swapped with a random deeper position so
+     * two consecutive picks are never identical.
+     *
+     * Guarantees vs the previous LIFO-recent-queue approach:
+     *   • Every pool item appears EXACTLY ONCE per pool.length picks
+     *     (no rarity, no luck-of-the-draw drift).
+     *   • Order within each cycle is uniformly random.
+     *   • Cycles are reshuffled every pool.length picks so users
+     *     never see the same fixed sequence repeating forever.
+     *   • Two adjacent picks are always different.
+     *
+     * This is functionally a strict LIFO queue of size pool.length-1
+     * with a re-randomization step every cycle boundary. The
+     * shuffle-bag formulation is just a cleaner way to express it.
+     */
+    function makePicker(pool) {
+      let bag = [];
+      let lastIndex = -1;
+      function refill() {
+        bag = pool.map((_, i) => i);
+        // Fisher-Yates shuffle in place.
+        for (let i = bag.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [bag[i], bag[j]] = [bag[j], bag[i]];
+        }
+      }
+      return function pickNext() {
+        if (pool.length === 0) return undefined;
+        if (pool.length === 1) {
+          lastIndex = 0;
+          return pool[0];
+        }
+        if (bag.length === 0) {
+          refill();
+          // Cycle-boundary collision guard: if the next item to pop
+          // matches the previously picked index, swap it deeper.
+          if (bag[bag.length - 1] === lastIndex) {
+            const other = Math.floor(Math.random() * (bag.length - 1));
+            [bag[bag.length - 1], bag[other]] = [bag[other], bag[bag.length - 1]];
+          }
+        }
+        const idx = bag.pop();
+        lastIndex = idx;
+        return pool[idx];
+      };
+    }
+
+    /** Detect if the user's locale uses a 24-hour clock. */
+    const is24h = (() => {
+      const sample = new Date(2000, 0, 1, 13, 0).toLocaleTimeString(undefined, { hour: "numeric" });
+      return sample.includes("13");
+    })();
+
+    /** Format current time: "13:05" (24h) or "1:05 PM" (12h). */
+    function formatTime() {
+      const now = new Date();
+      const h24 = now.getHours();
+      const m = String(now.getMinutes()).padStart(2, "0");
+      if (is24h) return `${String(h24).padStart(2, "0")}:${m}`;
+      const ampm = h24 >= 12 ? "PM" : "AM";
+      const h12 = h24 % 12 || 12;
+      return `${h12}:${m} ${ampm}`;
+    }
+
+    /** Update all .sc-live-time elements with current time. */
+    function updateLiveTime() {
+      const t = formatTime();
+      document.querySelectorAll(".sc-live-time").forEach((el) => {
+        el.textContent = t;
+      });
+    }
+
+    /* ── Discover cards and set up state ────────────────────────── */
+
+    const root = document.querySelector(".showcase");
+    if (!root) return;
+
+    const allCards = Array.from(root.querySelectorAll(".sc-card"));
+    if (allCards.length === 0) return;
+
+    /**
+     * Four independent shuffle-bag pickers — one each for cards,
+     * entrance animations, idle animations, and exit animations.
+     * Each maintains its own bag and cycles independently, so:
+     *   • Every animation in every pool is guaranteed to be shown
+     *     exactly once per pool-length picks.
+     *   • Card rotation and animation rotation never starve each
+     *     other (e.g. picking the same card twice in a row still
+     *     draws fresh enter/idle/exit combinations).
+     */
+    const pickNextCard  = makePicker(allCards);
+    const pickEnterAnim = makePicker(ENTER_ANIMATIONS);
+    const pickIdleAnim  = makePicker(IDLE_ANIMATIONS);
+    const pickExitAnim  = makePicker(EXIT_ANIMATIONS);
+
+    /**
+     * Show one card through the full enter → idle → exit sequence,
+     * then recursively schedule the next card.
+     */
+    function showCard() {
+      const card = pickNextCard();
+
+      // Pick non-repeating animations for this card.
+      const enterAnim = pickEnterAnim();
+      const idleAnim  = pickIdleAnim();
+      const exitAnim  = pickExitAnim();
+
+      // ── ENTER phase ──
+      card.style.animation = `${enterAnim} ${CONFIG.enterDuration}ms ${CONFIG.enterEasing} forwards`;
+      card.classList.add("active");
+
+      // ── IDLE phase (after enter completes) ──
+      const idleStart = CONFIG.enterDuration + CONFIG.idleDelay;
+      const idleDuration = CONFIG.showDuration - CONFIG.enterDuration - CONFIG.exitDuration;
+
+      setTimeout(() => {
+        card.style.animation = `${idleAnim} ${Math.max(idleDuration, 2000)}ms ease-in-out infinite`;
+      }, idleStart);
+
+      // ── EXIT phase ──
+      setTimeout(() => {
+        card.style.animation = `${exitAnim} ${CONFIG.exitDuration}ms ${CONFIG.exitEasing} forwards`;
+
+        // ── CLEANUP & NEXT ──
+        setTimeout(() => {
+          card.classList.remove("active");
+          card.style.animation = "";
+          showCard();
+        }, CONFIG.exitDuration);
+      }, CONFIG.showDuration - CONFIG.exitDuration);
+    }
+
+    /* ── Bootstrap ─────────────────────────────────────────────── */
+
+    updateLiveTime();
+    setInterval(updateLiveTime, 30000);
+    showCard();
+  })();
+</script>

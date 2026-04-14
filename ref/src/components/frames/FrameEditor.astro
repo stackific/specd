@@ -1,0 +1,69 @@
+---
+import "./FrameEditor.css";
+import { Image } from "astro:assets";
+import avatar4 from "$/assets/avatar4.jpg";
+---
+
+<div class="sc-card c-editor">
+  <div class="sc-status">
+    <span class="sc-live-time"></span>
+    <div class="sc-dot"></div>
+    <div class="sc-status-icons">
+      <span class="ms sc-status-ms">wifi</span>
+      <span class="ms sc-status-ms">battery_full</span>
+    </div>
+  </div>
+  <div class="ed-stage">
+    <Image src={avatar4} alt="" width={300} height={300} />
+    <div class="ed-ribbon text--1 lh-0">
+      <span class="ms text--1">auto_awesome</span>
+      <span>AI sees · golden hour · 1 person · quiet joy</span>
+    </div>
+  </div>
+  <div class="ed-mood-label text--2">Mood variants</div>
+  <div class="ed-filters">
+    <div class="ed-filter">
+      <div class="ed-thumb-wrap">
+        <Image class="ed-thumb fx-honest" src={avatar4} alt="" width={60} height={60} />
+      </div>
+      <div class="ed-fname text--1">Honest</div>
+    </div>
+    <div class="ed-filter">
+      <div class="ed-thumb-wrap">
+        <Image class="ed-thumb fx-nostalgic" src={avatar4} alt="" width={60} height={60} />
+      </div>
+      <div class="ed-fname text--1">Nostalgic</div>
+    </div>
+    <div class="ed-filter active">
+      <div class="ed-thumb-wrap">
+        <Image class="ed-thumb fx-tender" src={avatar4} alt="" width={60} height={60} />
+        <div class="ed-check text-0">&#10003;</div>
+      </div>
+      <div class="ed-fname text--1">Tender</div>
+    </div>
+    <div class="ed-filter">
+      <div class="ed-thumb-wrap">
+        <Image class="ed-thumb fx-hopeful" src={avatar4} alt="" width={60} height={60} />
+      </div>
+      <div class="ed-fname text--1">Hopeful</div>
+    </div>
+    <div class="ed-filter">
+      <div class="ed-thumb-wrap">
+        <Image class="ed-thumb fx-cinematic" src={avatar4} alt="" width={60} height={60} />
+      </div>
+      <div class="ed-fname text--1">Cinematic</div>
+    </div>
+  </div>
+  <div class="ed-tools">
+    <span class="ms ed-tool text-2" title="describe">visibility</span>
+    <span class="ms ed-tool text-2" title="rewind 10s">history</span>
+    <span class="ms ed-tool text-2" title="extend frame">crop_free</span>
+    <span class="ms ed-tool text-2 active" title="suggest soundtrack">graphic_eq</span>
+    <span class="ms ed-tool text-2" title="re-imagine">auto_fix_high</span>
+  </div>
+  <div class="ed-bar text--1">
+    <span class="ed-cancel">Keep honest</span>
+    <span class="ed-save">Apply Tender</span>
+  </div>
+  <div class="sc-home-bar"></div>
+</div>

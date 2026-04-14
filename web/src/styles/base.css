@@ -1,0 +1,55 @@
+/* =================================================================
+   Base — element-level rules
+   =================================================================
+   Targets HTML elements directly (body, h1/h2/h3, etc.). These
+   override BeerCSS's element defaults where we need a different
+   typographic baseline.
+
+   No class selectors here. Atomic helper classes live in
+   utilities.css.
+   ================================================================= */
+
+body {
+  /* The !important is required to win against BeerCSS's body rule */
+  letter-spacing: var(--ls-0) !important;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: var(--ls--1);
+}
+
+/* BeerCSS's `.grid` rule sets `display: grid` but does NOT set
+   `align-items`, which means any other rule that does (e.g. its own
+   `nav { align-items: center }`) leaks into the grid container and
+   centers grid items vertically inside their cells. That causes the
+   classic "staircase" footer columns when the columns have different
+   numbers of children. Force grid containers to align items at the
+   block-start so columns of unequal length top-align. (0,1,0)
+   specificity beats BeerCSS's nav selector. */
+.grid {
+  align-items: start;
+}
+
+/* Spin animation used by inline progress icons (e.g. submit-button spinner) */
+@keyframes is-rotating {
+  to { transform: rotate(360deg); }
+}
+.is-rotating {
+  animation: is-rotating 1s linear infinite;
+  display: inline-block;
+}
+
+/* Accessibility utility for screen-reader-only content */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

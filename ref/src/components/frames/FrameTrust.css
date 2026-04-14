@@ -1,0 +1,153 @@
+/* ── FrameTrust — phone-frame demo ──────────────────────────────
+   Light + dark variants. Tokens scoped to .c-trust. Dark mode
+   follows BeerCSS's `body.dark` class.
+
+   FrameTrust originally shipped as a hard-coded dark UI (a "ledger"
+   feels native to dark surfaces). The default values below are now
+   the LIGHT variant; the `body.dark` block restores the original
+   ledger-on-charcoal look. Semantic status colors (ok / warn / bad)
+   pick brighter shades in dark mode and slightly darker shades in
+   light mode for contrast on each surface.
+
+   Font-sizes live on utility classes in the markup; this file owns
+   colors, layout, dimensions, weight. */
+
+.c-trust {
+  --tr-bg:           var(--c-neutral-99);
+  --tr-fg:           var(--c-neutral-10);
+  --tr-fg-muted:     var(--c-neutral-50);
+  --tr-row-bg:       var(--c-neutral-95);
+  --tr-row-icon-bg:  rgba(0, 0, 0, 0.06);
+  --tr-row-icon-fg:  var(--c-neutral-30);
+  --tr-divider:      var(--c-neutral-90);
+
+  --tr-ok:           #16a34a;
+  --tr-warn:         #d97706;
+  --tr-bad:          #dc2626;
+  --tr-ok-glow:      rgba(22, 163, 74, 0.35);
+  --tr-warn-glow:    rgba(217, 119, 6, 0.35);
+  --tr-bad-glow:     rgba(220, 38, 38, 0.35);
+
+  --sc-home-bar-bg:  rgba(60, 65, 80, 0.5);
+
+  background: var(--tr-bg);
+  color: var(--tr-fg);
+}
+
+body.dark .c-trust {
+  --tr-bg:           #0f1115;
+  --tr-fg:           #e6e8ec;
+  --tr-fg-muted:     #6c7280;
+  --tr-row-bg:       #1a1d24;
+  --tr-row-icon-bg:  rgba(255, 255, 255, 0.06);
+  --tr-row-icon-fg:  #cbd0d9;
+  --tr-divider:      #1a1d24;
+
+  --tr-ok:           #4ade80;
+  --tr-warn:         #fbbf24;
+  --tr-bad:          #f87171;
+  --tr-ok-glow:      rgba(74, 222, 128, 0.5);
+  --tr-warn-glow:    rgba(251, 191, 36, 0.5);
+  --tr-bad-glow:     rgba(248, 113, 113, 0.5);
+
+  --sc-home-bar-bg:  #6c7280;
+}
+
+.c-trust .tr-header {
+  padding: 14px 18px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.c-trust .tr-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--tr-fg-muted);
+  font-weight: 600;
+}
+.c-trust .tr-title {
+  font-weight: 700;
+  margin-top: 4px;
+  letter-spacing: -0.3px;
+  color: var(--tr-fg);
+}
+
+.c-trust .tr-score { text-align: right; }
+.c-trust .tr-score-num {
+  font-weight: 700;
+  color: var(--tr-ok);
+}
+.c-trust .tr-score-num span { opacity: 0.7; }
+.c-trust .tr-score-label {
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--tr-fg-muted);
+  margin-top: 2px;
+}
+
+.c-trust .tr-list {
+  flex: 1;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.c-trust .tr-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--tr-row-bg);
+  border-radius: 14px;
+  border-left: 3px solid transparent;
+}
+.c-trust .tr-ok   { border-left-color: var(--tr-ok); }
+.c-trust .tr-warn { border-left-color: var(--tr-warn); }
+.c-trust .tr-bad  { border-left-color: var(--tr-bad); }
+
+.c-trust .tr-row-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--tr-row-icon-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--tr-row-icon-fg);
+}
+
+.c-trust .tr-row-body { flex: 1; min-width: 0; }
+.c-trust .tr-row-title {
+  font-weight: 500;
+  color: var(--tr-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c-trust .tr-row-meta {
+  color: var(--tr-fg-muted);
+  margin-top: 2px;
+}
+
+.c-trust .tr-row-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.c-trust .tr-ok-dot   { background: var(--tr-ok);   box-shadow: 0 0 8px var(--tr-ok-glow); }
+.c-trust .tr-warn-dot { background: var(--tr-warn); box-shadow: 0 0 8px var(--tr-warn-glow); }
+.c-trust .tr-bad-dot  { background: var(--tr-bad);  box-shadow: 0 0 8px var(--tr-bad-glow); }
+
+.c-trust .tr-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 14px;
+  color: var(--tr-fg-muted);
+  border-top: 1px solid var(--tr-divider);
+}

@@ -1,0 +1,30 @@
+@import "./_card-base.css";
+
+
+/* Blocks rising into a stack */
+.gfx-implement {
+  background: linear-gradient(160deg, var(--primary-container), var(--surface-container-low));
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px 24px 28px;
+}
+.gfx-implement .block {
+  width: 22%;
+  max-width: 60px;
+  background: var(--primary);
+  border-radius: 12px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  transform-origin: bottom center;
+  animation: gfx-rise 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.gfx-implement .b1 { height: 50%; animation-delay: 0s; }
+.gfx-implement .b2 { height: 75%; animation-delay: 0.25s; background: var(--secondary); }
+.gfx-implement .b3 { height: 92%; animation-delay: 0.5s; }
+
+@keyframes gfx-rise {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-10px) scaleY(1.02); }
+}
+

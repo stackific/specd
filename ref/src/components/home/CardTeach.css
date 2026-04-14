@@ -1,0 +1,36 @@
+@import "./_card-base.css";
+
+
+/* Ripples spreading from a glowing core */
+.gfx-teach {
+  background: linear-gradient(135deg, var(--tertiary-container), var(--surface-container-low));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gfx-teach .core {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--tertiary);
+  box-shadow: 0 0 24px var(--tertiary);
+  z-index: 2;
+}
+.gfx-teach .ripple {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid var(--tertiary);
+  aspect-ratio: 1;
+  animation: gfx-ripple 3.6s ease-out infinite;
+  opacity: 0;
+}
+.gfx-teach .ra { animation-delay: 0s; }
+.gfx-teach .rb { animation-delay: 1.2s; }
+.gfx-teach .rc { animation-delay: 2.4s; }
+
+@keyframes gfx-ripple {
+  0% { width: 18px; opacity: 0.7; }
+  100% { width: 70%; opacity: 0; }
+}
+

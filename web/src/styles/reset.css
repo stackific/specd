@@ -1,0 +1,189 @@
+/* =================================================================
+   Modern CSS reset
+   =================================================================
+   Adapted from Andy Bell's "A (more) Modern CSS Reset" and
+   Josh Comeau's "CSS Remedies", trimmed to coexist with BeerCSS.
+
+   BeerCSS already handles box-sizing, the MD3 element baseline,
+   font-family inheritance, and dark-mode wiring — so this reset
+   stays focused on the bits BeerCSS doesn't touch:
+
+     - sensible defaults for media (img/svg/video/iframe)
+     - form-control font inheritance
+     - typographic niceties (text-wrap, hyphenation)
+     - smooth in-page scrolling with scroll-margin for anchors
+     - reduced-motion accessibility default
+     - core root behaviour (no tap-highlight, full-height layout)
+
+   It is loaded BEFORE tokens.css so any token override or component
+   rule wins on cascade ties.
+   ================================================================= */
+
+/* Use a more intuitive box-sizing model on every element. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Remove default margin from common block elements so layout is
+   driven by intentional spacing utilities, not browser defaults. */
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+/* NOTE on BeerCSS auto vertical-rhythm:
+   BeerCSS injects `margin-block-start: 1rem` on every block element
+   via a `:is(...):not([class*=margin], .right, .left, .top, .bottom)`
+   selector with specificity (0,2,0) — too high for our utility classes
+   (which are 0,1,0) to beat through normal cascade. Instead of fighting
+   BeerCSS with a matching neutralizer (which would set margin-block-start
+   to 0 and create a NEW asymmetry — top from us, bottom from your utility),
+   the m / p / gap utilities are emitted with `!important` so they win
+   regardless. This is the standard pattern for utility-first frameworks
+   (Tailwind, etc.) and is the only family of utilities where we use
+   `!important`. Sizing / typography / round / ratio utilities tie BeerCSS
+   at (0,1,0) and win on source order — no `!important` needed. */
+
+/* Complete heading reset — BeerCSS attaches font-size, font-weight,
+   line-height, display, align-items, and margins to h1–h6 (via both
+   element selectors and `.h1`–`.h6` helpers). We strip ALL of it so
+   our framework owns heading typography end-to-end.
+
+   After this reset, an `<h1>` is visually identical to body text and
+   has zero margin. Apply explicit utility classes (text-N, fw-N,
+   lh-N, ls-N, my-N) on every heading to set its appearance. This is
+   intentional — sizing should never come from BeerCSS. */
+h1, h2, h3, h4, h5, h6 {
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  /* `!important` is required to beat BeerCSS's `:is(...):not(...)`
+     auto-rhythm rule (specificity 0,2,0). Without it, any heading
+     without an explicit `m*` utility inherits BeerCSS's `margin-block-
+     start: 1rem`. The m / p / gap utilities also use !important, so
+     setting an explicit `mt-N` / `my-N` etc. on a heading still works. */
+  margin: 0 !important;
+  /* BeerCSS sets align-items: center on headings (via `:is(h1, ...)`),
+     which is meaningless on non-flex elements but we reset it for tidiness. */
+  align-items: normal;
+}
+
+/* Complete <p> reset — BeerCSS attaches `margin: 0.5rem 0` directly to
+   p, then disables text selection via `p, i, label { user-select: none }`
+   (which is hostile UX for a content site), then layers a focus-visible
+   outline. Strip all of it so paragraph styling is fully owned by our
+   framework. After this reset, a `<p>` is body-text-sized with zero
+   margin and is normally selectable. Apply text-N / fw-N / lh-N / ls-N
+   / my-N utilities for any deviation from the body baseline. */
+p {
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  /* See heading reset above for why !important is required here. */
+  margin: 0 !important;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Smooth in-page anchor scrolling, but only for users who haven't
+   asked for reduced motion (the @media block at the bottom turns
+   it off again). */
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Improve text rendering and prevent orphaned words on headings. */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-wrap: balance;
+  line-height: 1.15;
+}
+
+p {
+  text-wrap: pretty;
+  hyphens: auto;
+}
+
+/* Make media easier to work with: never overflow, always block,
+   preserve aspect ratio. */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Inherit fonts for form controls (browsers ship UA defaults that
+   ignore body font). Skip `button` and skip `color` so BeerCSS's
+   MD3 button/field theming isn't overridden. */
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+/* Honour reading direction overrides without horizontal jitter. */
+textarea:not([rows]) {
+  min-height: 10em;
+}
+
+/* Anchor targets get breathing room from the viewport top. */
+:target {
+  scroll-margin-block: 5ex;
+}
+
+/* Lists used as navigation should not look like lists. */
+ul[role="list"],
+ol[role="list"] {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Respect the user's motion preference. Animations and smooth
+   scroll are reduced to a near-instant transition. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

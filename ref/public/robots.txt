@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /demos
+Disallow: /demos/
+Disallow: /widgets
+Disallow: /widgets/
+
+Sitemap: https://stackific.com/sitemap.xml

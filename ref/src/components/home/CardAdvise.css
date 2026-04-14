@@ -1,0 +1,52 @@
+@import "./_card-base.css";
+
+
+/* Radar sweep across concentric rings */
+.gfx-advise {
+  background: radial-gradient(ellipse at center, var(--secondary-container), var(--surface-container-low));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gfx-advise .ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid var(--secondary);
+  opacity: 0.35;
+}
+.gfx-advise .r1 { width: 76%; aspect-ratio: 1; }
+.gfx-advise .r2 { width: 52%; aspect-ratio: 1; opacity: 0.5; }
+.gfx-advise .r3 { width: 28%; aspect-ratio: 1; opacity: 0.7; }
+.gfx-advise .sweep {
+  position: absolute;
+  width: 76%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    var(--secondary) 0deg,
+    rgba(0, 0, 0, 0) 60deg,
+    rgba(0, 0, 0, 0) 360deg);
+  opacity: 0.45;
+  mask: radial-gradient(circle, transparent 0%, transparent 8%, #000 9%);
+  -webkit-mask: radial-gradient(circle, transparent 0%, transparent 8%, #000 9%);
+  animation: gfx-sweep 4s linear infinite;
+}
+.gfx-advise .ping {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--secondary);
+  box-shadow: 0 0 14px var(--secondary);
+  animation: gfx-ping 4s ease-out infinite;
+}
+
+@keyframes gfx-sweep {
+  to { transform: rotate(360deg); }
+}
+@keyframes gfx-ping {
+  0%, 25%, 100% { opacity: 0; transform: scale(0.6); }
+  30% { opacity: 1; transform: scale(1); }
+  55% { opacity: 0.4; transform: scale(1.4); }
+}
+

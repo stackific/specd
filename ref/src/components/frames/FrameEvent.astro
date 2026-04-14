@@ -1,0 +1,58 @@
+---
+import "./FrameEvent.css";
+import { Image } from "astro:assets";
+import highparkTo from "$/assets/highpark-to.jpg";
+---
+
+<div class="sc-card c-event">
+  <div class="sc-status">
+    <span class="sc-live-time"></span>
+    <div class="sc-dot"></div>
+    <div class="sc-status-icons">
+      <span class="ms sc-status-ms">wifi</span>
+      <span class="ms sc-status-ms">battery_full</span>
+    </div>
+  </div>
+  <Image class="ev-photo" src={highparkTo} width={280} height={220} alt="High Park Toronto" />
+  <div class="ev-details text--1">
+    <div class="ev-row">
+      <div>
+        <div class="ev-label">What</div>
+        <div class="ev-value lh-0">Nature photowalk</div>
+      </div>
+      <div>
+        <div class="ev-label">Where</div>
+        <div class="ev-valuelh-0">High Park &#8599;</div>
+      </div>
+    </div>
+    <div class="ev-row">
+      <div>
+        <div class="ev-label">When</div>
+        <div class="ev-value lh-0">Friday @ 6:30pm</div>
+      </div>
+      <div>
+        <div class="ev-label">Reason</div>
+        <div class="ev-value lh-0">You've no one and like photography</div>
+      </div>
+    </div>
+    <article class="border no-round p-2 center text--1 secondary-container">
+      <div class="row m-0">
+        <i class="small tertiary-text">auto_awesome</i>
+        <p class="text--1 lh-0 m-0" style="flex:1;">AI agent is completing a <strong>$19.95 payment</strong> on your behalf. Please review before it finalizes.</p>
+      </div>
+    </article>
+  </div>
+  <div class="ev-actions">
+    <button class="small">
+      <span>$19.95</span>
+    </button>
+    <button class="border small error-border error-text">
+      <span>Cancel</span>
+    </button>
+    <button class="border small secondary-border secondary-text">
+      <i>report</i>
+      <span>Report</span>
+    </button>
+  </div>
+  <div class="sc-home-bar"></div>
+</div>
