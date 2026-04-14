@@ -1,54 +1,56 @@
 # specd
 
-A Go server that serves the Astro frontend as a single deployable binary.
+A local spec, task, and knowledge base management tool for any project or workspace, designed to be driven by AI agents via the AGENTS.md standard.
+
+See [AGENTS.md](AGENTS.md) for the full specification.
 
 ## Prerequisites
 
 - [Go](https://go.dev/dl/) 1.26+
-- [Node.js](https://nodejs.org/) 22+
-- [pnpm](https://pnpm.io/)
 - [just](https://github.com/casey/just) (`brew install just`)
-- [air](https://github.com/air-verse/air) (`go install github.com/air-verse/air@latest`)
 
-## Development
-
-```sh
-just dev
-```
-
-Starts the Astro dev server (port 4321) and the Go server (port 8080) with livereload via [air](https://github.com/air-verse/air). Astro's HMR handles frontend changes, air rebuilds and restarts Go on backend changes. Browse `http://localhost:8080`.
-
-## Production Build
+## Quick Start
 
 ```sh
-just build
+just build                # build the binary
+./specd init              # initialize workspace in current directory
+./specd new-spec --title "My Feature" --type technical --summary "Feature design"
+./specd list specs
 ```
 
-Builds the Astro site, then compiles a single Go binary (`specd`) with all static assets embedded. Deploy it anywhere with no dependencies:
+## Commands
 
 ```sh
-./specd                  # serves on :8080
-./specd -addr :3000      # custom port
+just build                # build CLI binary
+just test                 # run all tests
+just clean                # remove build artifacts
 ```
 
-## Cross-Compile
+## CLI Usage
 
-```sh
-just build-all
+```
+specd init [path]           Initialize a new workspace
+specd config <key> [value]  Get or set config (e.g. user.name)
+specd new-spec              Create a spec (--title, --type, --summary, --body)
+specd new-task              Create a task (--spec-id, --title, --summary, --body)
+specd read <id>             Read a spec or task (--with-tasks, --with-criteria)
+specd list specs            List specs (--type, --limit)
+specd list tasks            List tasks (--spec-id, --status, --created-by, --limit)
 ```
 
-Outputs binaries to `dist/`:
-
-- `specd-darwin-arm64` / `specd-darwin-amd64`
-- `specd-linux-arm64` / `specd-linux-amd64`
-- `specd-windows-amd64.exe`
+All commands support `--json` for machine-readable output.
 
 ## Project Structure
 
 ```
-main.go           Entry point
-static_prod.go    Embeds web/dist/client/ into the binary
-static_dev.go     Reverse proxies to Astro dev server
-justfile          Task runner
-web/              Astro frontend (pnpm)
+cmd/specd/              CLI entry point
+internal/
+  cli/                  Cobra command definitions
+  db/                   SQLite schema, migrations, meta
+  frontmatter/          YAML frontmatter parser
+  hash/                 Content hashing (SHA-256)
+  lock/                 flock-based single-writer enforcement
+  workspace/            Domain logic (init, specs, tasks, criteria)
+justfile                Task runner
+web/                    Astro frontend (future)
 ```

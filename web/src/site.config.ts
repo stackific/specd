@@ -38,7 +38,7 @@ export const siteConfig: SiteConfig = {
   ogImageAlt: "specd",
   twitterHandle: "",
   themeColor: "#1447E6",
-  author: "specd",
+  author: "Stackific Inc.",
   indexable: true,
   logo: {
     light: "/logo.svg",

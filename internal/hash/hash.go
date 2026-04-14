@@ -1,3 +1,6 @@
+// Package hash provides SHA-256 content hashing for change detection.
+// The watcher and CLI use content hashes to determine whether a file
+// has been modified since the last known state in SQLite.
 package hash
 
 import (

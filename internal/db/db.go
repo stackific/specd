@@ -1,3 +1,7 @@
+// Package db manages the specd SQLite cache database. It handles schema
+// creation, migrations, meta key-value storage, and atomic ID counters.
+// The schema includes FTS5 full-text indexes and trigram indexes with
+// triggers that keep them in sync with base tables automatically.
 package db
 
 import (

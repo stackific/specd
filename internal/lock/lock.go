@@ -1,3 +1,6 @@
+// Package lock provides single-writer enforcement for the specd workspace.
+// Every mutation acquires an exclusive flock on .specd/lock, holds it for the
+// full transaction, and releases. A 5-second timeout prevents deadlocks.
 package lock
 
 import (

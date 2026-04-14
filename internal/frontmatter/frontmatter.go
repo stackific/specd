@@ -1,3 +1,7 @@
+// Package frontmatter handles YAML frontmatter parsing and rendering for
+// specd markdown files. It supports spec and task frontmatter schemas,
+// round-trip encoding, and extraction of acceptance criteria checkboxes
+// from the "## Acceptance criteria" body section.
 package frontmatter
 
 import (
