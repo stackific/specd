@@ -1,27 +1,26 @@
 app    := "specd"
-webdir := "web"
+webdir := "styles"
 
 # Run all tests
 test:
     go test ./...
 
+# Build CSS with Vite (LightningCSS + PurgeCSS)
+web:
+    cd {{webdir}} && pnpm install --frozen-lockfile && pnpm build
+
 # Build CLI binary (current OS/arch)
-build:
+build: web
     go build -o {{app}} ./cmd/specd/
 
-# Development: Astro dev server + Go with livereload (air)
+# Development: Vite CSS watch + Air Go hot-reload
 dev:
     #!/usr/bin/env bash
     set -euo pipefail
     trap 'kill 0' EXIT
     (cd {{webdir}} && pnpm dev) &
-    sleep 2
     air &
     wait
-
-# Build Astro static site
-web:
-    cd {{webdir}} && pnpm install --frozen-lockfile && pnpm build
 
 # Cross-compile for macOS, Linux, Windows
 build-all: web
@@ -34,4 +33,4 @@ build-all: web
 
 # Remove build artifacts
 clean:
-    rm -rf {{app}} dist/
+    rm -rf {{app}} dist/ {{webdir}}/dist/

@@ -1,0 +1,39 @@
+{{define "nav"}}
+<!-- Desktop sidebar: visible on large screens ("l" breakpoint), "max" = expanded by default -->
+<nav class="left l max surface-container" aria-label="Main navigation">
+  <header>
+    <button class="circle extra transparent" aria-label="Toggle sidebar" aria-expanded="true">
+      <i aria-hidden="true">menu_open</i>
+    </button>
+  </header>
+  <a href="/"><i aria-hidden="true">home</i><span class="fw-5">Home</span></a>
+  <a href="/about"><i aria-hidden="true">info</i><span class="fw-5">About</span></a>
+  <div class="max"></div>
+  <button class="my-2 border circle" aria-label="Toggle dark mode">
+    <i class="page bottom active" aria-hidden="true">dark_mode</i>
+  </button>
+</nav>
+
+<!-- Mobile/tablet top bar -->
+<nav class="top s m left-align" aria-label="Mobile navigation">
+  <button class="circle transparent" data-ui="#mobile-menu" aria-label="Open menu">
+    <i aria-hidden="true">menu</i>
+  </button>
+  <a href="/" class="circle transparent" aria-label="specd home">
+    <img class="logo-light" alt="specd logo" width="60" src="/logo.svg" />
+    <img class="logo-dark" alt="specd logo" width="60" src="/logo-dark.svg" />
+  </a>
+  <div class="max"></div>
+  <button class="circle border primary-text" aria-label="Toggle dark mode">
+    <i class="page top active" aria-hidden="true">dark_mode</i>
+  </button>
+</nav>
+
+<!-- Mobile menu dialog -->
+<dialog id="mobile-menu" class="p-5" aria-label="Mobile menu" style="width:min(360px, 92vw); max-width:none;">
+  <nav class="vertical fw-5 text-2">
+    <a href="/"><i aria-hidden="true">home</i><span class="ml-3">Home</span></a>
+    <a href="/about"><i aria-hidden="true">info</i><span class="ml-3">About</span></a>
+  </nav>
+</dialog>
+{{end}}

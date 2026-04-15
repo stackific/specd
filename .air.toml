@@ -2,10 +2,11 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  cmd = "go build -tags dev -o tmp/specd ."
-  bin = "tmp/specd"
-  include_ext = ["go"]
-  exclude_dir = ["tmp", "dist", "web", "vendor"]
+  cmd = "go build -o tmp/specd ./cmd/specd/"
+  bin = "tmp/specd serve"
+  include_ext = ["go", "html"]
+  include_dir = [".", "internal", "cmd", "templates"]
+  exclude_dir = ["tmp", "dist", "web", "vendor", "assets", "ref"]
   delay = 500
 
 [misc]

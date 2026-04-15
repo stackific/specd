@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{{if .Title}}{{.Title}} — specd{{else}}specd{{end}}</title>
+    <meta name="description" content="Give your AI coding agent a memory that survives the session. specd stores specs, tasks, and reference docs in markdown with powerful search and citations." />
+    <meta name="author" content="Stackific Inc." />
+    <meta name="theme-color" content="#1447E6" />
+
+    <!-- Icons / PWA -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- BeerCSS framework (separate cache) -->
+    <link rel="stylesheet" href="/vendor/beer.min.css" />
+
+    <!-- Custom CSS bundle (Vite-built, PurgeCSS-trimmed) -->
+    <link rel="stylesheet" href="/assets/{{.CSSFile}}" />
+
+    <!-- BeerCSS runtime (ESM — sets window.ui as side effect, wires data-ui on load) -->
+    <script type="module" src="/assets/beer.min.js"></script>
+    <script type="module" src="/assets/material-dynamic-colors.min.js"></script>
+  </head>
+  <body class="surface">
+    {{template "nav" .}}
+
+    <main class="responsive" id="main-content">
+      {{block "content" .}}{{end}}
+    </main>
+
+    {{template "footer" .}}
+
+    <script src="/assets/htmx.min.js"></script>
+    <script type="module" src="/assets/app.js"></script>
+  </body>
+</html>
