@@ -1,3 +1,5 @@
+// Package cli — depend.go registers the depend and undepend commands
+// for declaring and removing task dependency relationships.
 package cli
 
 import (

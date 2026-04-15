@@ -1,3 +1,4 @@
+// Package workspace — slug.go provides URL-safe slug generation from titles.
 package workspace
 
 import (

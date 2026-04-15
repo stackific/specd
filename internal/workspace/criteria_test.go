@@ -200,3 +200,80 @@ func TestReplaceCriteriaSection(t *testing.T) {
 		t.Error("should preserve content after criteria section")
 	}
 }
+
+func TestListCriteriaEmpty(t *testing.T) {
+	w := setupWorkspace(t)
+	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t", Body: "No criteria here."})
+
+	criteria, err := w.ListCriteria("TASK-1")
+	if err != nil {
+		t.Fatalf("ListCriteria: %v", err)
+	}
+	if len(criteria) != 0 {
+		t.Errorf("expected 0 criteria, got %d", len(criteria))
+	}
+}
+
+func TestCheckCriterionIdempotent(t *testing.T) {
+	w, taskID := setupTaskWithCriteria(t)
+
+	w.CheckCriterion(taskID, 1)
+	err := w.CheckCriterion(taskID, 1)
+	if err != nil {
+		t.Fatalf("idempotent check should not error: %v", err)
+	}
+
+	criteria, _ := w.ListCriteria(taskID)
+	if !criteria[0].Checked {
+		t.Error("should still be checked")
+	}
+}
+
+func TestUncheckCriterionIdempotent(t *testing.T) {
+	w, taskID := setupTaskWithCriteria(t)
+
+	err := w.UncheckCriterion(taskID, 1) // already unchecked
+	if err != nil {
+		t.Fatalf("idempotent uncheck should not error: %v", err)
+	}
+}
+
+func TestRemoveCriterionRenumbers(t *testing.T) {
+	w := setupWorkspace(t)
+	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewTask(NewTaskInput{
+		SpecID: "SPEC-1", Title: "T", Summary: "t",
+		Body: "## Acceptance criteria\n\n- [ ] First\n- [ ] Second\n- [ ] Third",
+	})
+
+	w.RemoveCriterion("TASK-1", 2)
+
+	criteria, _ := w.ListCriteria("TASK-1")
+	if len(criteria) != 2 {
+		t.Fatalf("criteria count = %d, want 2", len(criteria))
+	}
+	if criteria[0].Text != "First" || criteria[0].Position != 1 {
+		t.Errorf("first: %+v", criteria[0])
+	}
+	if criteria[1].Text != "Third" || criteria[1].Position != 2 {
+		t.Errorf("second (renumbered): %+v", criteria[1])
+	}
+}
+
+func TestAddCriterionDuplicate(t *testing.T) {
+	w, taskID := setupTaskWithCriteria(t)
+
+	before, _ := w.ListCriteria(taskID)
+	countBefore := len(before)
+
+	_, err := w.AddCriterion(taskID, "Users table")
+	if err != nil {
+		t.Fatalf("AddCriterion duplicate text should work: %v", err)
+	}
+
+	after, _ := w.ListCriteria(taskID)
+	if len(after) != countBefore+1 {
+		t.Errorf("criteria count = %d, want %d", len(after), countBefore+1)
+	}
+}

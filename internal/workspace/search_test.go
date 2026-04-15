@@ -148,3 +148,42 @@ func TestSearchTrigramFallback(t *testing.T) {
 		t.Fatal("should find the spec via BM25 or trigram")
 	}
 }
+
+func TestSearchWithFTSOperators(t *testing.T) {
+	w := setupWorkspace(t)
+	w.NewSpec(NewSpecInput{Title: "OAuth Authentication", Type: "technical", Summary: "OAuth auth flow"})
+	w.NewSpec(NewSpecInput{Title: "Database Schema", Type: "technical", Summary: "DB design"})
+
+	results, err := w.Search("OAuth AND Authentication", "spec", 10)
+	if err != nil {
+		t.Fatalf("Search AND: %v", err)
+	}
+	if len(results.Specs) == 0 {
+		t.Error("expected results for AND query")
+	}
+}
+
+func TestSearchQuotedPhrase(t *testing.T) {
+	w := setupWorkspace(t)
+	w.NewSpec(NewSpecInput{Title: "OAuth Flow Design", Type: "technical", Summary: "OAuth flow"})
+
+	results, err := w.Search(`"OAuth Flow"`, "spec", 10)
+	if err != nil {
+		t.Fatalf("Search quoted: %v", err)
+	}
+	if len(results.Specs) == 0 {
+		t.Error("expected results for quoted phrase")
+	}
+}
+
+func TestSearchKBEmpty(t *testing.T) {
+	w := setupWorkspace(t)
+
+	results, err := w.Search("anything", "kb", 10)
+	if err != nil {
+		t.Fatalf("Search empty KB: %v", err)
+	}
+	if len(results.KB) != 0 {
+		t.Errorf("expected 0 KB results, got %d", len(results.KB))
+	}
+}

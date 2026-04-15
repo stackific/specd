@@ -1,3 +1,5 @@
+// Package workspace — depend.go implements directed task dependencies
+// with cycle detection via DFS.
 package workspace
 
 import (

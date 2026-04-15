@@ -1,3 +1,5 @@
+// Package cli — criteria.go registers the criteria subcommands for
+// listing, adding, checking, unchecking, and removing acceptance criteria.
 package cli
 
 import (

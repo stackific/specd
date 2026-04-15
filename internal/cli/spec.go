@@ -14,6 +14,9 @@ func init() {
 		specType    string
 		specSummary string
 		specBody    string
+		specLinks   []string
+		specCites   []string
+		specDryRun  bool
 	)
 
 	newSpecCmd := &cobra.Command{
@@ -26,6 +29,21 @@ func init() {
 			}
 			defer w.Close()
 
+			if specDryRun {
+				response := map[string]any{
+					"dry_run": true,
+					"title":   specTitle,
+					"type":    specType,
+					"summary": specSummary,
+				}
+				if jsonOutput {
+					printJSON(response)
+				} else {
+					fmt.Printf("[dry-run] Would create spec: %s (%s)\n", specTitle, specType)
+				}
+				return nil
+			}
+
 			result, err := w.NewSpec(workspace.NewSpecInput{
 				Title:   specTitle,
 				Type:    specType,
@@ -34,6 +52,25 @@ func init() {
 			})
 			if err != nil {
 				return err
+			}
+
+			// Apply links.
+			for _, linkID := range specLinks {
+				if err := w.Link(result.ID, linkID); err != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(), "warning: link %s: %v\n", linkID, err)
+				}
+			}
+
+			// Apply citations.
+			for _, citeRef := range specCites {
+				parsed, err := workspace.ParseCitationRef(citeRef)
+				if err != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(), "warning: cite %s: %v\n", citeRef, err)
+					continue
+				}
+				if err := w.Cite(result.ID, []workspace.CitationInput{*parsed}); err != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(), "warning: cite %s: %v\n", citeRef, err)
+				}
 			}
 
 			if jsonOutput {
@@ -49,6 +86,9 @@ func init() {
 	newSpecCmd.Flags().StringVar(&specType, "type", "", "spec type: business, technical, non-technical (required)")
 	newSpecCmd.Flags().StringVar(&specSummary, "summary", "", "one-line summary (required)")
 	newSpecCmd.Flags().StringVar(&specBody, "body", "", "markdown body")
+	newSpecCmd.Flags().StringSliceVar(&specLinks, "link", nil, "link to SPEC-N (repeatable)")
+	newSpecCmd.Flags().StringSliceVar(&specCites, "cite", nil, "cite KB-N:position (repeatable)")
+	newSpecCmd.Flags().BoolVar(&specDryRun, "dry-run", false, "preview without creating")
 	newSpecCmd.MarkFlagRequired("title")
 	newSpecCmd.MarkFlagRequired("type")
 	newSpecCmd.MarkFlagRequired("summary")
@@ -93,10 +133,46 @@ func init() {
 					response["tasks"] = tasks
 				}
 
+				if withLinks {
+					links, err := w.GetSpecLinks(id)
+					if err != nil {
+						return err
+					}
+					response["links"] = links
+				}
+
+				if withProgress {
+					progress, err := w.GetSpecProgress(id)
+					if err != nil {
+						return err
+					}
+					response["progress"] = progress
+				}
+
+				if withCitations {
+					citations, err := w.GetCitations(id)
+					if err != nil {
+						return err
+					}
+					response["citations"] = citations
+				}
+
 				if jsonOutput {
 					printJSON(response)
 				} else {
 					printSpec(spec)
+					if withLinks {
+						links, _ := w.GetSpecLinks(id)
+						printSpecLinks(links)
+					}
+					if withProgress {
+						progress, _ := w.GetSpecProgress(id)
+						printProgress(progress)
+					}
+					if withCitations {
+						citations, _ := w.GetCitations(id)
+						printCitations(citations)
+					}
 				}
 			} else if isTaskID(id) {
 				task, err := w.ReadTask(id)
@@ -114,10 +190,46 @@ func init() {
 					response["criteria"] = criteria
 				}
 
+				if withLinks {
+					links, err := w.GetTaskLinks(id)
+					if err != nil {
+						return err
+					}
+					response["links"] = links
+				}
+
+				if withDeps {
+					deps, err := w.GetTaskDeps(id)
+					if err != nil {
+						return err
+					}
+					response["dependencies"] = deps
+				}
+
+				if withCitations {
+					citations, err := w.GetCitations(id)
+					if err != nil {
+						return err
+					}
+					response["citations"] = citations
+				}
+
 				if jsonOutput {
 					printJSON(response)
 				} else {
 					printTask(task)
+					if withLinks {
+						links, _ := w.GetTaskLinks(id)
+						printTaskLinks(links)
+					}
+					if withDeps {
+						deps, _ := w.GetTaskDeps(id)
+						printDeps(deps)
+					}
+					if withCitations {
+						citations, _ := w.GetCitations(id)
+						printCitations(citations)
+					}
 				}
 			} else {
 				return fmt.Errorf("invalid ID format: %s (expected SPEC-N or TASK-N)", id)
@@ -142,6 +254,7 @@ func init() {
 		listLinkedTo  string
 		listDependsOn string
 		listCreatedBy string
+		listEmpty     bool
 		listLimit     int
 	)
 
@@ -161,6 +274,7 @@ func init() {
 				specs, err := w.ListSpecs(workspace.ListSpecsFilter{
 					Type:     listType,
 					LinkedTo: listLinkedTo,
+					Empty:    listEmpty,
 					Limit:    listLimit,
 				})
 				if err != nil {
@@ -213,6 +327,7 @@ func init() {
 	listCmd.Flags().StringVar(&listLinkedTo, "linked-to", "", "filter by linked item")
 	listCmd.Flags().StringVar(&listDependsOn, "depends-on", "", "filter tasks by dependency")
 	listCmd.Flags().StringVar(&listCreatedBy, "created-by", "", "filter tasks by creator")
+	listCmd.Flags().BoolVar(&listEmpty, "empty", false, "only specs with no tasks")
 	listCmd.Flags().IntVar(&listLimit, "limit", 0, "max results")
 	rootCmd.AddCommand(listCmd)
 }
@@ -247,5 +362,67 @@ func printTask(t *workspace.Task) {
 	fmt.Printf("Path: %s\n", t.Path)
 	if t.Body != "" {
 		fmt.Printf("\n%s\n", t.Body)
+	}
+}
+
+// printSpecLinks writes human-readable linked specs to stdout.
+func printSpecLinks(links []workspace.LinkedSpec) {
+	if len(links) == 0 {
+		return
+	}
+	fmt.Println("\nLinked specs:")
+	for _, l := range links {
+		fmt.Printf("  %s: %s\n", l.ID, l.Title)
+	}
+}
+
+// printTaskLinks writes human-readable linked tasks to stdout.
+func printTaskLinks(links []workspace.LinkedTask) {
+	if len(links) == 0 {
+		return
+	}
+	fmt.Println("\nLinked tasks:")
+	for _, l := range links {
+		fmt.Printf("  %s [%s]: %s\n", l.ID, l.Status, l.Title)
+	}
+}
+
+// printProgress writes human-readable spec progress to stdout.
+func printProgress(p *workspace.SpecProgress) {
+	fmt.Printf("\nProgress: %d/%d done (%.0f%%)\n", p.Done, p.Active, p.Percent)
+}
+
+// printDeps writes human-readable task dependencies to stdout.
+func printDeps(deps []workspace.TaskDependency) {
+	if len(deps) == 0 {
+		return
+	}
+	fmt.Println("\nBlocked by:")
+	for _, d := range deps {
+		ready := ""
+		if d.Ready {
+			ready = " ✓"
+		}
+		fmt.Printf("  %s [%s]: %s%s\n", d.ID, d.Status, d.Title, ready)
+	}
+}
+
+// printCitations writes human-readable citation details to stdout.
+func printCitations(citations []workspace.CitationDetail) {
+	if len(citations) == 0 {
+		return
+	}
+	fmt.Println("\nReferences:")
+	for _, c := range citations {
+		fmt.Printf("  [%s] %s · chunk %d", c.SourceType, c.KBDocTitle, c.ChunkPosition)
+		if c.Page != nil {
+			fmt.Printf(" · page %d", *c.Page)
+		}
+		fmt.Println()
+		text := c.ChunkText
+		if len(text) > 120 {
+			text = text[:120] + "..."
+		}
+		fmt.Printf("  %s\n", text)
 	}
 }

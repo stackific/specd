@@ -106,3 +106,25 @@ func TestTaskCandidates(t *testing.T) {
 		t.Errorf("first task candidate should be TASK-2, got %s", result.Tasks[0].ID)
 	}
 }
+
+func TestCandidatesInvalidID(t *testing.T) {
+	w := setupWorkspace(t)
+
+	_, err := w.Candidates("INVALID-1", 20)
+	if err == nil {
+		t.Fatal("expected error for invalid ID format")
+	}
+}
+
+func TestCandidatesNoMatches(t *testing.T) {
+	w := setupWorkspace(t)
+	w.NewSpec(NewSpecInput{Title: "X", Type: "technical", Summary: "X"})
+
+	result, err := w.Candidates("SPEC-1", 20)
+	if err != nil {
+		t.Fatalf("Candidates: %v", err)
+	}
+	if len(result.Specs) != 0 {
+		t.Errorf("expected 0 spec candidates, got %d", len(result.Specs))
+	}
+}

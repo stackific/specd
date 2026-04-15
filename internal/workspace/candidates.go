@@ -1,25 +1,42 @@
+// Package workspace — candidates.go finds related specs, tasks, and KB
+// chunks for a given item using word overlap scoring and BM25 search.
 package workspace
 
-import "fmt"
+import (
+	"database/sql"
+	"fmt"
+)
 
 // CandidateSpec is a spec returned as a link candidate.
 type CandidateSpec struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
+	ID    string  `json:"id"`
+	Title string  `json:"title"`
 	Score float64 `json:"score"`
 }
 
 // CandidateTask is a task returned as a link candidate.
 type CandidateTask struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
+	ID    string  `json:"id"`
+	Title string  `json:"title"`
 	Score float64 `json:"score"`
 }
 
-// CandidatesResult holds candidate specs and tasks for linking.
+// CandidateKBChunk is a KB chunk returned as a citation candidate.
+type CandidateKBChunk struct {
+	DocID         string  `json:"doc_id"`
+	DocTitle      string  `json:"doc_title"`
+	ChunkPosition int     `json:"chunk_position"`
+	Text          string  `json:"text"`
+	Score         float64 `json:"score"`
+	MatchType     string  `json:"match_type"`
+	Page          *int    `json:"page,omitempty"`
+}
+
+// CandidatesResult holds candidate specs, tasks, and KB chunks.
 type CandidatesResult struct {
-	Specs []CandidateSpec `json:"specs"`
-	Tasks []CandidateTask `json:"tasks"`
+	Specs    []CandidateSpec    `json:"specs"`
+	Tasks    []CandidateTask    `json:"tasks"`
+	KBChunks []CandidateKBChunk `json:"kb_chunks,omitempty"`
 }
 
 // Candidates finds specs or tasks related to the given ID by searching
@@ -81,7 +98,11 @@ func (w *Workspace) specCandidates(specID string, limit int) (*CandidatesResult,
 		candidates = candidates[:limit]
 	}
 
-	return &CandidatesResult{Specs: candidates}, nil
+	// KB chunk candidates.
+	searchText := spec.Title + " " + spec.Summary
+	kbChunks, _ := w.kbChunkCandidates(searchText, 20)
+
+	return &CandidatesResult{Specs: candidates, KBChunks: kbChunks}, nil
 }
 
 func (w *Workspace) taskCandidates(taskID string, limit int) (*CandidatesResult, error) {
@@ -122,7 +143,10 @@ func (w *Workspace) taskCandidates(taskID string, limit int) (*CandidatesResult,
 		candidates = candidates[:limit]
 	}
 
-	return &CandidatesResult{Tasks: candidates}, nil
+	searchText := task.Title + " " + task.Summary
+	kbChunks, _ := w.kbChunkCandidates(searchText, 20)
+
+	return &CandidatesResult{Tasks: candidates, KBChunks: kbChunks}, nil
 }
 
 // extractTerms splits text into lowercase unique words, filtering short ones.
@@ -193,4 +217,46 @@ func sortCandidateTasks(c []CandidateTask) {
 			c[j], c[j-1] = c[j-1], c[j]
 		}
 	}
+}
+
+// kbChunkCandidates searches KB chunks by text and returns candidates
+// for citation. Uses BM25 search.
+func (w *Workspace) kbChunkCandidates(searchText string, limit int) ([]CandidateKBChunk, error) {
+	ftsQuery := sanitizeFTS(searchText)
+	if ftsQuery == "" {
+		return nil, nil
+	}
+
+	rows, err := w.DB.Query(`
+		SELECT d.id, d.title, k.position, k.text, k.page, bm25(kb_chunks_fts) AS score
+		FROM kb_chunks_fts
+		JOIN kb_chunks k ON k.id = kb_chunks_fts.rowid
+		JOIN kb_docs d ON d.id = k.doc_id
+		WHERE kb_chunks_fts MATCH ?
+		ORDER BY score
+		LIMIT ?`, ftsQuery, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []CandidateKBChunk
+	for rows.Next() {
+		var r CandidateKBChunk
+		var page sql.NullInt64
+		if err := rows.Scan(&r.DocID, &r.DocTitle, &r.ChunkPosition, &r.Text, &page, &r.Score); err != nil {
+			return nil, err
+		}
+		r.MatchType = "bm25"
+		r.Score = -r.Score
+		if page.Valid {
+			pg := int(page.Int64)
+			r.Page = &pg
+		}
+		if len(r.Text) > 200 {
+			r.Text = r.Text[:200] + "..."
+		}
+		results = append(results, r)
+	}
+	return results, rows.Err()
 }

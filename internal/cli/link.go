@@ -1,3 +1,5 @@
+// Package cli — link.go registers the link, unlink, and candidates
+// commands for managing undirected relationships between specs or tasks.
 package cli
 
 import (
@@ -105,7 +107,18 @@ func init() {
 						fmt.Printf("  %-10s (%.0f%%) %s\n", c.ID, c.Score*100, c.Title)
 					}
 				}
-				if len(result.Specs) == 0 && len(result.Tasks) == 0 {
+				if len(result.KBChunks) > 0 {
+					fmt.Println("KB chunk candidates:")
+					for _, c := range result.KBChunks {
+						fmt.Printf("  %s chunk %d (%.2f) %s\n", c.DocID, c.ChunkPosition, c.Score, c.DocTitle)
+						text := c.Text
+						if len(text) > 100 {
+							text = text[:100] + "..."
+						}
+						fmt.Printf("    %s\n", text)
+					}
+				}
+				if len(result.Specs) == 0 && len(result.Tasks) == 0 && len(result.KBChunks) == 0 {
 					fmt.Println("No candidates found.")
 				}
 			}

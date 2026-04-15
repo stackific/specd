@@ -1,3 +1,5 @@
+// Package cli — search.go registers the search command for hybrid
+// BM25 + trigram full-text search across specs, tasks, and KB documents.
 package cli
 
 import (

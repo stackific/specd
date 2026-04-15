@@ -1,3 +1,5 @@
+// Package cli — init.go registers the init command for creating new
+// specd workspaces with directory structure, database, and gitignore.
 package cli
 
 import (

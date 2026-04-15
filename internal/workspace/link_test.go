@@ -98,3 +98,45 @@ func TestLinkIdempotent(t *testing.T) {
 		t.Errorf("should have exactly 1 link, got %d", len(links))
 	}
 }
+
+func TestLinkNonexistentSource(t *testing.T) {
+	w := setupWorkspace(t)
+	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
+
+	err := w.Link("SPEC-999", "SPEC-1")
+	if err == nil {
+		t.Fatal("expected error for nonexistent source")
+	}
+}
+
+func TestLinkNonexistentTarget(t *testing.T) {
+	w := setupWorkspace(t)
+	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
+
+	err := w.Link("SPEC-1", "SPEC-999")
+	if err == nil {
+		t.Fatal("expected error for nonexistent target")
+	}
+}
+
+func TestUnlinkNonexistentLink(t *testing.T) {
+	w := setupWorkspace(t)
+	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
+	w.NewSpec(NewSpecInput{Title: "B", Type: "technical", Summary: "b"})
+
+	err := w.Unlink("SPEC-1", "SPEC-2")
+	if err != nil {
+		t.Fatalf("Unlink no-op should not error: %v", err)
+	}
+}
+
+func TestLinkTaskNonexistent(t *testing.T) {
+	w := setupWorkspace(t)
+	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
+
+	err := w.Link("TASK-1", "TASK-999")
+	if err == nil {
+		t.Fatal("expected error for nonexistent task link target")
+	}
+}

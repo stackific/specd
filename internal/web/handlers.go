@@ -1,3 +1,5 @@
+// Package web — handlers.go defines HTTP handler functions for the
+// embedded web UI pages.
 package web
 
 import "net/http"

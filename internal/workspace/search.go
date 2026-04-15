@@ -1,3 +1,5 @@
+// Package workspace — search.go implements hybrid BM25 + trigram search
+// across specs, tasks, and KB chunks via FTS5 with trigram fallback.
 package workspace
 
 import (

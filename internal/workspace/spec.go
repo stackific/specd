@@ -1,3 +1,7 @@
+// Package workspace — spec.go implements spec lifecycle operations: create,
+// read, list, update, rename, and soft-delete. Each mutation acquires the
+// workspace lock, updates both the markdown file and SQLite in a single
+// transaction, and syncs system-managed frontmatter fields.
 package workspace
 
 import (
@@ -37,8 +41,9 @@ type NewSpecInput struct {
 
 // NewSpecResult is the JSON response from new-spec.
 type NewSpecResult struct {
-	ID   string `json:"id"`
-	Path string `json:"path"`
+	ID         string            `json:"id"`
+	Path       string            `json:"path"`
+	Candidates *CandidatesResult `json:"candidates,omitempty"`
 }
 
 // NewSpec creates a new spec in the workspace.
@@ -105,6 +110,12 @@ func (w *Workspace) NewSpec(input NewSpecInput) (*NewSpecResult, error) {
 		return nil
 	})
 
+	// Compute candidates outside the lock (read-only).
+	if err == nil && result != nil {
+		candidates, _ := w.Candidates(result.ID, 20)
+		result.Candidates = candidates
+	}
+
 	return result, err
 }
 
@@ -129,6 +140,7 @@ func (w *Workspace) ReadSpec(specID string) (*Spec, error) {
 type ListSpecsFilter struct {
 	Type     string
 	LinkedTo string
+	Empty    bool // only specs with zero tasks
 	Limit    int
 }
 
@@ -148,6 +160,9 @@ func (w *Workspace) ListSpecs(filter ListSpecsFilter) ([]Spec, error) {
 			SELECT to_spec FROM spec_links WHERE from_spec = ?
 			UNION SELECT from_spec FROM spec_links WHERE to_spec = ?)`
 		args = append(args, filter.LinkedTo, filter.LinkedTo)
+	}
+	if filter.Empty {
+		query += ` AND id NOT IN (SELECT DISTINCT spec_id FROM tasks)`
 	}
 
 	query += " ORDER BY position ASC"
@@ -172,6 +187,216 @@ func (w *Workspace) ListSpecs(filter ListSpecsFilter) ([]Spec, error) {
 		specs = append(specs, s)
 	}
 	return specs, rows.Err()
+}
+
+// UpdateSpecInput holds optional fields for updating a spec.
+type UpdateSpecInput struct {
+	Title   *string
+	Type    *string
+	Summary *string
+	Body    *string
+}
+
+// UpdateSpec updates mutable fields on a spec.
+func (w *Workspace) UpdateSpec(specID string, input UpdateSpecInput) error {
+	return w.WithLock(func() error {
+		spec, err := w.ReadSpec(specID)
+		if err != nil {
+			return err
+		}
+
+		now := time.Now().UTC().Format(time.RFC3339)
+		userName, _ := w.DB.GetMeta("user_name")
+
+		title := spec.Title
+		typ := spec.Type
+		summary := spec.Summary
+		body := spec.Body
+
+		if input.Title != nil {
+			title = *input.Title
+		}
+		if input.Type != nil {
+			typ = *input.Type
+		}
+		if input.Summary != nil {
+			summary = *input.Summary
+		}
+		if input.Body != nil {
+			body = *input.Body
+		}
+
+		// Rewrite markdown file.
+		fm := &frontmatter.SpecFrontmatter{
+			Title:   title,
+			Type:    typ,
+			Summary: summary,
+		}
+
+		// Preserve existing system-managed fields by reading current frontmatter.
+		absPath := filepath.Join(w.Root, spec.Path)
+		data, err := os.ReadFile(absPath)
+		if err != nil {
+			return fmt.Errorf("read spec file: %w", err)
+		}
+		doc, err := frontmatter.Parse(string(data))
+		if err != nil {
+			return fmt.Errorf("parse spec: %w", err)
+		}
+		existingFM, err := frontmatter.DecodeSpec(doc.RawFrontmatter)
+		if err != nil {
+			return err
+		}
+		fm.LinkedSpecs = existingFM.LinkedSpecs
+		fm.Cites = existingFM.Cites
+
+		content, err := frontmatter.RenderSpec(fm, body)
+		if err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(absPath, []byte(content), 0o644); err != nil {
+			return err
+		}
+
+		contentHash := hash.String(content)
+		_, err = w.DB.Exec(`UPDATE specs SET title=?, type=?, summary=?, body=?,
+			updated_by=?, content_hash=?, updated_at=? WHERE id=?`,
+			title, typ, summary, body, userName, contentHash, now, specID)
+		return err
+	})
+}
+
+// RenameSpec changes a spec's title and updates its slug and folder name.
+func (w *Workspace) RenameSpec(specID string, newTitle string) error {
+	return w.WithLock(func() error {
+		spec, err := w.ReadSpec(specID)
+		if err != nil {
+			return err
+		}
+
+		newSlug := Slugify(newTitle)
+		newDirName := fmt.Sprintf("%s-%s", specID, newSlug)
+		oldDir := filepath.Join(w.Root, filepath.Dir(spec.Path))
+		newDir := filepath.Join(w.Root, "specd", "specs", newDirName)
+
+		if err := os.Rename(oldDir, newDir); err != nil {
+			return fmt.Errorf("rename spec dir: %w", err)
+		}
+
+		newRelPath := filepath.Join("specd", "specs", newDirName, "spec.md")
+		now := time.Now().UTC().Format(time.RFC3339)
+		userName, _ := w.DB.GetMeta("user_name")
+
+		// Rewrite frontmatter with new title.
+		absPath := filepath.Join(w.Root, newRelPath)
+		data, err := os.ReadFile(absPath)
+		if err != nil {
+			return fmt.Errorf("read spec: %w", err)
+		}
+		doc, err := frontmatter.Parse(string(data))
+		if err != nil {
+			return err
+		}
+		fm, err := frontmatter.DecodeSpec(doc.RawFrontmatter)
+		if err != nil {
+			return err
+		}
+		fm.Title = newTitle
+		content, err := frontmatter.RenderSpec(fm, doc.Body)
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(absPath, []byte(content), 0o644); err != nil {
+			return err
+		}
+
+		contentHash := hash.String(content)
+		_, err = w.DB.Exec(`UPDATE specs SET title=?, slug=?, path=?,
+			updated_by=?, content_hash=?, updated_at=? WHERE id=?`,
+			newTitle, newSlug, newRelPath, userName, contentHash, now, specID)
+		if err != nil {
+			return err
+		}
+
+		// Update task paths that reference this spec dir.
+		rows, err := w.DB.Query("SELECT id, path FROM tasks WHERE spec_id = ?", specID)
+		if err != nil {
+			return err
+		}
+		type taskPath struct{ id, path string }
+		var tasks []taskPath
+		for rows.Next() {
+			var tp taskPath
+			rows.Scan(&tp.id, &tp.path)
+			tasks = append(tasks, tp)
+		}
+		rows.Close()
+
+		for _, tp := range tasks {
+			newTaskPath := filepath.Join("specd", "specs", newDirName, filepath.Base(tp.path))
+			w.DB.Exec("UPDATE tasks SET path = ? WHERE id = ?", newTaskPath, tp.id)
+		}
+
+		return nil
+	})
+}
+
+// DeleteSpec soft-deletes a spec and its tasks to trash.
+func (w *Workspace) DeleteSpec(specID string) error {
+	return w.WithLock(func() error {
+		spec, err := w.ReadSpec(specID)
+		if err != nil {
+			return err
+		}
+
+		absDir := filepath.Join(w.Root, filepath.Dir(spec.Path))
+		now := time.Now().UTC().Format(time.RFC3339)
+
+		// Read spec file for trash.
+		absPath := filepath.Join(w.Root, spec.Path)
+		content, err := os.ReadFile(absPath)
+		if err != nil {
+			return fmt.Errorf("read spec for trash: %w", err)
+		}
+
+		metadata := fmt.Sprintf(`{"id":"%s","title":"%s","type":"%s","path":"%s"}`,
+			spec.ID, spec.Title, spec.Type, spec.Path)
+
+		tx, err := w.DB.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+
+		// Trash the spec.
+		_, err = tx.Exec(`INSERT INTO trash (kind, original_id, original_path, content, metadata, deleted_at, deleted_by)
+			VALUES ('spec', ?, ?, ?, ?, ?, 'cli')`,
+			spec.ID, spec.Path, content, metadata, now)
+		if err != nil {
+			return fmt.Errorf("insert spec trash: %w", err)
+		}
+
+		// Delete citations referencing this spec (not FK-cascaded).
+		_, err = tx.Exec("DELETE FROM citations WHERE from_kind = 'spec' AND from_id = ?", specID)
+		if err != nil {
+			return fmt.Errorf("delete spec citations: %w", err)
+		}
+
+		// Delete from specs (cascades tasks, links, etc).
+		_, err = tx.Exec("DELETE FROM specs WHERE id = ?", specID)
+		if err != nil {
+			return fmt.Errorf("delete spec: %w", err)
+		}
+
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+
+		// Remove the entire spec directory from disk.
+		os.RemoveAll(absDir)
+		return nil
+	})
 }
 
 // appendIndex adds a spec entry to specd/specs/index.md.

@@ -1,3 +1,5 @@
+// Package workspace — criteria.go implements acceptance criteria CRUD.
+// Criteria are parsed from the body and stored in SQLite with markdown sync.
 package workspace
 
 import (

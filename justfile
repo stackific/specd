@@ -3,7 +3,7 @@ webdir := "styles"
 
 # Run all tests
 test:
-    go test ./...
+    go test -v -count=1 ./... 2>&1 | grep -E '(^=== RUN|^--- |^FAIL|^ok |^\?)' | tee /dev/stderr | grep -c '^--- PASS' | xargs -I{} echo "{} tests passed"
 
 # Build CSS with Vite (LightningCSS + PurgeCSS)
 web:

@@ -3,6 +3,7 @@ package workspace
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -297,5 +298,117 @@ func TestSlugify(t *testing.T) {
 		if got != want {
 			t.Errorf("Slugify(%q) = %q, want %q", input, got, want)
 		}
+	}
+}
+
+func TestInitGitignoreAppend(t *testing.T) {
+	dir := t.TempDir()
+	existing := "node_modules/\n*.log\n"
+	os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(existing), 0o644)
+
+	w, err := Init(dir, InitOptions{})
+	if err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+	w.Close()
+
+	data, _ := os.ReadFile(filepath.Join(dir, ".gitignore"))
+	content := string(data)
+	if !strings.Contains(content, "node_modules/") {
+		t.Error("should preserve existing .gitignore content")
+	}
+	if !strings.Contains(content, ".specd/") {
+		t.Error("should append .specd/")
+	}
+}
+
+func TestInitGitignoreAlreadyPresent(t *testing.T) {
+	dir := t.TempDir()
+	existing := ".specd/\nnode_modules/\n"
+	os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(existing), 0o644)
+
+	w, err := Init(dir, InitOptions{})
+	if err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+	w.Close()
+
+	data, _ := os.ReadFile(filepath.Join(dir, ".gitignore"))
+	count := strings.Count(string(data), ".specd/")
+	if count != 1 {
+		t.Errorf(".specd/ appears %d times, should be exactly 1", count)
+	}
+}
+
+func TestInitCreatesKBDir(t *testing.T) {
+	dir := t.TempDir()
+	w, err := Init(dir, InitOptions{})
+	if err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+	w.Close()
+
+	if _, err := os.Stat(filepath.Join(dir, "specd", "kb")); err != nil {
+		t.Errorf("specd/kb directory missing: %v", err)
+	}
+}
+
+func TestNewTaskDefaultStatus(t *testing.T) {
+	w := setupWorkspace(t)
+	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
+
+	task, _ := w.ReadTask("TASK-1")
+	if task.Status != "backlog" {
+		t.Errorf("default status = %q, want backlog", task.Status)
+	}
+}
+
+func TestListTasksCombinedFilters(t *testing.T) {
+	w := setupWorkspace(t)
+	w.NewSpec(NewSpecInput{Title: "S1", Type: "technical", Summary: "s1"})
+	w.NewSpec(NewSpecInput{Title: "S2", Type: "technical", Summary: "s2"})
+	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1", Status: "todo"})
+	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2", Status: "in_progress"})
+	w.NewTask(NewTaskInput{SpecID: "SPEC-2", Title: "T3", Summary: "t3", Status: "todo"})
+
+	tasks, err := w.ListTasks(ListTasksFilter{SpecID: "SPEC-1", Status: "todo"})
+	if err != nil {
+		t.Fatalf("ListTasks: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Errorf("expected 1 task (SPEC-1 + todo), got %d", len(tasks))
+	}
+}
+
+func TestListTasksLimit(t *testing.T) {
+	w := setupWorkspace(t)
+	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	for i := 0; i < 5; i++ {
+		w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
+	}
+
+	tasks, _ := w.ListTasks(ListTasksFilter{Limit: 2})
+	if len(tasks) != 2 {
+		t.Errorf("expected 2 tasks with limit, got %d", len(tasks))
+	}
+}
+
+func TestNewSpecWithSpecialChars(t *testing.T) {
+	w := setupWorkspace(t)
+
+	result, err := w.NewSpec(NewSpecInput{
+		Title:   "Special Chars",
+		Type:    "technical",
+		Summary: "Test: colons, quotes",
+		Body:    "Body with `code` and \"quotes\" and: colons",
+	})
+	if err != nil {
+		t.Fatalf("NewSpec: %v", err)
+	}
+
+	spec, _ := w.ReadSpec(result.ID)
+	if !strings.Contains(spec.Body, "`code`") {
+		t.Errorf("body lost formatting: %q", spec.Body)
 	}
 }

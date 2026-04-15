@@ -1,3 +1,5 @@
+// Package workspace — link.go implements undirected linking between
+// specs and tasks. Links are stored in SQLite and synced to frontmatter.
 package workspace
 
 import (

@@ -1,3 +1,5 @@
+// Package cli — config.go registers the config command for reading and
+// setting workspace configuration values like user.name.
 package cli
 
 import (

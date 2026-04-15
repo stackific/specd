@@ -1,3 +1,5 @@
+// Package cli — serve.go registers the serve command for starting the
+// embedded HTTP server that hosts the read-write web UI.
 package cli
 
 import (

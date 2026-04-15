@@ -88,6 +88,15 @@ styles/src/styles/pages/<page>.css                  Page CSS (imported in index.
 - `styles/vite.config.js` build pipeline
 - `styles/public/vendor/beer.min.css` and the vendoring approach
 
+# Go project conventions
+
+- The `citations` table uses `from_id` (plain text), not a foreign key to `specs` or `tasks`. Deleting a spec or task must explicitly `DELETE FROM citations WHERE from_kind = '...' AND from_id = '...'` — it will not cascade via FK.
+- Every workspace mutation acquires the flock via `w.WithLock(func() error { ... })`. Read-only operations (candidates, search, read) do not need the lock.
+- Tests use `setupWorkspace(t)` from `workspace_test.go` which calls `Init` in a `t.TempDir()`. Tests that need KB + spec + task use `setupWithKB(t)` from `cite_test.go`.
+- Colocate tests with their source: `spec.go` → `workspace_test.go`, `kb.go` → `kb_test.go`, `cite.go` → `cite_test.go`, etc. Do not put tests in a single monolithic file.
+- `NewSpecResult` and `NewTaskResult` include a `Candidates` field computed outside the lock after creation. This is intentional — candidates are read-only.
+- PDF text extraction uses `ledongthuc/pdf` (pure-Go, no CGO). It has limited format support compared to go-fitz/MuPDF but keeps the build CGO-free to match `modernc.org/sqlite`.
+
 # Go template conventions
 
 - Templates in `templates/` (layouts, partials, pages) — embedded via `embed.go`
