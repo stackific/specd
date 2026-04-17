@@ -1,0 +1,168 @@
+{{define "content"}}
+<section class="container-xl p-3 m:p-5">
+  <div class="mb-5">
+    <div class="grid no-space">
+      <div class="s8">
+        <h1 class="text-4 m:text-5 fw-7 lh-1">Knowledge Base</h1>
+      </div>
+      <div class="s4 right-align">
+        <button class="round" data-ui="#add-kb-dialog">
+          <i aria-hidden="true">add</i>
+          <span>Add Document</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <form method="get" action="/kb" class="mb-4">
+    <div class="grid no-space">
+      <div class="s12 m8 l6">
+        <div class="field label prefix border">
+          <i aria-hidden="true">search</i>
+          <input type="search" name="q" value="{{.Data.Query}}" autocomplete="off" placeholder=" " />
+          <label>Search KB chunks...</label>
+        </div>
+      </div>
+    </div>
+    {{if .Data.FilterType}}
+    <input type="hidden" name="type" value="{{.Data.FilterType}}" />
+    {{end}}
+  </form>
+
+  <nav class="mb-4" aria-label="Filter by type">
+    <a href="/kb" class="chip small{{if not .Data.FilterType}} fill{{end}}">All</a>
+    <a href="/kb?type=md{{if .Data.Query}}&q={{.Data.Query}}{{end}}" class="chip small{{if eq .Data.FilterType "md"}} fill{{end}}">
+      <i aria-hidden="true">article</i>
+      <span>Markdown</span>
+    </a>
+    <a href="/kb?type=html{{if .Data.Query}}&q={{.Data.Query}}{{end}}" class="chip small{{if eq .Data.FilterType "html"}} fill{{end}}">
+      <i aria-hidden="true">code</i>
+      <span>HTML</span>
+    </a>
+    <a href="/kb?type=pdf{{if .Data.Query}}&q={{.Data.Query}}{{end}}" class="chip small{{if eq .Data.FilterType "pdf"}} fill{{end}}">
+      <i aria-hidden="true">picture_as_pdf</i>
+      <span>PDF</span>
+    </a>
+    <a href="/kb?type=txt{{if .Data.Query}}&q={{.Data.Query}}{{end}}" class="chip small{{if eq .Data.FilterType "txt"}} fill{{end}}">
+      <i aria-hidden="true">text_snippet</i>
+      <span>Text</span>
+    </a>
+  </nav>
+
+  {{if .Data.SearchResults}}
+  <div class="mb-5">
+    <h2 class="text-2 fw-6 lh-2 mb-3">Search Results</h2>
+    {{range .Data.SearchResults}}
+    <a href="/kb/{{.DocID}}?chunk={{.ChunkPosition}}" class="no-line">
+      <article class="surface-container-low round p-3 mb-2">
+        <p class="text-1 fw-5 lh-2">
+          {{.DocTitle}} · chunk {{.ChunkPosition}}{{if .Page}} · page {{.Page}}{{end}}
+        </p>
+        <p class="text--1 mt-1">score {{printf "%.2f" .Score}} · {{.MatchType}}</p>
+        <p class="text-1 lh-3 mt-1">{{.Text}}</p>
+      </article>
+    </a>
+    {{end}}
+  </div>
+  {{else if .Data.Query}}
+  <p class="text-2 lh-3 mb-5">No results found for "{{.Data.Query}}".</p>
+  {{end}}
+
+  {{if .Data.Docs}}
+  <h2 class="text-2 fw-6 lh-2 mb-3">Documents</h2>
+  <table class="border">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Type</th>
+        <th class="m l">Added</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Data.Docs}}
+      <tr>
+        <td><span class="chip small no-margin">{{.ID}}</span></td>
+        <td class="fw-5"><a href="/kb/{{.ID}}">{{.Title}}</a></td>
+        <td>
+          {{if eq .SourceType "md"}}<i aria-hidden="true">article</i>
+          {{else if eq .SourceType "html"}}<i aria-hidden="true">code</i>
+          {{else if eq .SourceType "pdf"}}<i aria-hidden="true">picture_as_pdf</i>
+          {{else}}<i aria-hidden="true">text_snippet</i>
+          {{end}}
+          {{.SourceType}}
+        </td>
+        <td class="m l text--1">{{.AddedAt}}</td>
+        <td>
+          <form method="post" action="/kb/{{.ID}}/delete" class="inline"
+            onsubmit="return confirm('Remove {{.ID}}? It will be moved to trash.')">
+            <button type="submit" class="circle small transparent" title="Remove">
+              <i aria-hidden="true">delete</i>
+            </button>
+          </form>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else if not .Data.Query}}
+  <article class="surface-container-low round p-5">
+    <p class="text-2 lh-3">No KB documents yet. Click <strong>Add Document</strong> to upload one.</p>
+  </article>
+  {{end}}
+</section>
+
+<dialog id="add-kb-dialog" aria-label="Add KB document" class="sd-dialog-form">
+  <h5>Add Document</h5>
+  <p class="text--1 mt-2">Upload a file (md, html, pdf, txt) or provide a URL.</p>
+  {{template "add-kb-form" .Data.KBForm}}
+</dialog>
+<script>
+  document.getElementById("kb-file-input").addEventListener("change", function () {
+    var el = document.getElementById("kb-file-name");
+    el.textContent = this.files.length ? this.files[0].name : "md, html, pdf, or txt";
+  });
+</script>
+{{end}}
+
+{{define "add-kb-form"}}
+<form hx-post="/kb" hx-target="this" hx-swap="outerHTML" hx-encoding="multipart/form-data" class="mt-4" id="kb-add-form">
+  {{if .Error}}
+  <div class="sd-form-error error-container round p-3 mb-3" role="alert">
+    <i aria-hidden="true">error</i>
+    <span>{{.Error}}</span>
+  </div>
+  {{end}}
+  <input type="file" name="file" accept=".md,.html,.htm,.pdf,.txt" id="kb-file-input" hidden />
+  <div class="border round p-4 mb-3 center-align">
+    <i class="large" aria-hidden="true">upload_file</i>
+    <p class="mt-2">
+      <button type="button" class="small border" onclick="document.getElementById('kb-file-input').click()">
+        <i aria-hidden="true">attach_file</i>
+        <span>Choose file</span>
+      </button>
+    </p>
+    <p class="text--1 mt-2" id="kb-file-name">md, html, pdf, or txt</p>
+  </div>
+  <div class="center-align mb-3">
+    <span class="text--1">— or —</span>
+  </div>
+  <div class="field label border mb-3">
+    <input type="url" name="url" value="{{.URL}}" id="kb-url-input" placeholder=" " />
+    <label>URL</label>
+  </div>
+  <div class="field label border mb-3">
+    <input type="text" name="title" value="{{.Title}}" placeholder=" " />
+    <label>Title (optional, auto-detected)</label>
+  </div>
+  <div class="field label border mb-3">
+    <input type="text" name="note" value="{{.Note}}" placeholder=" " />
+    <label>Note (optional)</label>
+  </div>
+  <nav class="right-align no-space">
+    <button type="button" class="transparent link" data-ui="#add-kb-dialog">Cancel</button>
+    <button type="submit" class="ml-2">Add</button>
+  </nav>
+</form>
+{{end}}

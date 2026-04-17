@@ -40,7 +40,7 @@ func init() {
 			}
 			defer wt.Stop()
 
-			srv, err := web.NewServer(specd.TemplateFS, specd.DistFS, specd.AssetsFS)
+			srv, err := web.NewServer(w, specd.TemplateFS, specd.DistFS, specd.AssetsFS)
 			if err != nil {
 				return fmt.Errorf("create web server: %w", err)
 			}

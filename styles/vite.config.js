@@ -55,7 +55,7 @@ function purgeOwnCss() {
         defaultExtractor: (content) => content.match(/[\w-/:]+(?<!:)/g) || [],
         safelist: {
           standard: [/^is-/, /^active$/, /^dark$/, /^ms$/],
-          deep: [/active$/, /dark$/],
+          deep: [/active$/, /dark$/, /kr-/],
           greedy: [/^field/, /^chip/, /^dialog/, /^nav/, /^snackbar/],
         },
       });

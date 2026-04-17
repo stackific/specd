@@ -10,7 +10,7 @@ import (
 func TestDependAndFrontmatter(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "S"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "S"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "T1"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "T2"})
 
@@ -34,7 +34,7 @@ func TestDependAndFrontmatter(t *testing.T) {
 func TestUndepend(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "S"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "S"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "T1"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "T2"})
 	w.Depend("TASK-2", []string{"TASK-1"})
@@ -52,7 +52,7 @@ func TestUndepend(t *testing.T) {
 func TestDependCycleDetection(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "S"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "S"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "T1"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "T2"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T3", Summary: "T3"})
@@ -74,7 +74,7 @@ func TestDependCycleDetection(t *testing.T) {
 func TestDependSelfCycle(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "S"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "S"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "T1"})
 
 	err := w.Depend("TASK-1", []string{"TASK-1"})
@@ -85,7 +85,7 @@ func TestDependSelfCycle(t *testing.T) {
 
 func TestDependNonexistentBlocker(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
 
 	err := w.Depend("TASK-1", []string{"TASK-999"})
@@ -96,7 +96,7 @@ func TestDependNonexistentBlocker(t *testing.T) {
 
 func TestDependNonexistentBlocked(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
 
 	err := w.Depend("TASK-999", []string{"TASK-1"})
@@ -107,7 +107,7 @@ func TestDependNonexistentBlocked(t *testing.T) {
 
 func TestDependMultipleBlockers(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T3", Summary: "t3"})
@@ -125,7 +125,7 @@ func TestDependMultipleBlockers(t *testing.T) {
 
 func TestDependIndirectCycle(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "A", Summary: "a"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "B", Summary: "b"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "C", Summary: "c"})
@@ -140,7 +140,7 @@ func TestDependIndirectCycle(t *testing.T) {
 
 func TestUndependNonexistentDep(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
 
 	err := w.Undepend("TASK-1", []string{"TASK-999"})
@@ -151,7 +151,7 @@ func TestUndependNonexistentDep(t *testing.T) {
 
 func TestUndependPartial(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T3", Summary: "t3"})

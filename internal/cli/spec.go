@@ -83,7 +83,7 @@ func init() {
 	}
 
 	newSpecCmd.Flags().StringVar(&specTitle, "title", "", "spec title (required)")
-	newSpecCmd.Flags().StringVar(&specType, "type", "", "spec type: business, technical, non-technical (required)")
+	newSpecCmd.Flags().StringVar(&specType, "type", "", "spec type: business, functional, non-functional (required)")
 	newSpecCmd.Flags().StringVar(&specSummary, "summary", "", "one-line summary (required)")
 	newSpecCmd.Flags().StringVar(&specBody, "body", "", "markdown body")
 	newSpecCmd.Flags().StringSliceVar(&specLinks, "link", nil, "link to SPEC-N (repeatable)")

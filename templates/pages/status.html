@@ -1,0 +1,133 @@
+{{define "content"}}
+<section class="container-xl p-3 m:p-5">
+  <h1 class="text-4 m:text-5 fw-7 lh-1 mb-5">Status</h1>
+
+  {{if .Data.Status}}
+  <div class="grid mb-5">
+    <!-- Specs card -->
+    <article class="s12 m6 l3 surface-container-low round p-4">
+      <i class="large" aria-hidden="true">description</i>
+      <h2 class="text-3 fw-7 mt-2">{{.Data.Status.Specs.Total}}</h2>
+      <p class="text-1 fw-5">Specs</p>
+      <p class="text--1 mt-1">{{.Data.Status.Specs.Business}} business · {{.Data.Status.Specs.Functional}} functional · {{.Data.Status.Specs.NonFunctional}} non-functional</p>
+    </article>
+
+    <!-- Tasks card -->
+    <article class="s12 m6 l3 surface-container-low round p-4">
+      <i class="large" aria-hidden="true">checklist</i>
+      <h2 class="text-3 fw-7 mt-2">{{.Data.Status.Tasks.Total}}</h2>
+      <p class="text-1 fw-5">Tasks</p>
+      {{with .Data.Status.Tasks}}
+      <p class="text--1 mt-1">{{.Done}} done · {{add .Backlog (add .Todo (add .InProgress .PendingVerification))}} active · {{.Blocked}} blocked · {{add .Cancelled .WontFix}} closed</p>
+      {{end}}
+    </article>
+
+    <!-- KB card -->
+    <article class="s12 m6 l3 surface-container-low round p-4">
+      <i class="large" aria-hidden="true">menu_book</i>
+      <h2 class="text-3 fw-7 mt-2">{{.Data.Status.KB.Total}}</h2>
+      <p class="text-1 fw-5">KB Docs</p>
+      <p class="text--1 mt-1">{{.Data.Status.KB.Chunks}} chunks · {{.Data.Status.KB.Connections}} connections</p>
+      {{if .Data.Status.KB.Total}}
+      <p class="text--2 mt-1">{{.Data.Status.KB.Markdown}} md · {{.Data.Status.KB.HTML}} html · {{.Data.Status.KB.PDF}} pdf · {{.Data.Status.KB.Text}} txt</p>
+      {{end}}
+    </article>
+
+    <!-- Health card -->
+    <article class="s12 m6 l3 surface-container-low round p-4">
+      <i class="large" aria-hidden="true">monitoring</i>
+      {{if .Data.Status.Tidy.Stale}}
+      <h2 class="text-3 fw-7 mt-2 error-text">Stale</h2>
+      {{else}}
+      <h2 class="text-3 fw-7 mt-2">OK</h2>
+      {{end}}
+      <p class="text-1 fw-5">Tidy</p>
+      <p class="text--1 mt-1">Last {{.Data.Status.Tidy.DaysAgo}}d ago</p>
+    </article>
+  </div>
+
+  <!-- Task breakdown -->
+  <div class="mb-5">
+    <h2 class="text-2 fw-6 lh-2 mb-3">Tasks by Status</h2>
+    <table class="border">
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Backlog</td><td>{{.Data.Status.Tasks.Backlog}}</td></tr>
+        <tr><td>To Do</td><td>{{.Data.Status.Tasks.Todo}}</td></tr>
+        <tr><td>In Progress</td><td>{{.Data.Status.Tasks.InProgress}}</td></tr>
+        <tr><td>Blocked</td><td>{{.Data.Status.Tasks.Blocked}}</td></tr>
+        <tr><td>Pending Verification</td><td>{{.Data.Status.Tasks.PendingVerification}}</td></tr>
+        <tr><td>Done</td><td>{{.Data.Status.Tasks.Done}}</td></tr>
+        <tr><td>Cancelled</td><td>{{.Data.Status.Tasks.Cancelled}}</td></tr>
+        <tr><td>Won't Fix</td><td>{{.Data.Status.Tasks.WontFix}}</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Lint issues -->
+  <div class="mb-5">
+    <h2 class="text-2 fw-6 lh-2 mb-3">Lint</h2>
+    {{if .Data.LintIssues}}
+    <table class="border">
+      <thead>
+        <tr>
+          <th>Severity</th>
+          <th>Category</th>
+          <th class="m l">ID</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Data.LintIssues}}
+        <tr>
+          <td>
+            {{if eq .Severity "error"}}
+            <span class="chip small no-margin error">error</span>
+            {{else}}
+            <span class="chip small no-margin">warning</span>
+            {{end}}
+          </td>
+          <td class="text--1">{{.Category}}</td>
+          <td class="m l text--1 fw-5">{{.ID}}</td>
+          <td class="text--1">{{.Message}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+    {{else}}
+    <p class="text-1 lh-3"><i aria-hidden="true">check_circle</i> No issues found.</p>
+    {{end}}
+  </div>
+
+  <!-- Trash summary -->
+  <div class="mb-5">
+    <h2 class="text-2 fw-6 lh-2 mb-2">Trash</h2>
+    {{if gt .Data.Status.Trash.Total 0}}
+    <p class="text-1 lh-3">
+      <a href="/trash">{{.Data.Status.Trash.Total}} items</a>
+      ({{.Data.Status.Trash.Specs}} specs, {{.Data.Status.Trash.Tasks}} tasks, {{.Data.Status.Trash.KB}} kb)
+    </p>
+    {{else}}
+    <p class="text-1 lh-3"><i aria-hidden="true">check_circle</i> Empty.</p>
+    {{end}}
+  </div>
+
+  <!-- Rejected files summary -->
+  <div class="mb-5">
+    <h2 class="text-2 fw-6 lh-2 mb-2">Rejected Files</h2>
+    {{if gt .Data.Status.Rejected 0}}
+    <p class="text-1 lh-3">
+      <a href="/rejected">{{.Data.Status.Rejected}} files</a>
+    </p>
+    {{else}}
+    <p class="text-1 lh-3"><i aria-hidden="true">check_circle</i> None.</p>
+    {{end}}
+  </div>
+  {{end}}
+</section>
+{{end}}

@@ -6,7 +6,7 @@ import (
 
 const specMD = `---
 title: OAuth with GitHub
-type: technical
+type: functional
 summary: OAuth flow using GitHub as an identity provider
 linked_specs: [SPEC-1, SPEC-7]
 cites:
@@ -58,7 +58,7 @@ func TestParseSpec(t *testing.T) {
 	if fm.Title != "OAuth with GitHub" {
 		t.Errorf("title = %q", fm.Title)
 	}
-	if fm.Type != "technical" {
+	if fm.Type != "functional" {
 		t.Errorf("type = %q", fm.Type)
 	}
 	if len(fm.LinkedSpecs) != 2 {
@@ -123,7 +123,7 @@ func TestParseCriteria(t *testing.T) {
 func TestRenderSpecRoundtrip(t *testing.T) {
 	fm := &SpecFrontmatter{
 		Title:   "Test Spec",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "A test spec",
 	}
 	body := "# Test Spec\n\nBody content.\n"

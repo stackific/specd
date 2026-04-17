@@ -91,7 +91,7 @@ Minimal frontmatter. Content is freeform.
 ```markdown
 ---
 title: OAuth with GitHub
-type: technical
+type: functional
 summary: OAuth flow using GitHub as an identity provider
 linked_specs: [SPEC-1, SPEC-7]
 cites:
@@ -175,7 +175,7 @@ CREATE TABLE specs (
   id           TEXT PRIMARY KEY,                -- "SPEC-42"
   slug         TEXT NOT NULL,
   title        TEXT NOT NULL,
-  type         TEXT NOT NULL CHECK (type IN ('business','technical','non-technical')),
+  type         TEXT NOT NULL CHECK (type IN ('business','functional','non-functional')),
   summary      TEXT NOT NULL,
   body         TEXT NOT NULL,
   path         TEXT NOT NULL,                   -- relative to workspace root
@@ -391,8 +391,8 @@ specd workspace remove <nickname>
 ### 7.2 Specs
 
 ```
-specd new-spec --title "<title>" --type <business|technical|non-technical>
-               --summary "<one-line>" --body "<markdown body>"
+specd new-spec --title "<title>" --type <business|functional|non-functional>
+               --body "<markdown body>" [--summary "<one-line>"]
                [--link SPEC-N]... [--cite KB-N:position]... [--dry-run]
 ```
 
@@ -438,8 +438,8 @@ specd reorder spec <id> --before <id> | --after <id> | --to <position>
 ### 7.3 Tasks
 
 ```
-specd new-task --spec-id SPEC-N --title "<title>" --summary "<one-line>"
-               --body "<markdown body>" [--status backlog]
+specd new-task --spec-id SPEC-N --title "<title>"
+               --body "<markdown body>" [--summary "<one-line>"] [--status backlog]
                [--link TASK-N]... [--depends-on TASK-N]...
                [--cite KB-N:position]... [--dry-run]
 ```
@@ -839,8 +839,8 @@ Do not create files under `specd/` manually — they will be rejected.
 
 | Task | Command |
 |------|---------|
-| Create a spec | `specd new-spec --title "..." --type <business\|technical\|non-technical> --summary "..." --body "..."` |
-| Create a task | `specd new-task --spec-id SPEC-N --title "..." --summary "..." --body "..."` |
+| Create a spec | `specd new-spec --title "..." --type <business\|functional\|non-functional> --body "..."` |
+| Create a task | `specd new-task --spec-id SPEC-N --title "..." --body "..."` |
 | Add a reference doc | `specd kb add <path-or-url> --title "..." --note "..."` |
 | Free-text search | `specd search "query" --kind all` |
 | KB-only search | `specd kb search "query"` |
@@ -874,7 +874,7 @@ Do not create files under `specd/` manually — they will be rejected.
 2. Present ready tasks to the user.
 3. On selection, `specd move TASK-N --status in_progress`.
 
-**Brownfield bootstrap:** when specd is newly installed in an existing project with code but no specs, read the codebase to populate initial specs and tasks. Identify major subsystems (technical specs), user-facing features (business specs), and TODOs/gaps (tasks). Use existing commands; there is no special bootstrap command.
+**Brownfield bootstrap:** when specd is newly installed in an existing project with code but no specs, read the codebase to populate initial specs and tasks. Identify major subsystems (functional specs), user-facing features (business specs), and TODOs/gaps (tasks). Use existing commands; there is no special bootstrap command.
 
 **System-managed frontmatter fields** (`linked_specs`, `linked_tasks`, `depends_on`, `cites`) must never be edited by hand. Always use CLI commands.
 

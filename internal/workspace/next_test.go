@@ -8,7 +8,7 @@ import (
 func TestNextBasicOrdering(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T3", Summary: "t3", Status: "todo"})
@@ -35,7 +35,7 @@ func TestNextBasicOrdering(t *testing.T) {
 func TestNextReadyBeforeNotReady(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Blocker", Summary: "b", Status: "in_progress"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Blocked", Summary: "blocked", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Free", Summary: "free", Status: "todo"})
@@ -69,7 +69,7 @@ func TestNextReadyBeforeNotReady(t *testing.T) {
 func TestNextPartiallyDoneBeforeFresh(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	body := "## Acceptance criteria\n\n- [ ] First\n- [ ] Second\n"
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Fresh", Summary: "fresh", Status: "todo", Body: body})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Partial", Summary: "partial", Status: "todo", Body: body})
@@ -100,7 +100,7 @@ func TestNextPartiallyDoneBeforeFresh(t *testing.T) {
 func TestNextHigherProgressFirst(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	body3 := "## Acceptance criteria\n\n- [ ] A\n- [ ] B\n- [ ] C\n"
 	body2 := "## Acceptance criteria\n\n- [ ] A\n- [ ] B\n"
 
@@ -126,8 +126,8 @@ func TestNextHigherProgressFirst(t *testing.T) {
 func TestNextFilterBySpec(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S1", Type: "technical", Summary: "s1"})
-	w.NewSpec(NewSpecInput{Title: "S2", Type: "technical", Summary: "s2"})
+	w.NewSpec(NewSpecInput{Title: "S1", Type: "functional", Summary: "s1"})
+	w.NewSpec(NewSpecInput{Title: "S2", Type: "functional", Summary: "s2"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-2", Title: "T2", Summary: "t2", Status: "todo"})
 
@@ -146,7 +146,7 @@ func TestNextFilterBySpec(t *testing.T) {
 func TestNextLimit(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	for i := 0; i < 5; i++ {
 		w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t", Status: "todo"})
 	}
@@ -163,7 +163,7 @@ func TestNextLimit(t *testing.T) {
 func TestNextOnlyTodoTasks(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Backlog", Summary: "b", Status: "backlog"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "InProg", Summary: "ip", Status: "in_progress"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Todo", Summary: "todo", Status: "todo"})
@@ -184,7 +184,7 @@ func TestNextOnlyTodoTasks(t *testing.T) {
 func TestNextReadyWhenDepDone(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Dep", Summary: "dep", Status: "done"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Work", Summary: "work", Status: "todo"})
 	w.Depend("TASK-2", []string{"TASK-1"})
@@ -204,7 +204,7 @@ func TestNextReadyWhenDepDone(t *testing.T) {
 func TestNextNoCriteria(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t", Status: "todo"})
 
 	result, err := w.Next("", 10)
@@ -236,7 +236,7 @@ func TestNextEmpty(t *testing.T) {
 func TestNextDepCycleError(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "A", Summary: "a", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "B", Summary: "b", Status: "todo"})
 
@@ -257,7 +257,7 @@ func TestNextDepCycleError(t *testing.T) {
 func TestNextComplexSorting(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	body := "## Acceptance criteria\n\n- [ ] A\n- [ ] B\n- [ ] C\n- [ ] D\n"
 
 	// Create tasks in specific order to test all 4 sorting levels.

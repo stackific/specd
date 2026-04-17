@@ -21,7 +21,7 @@ func TestTrashListEmpty(t *testing.T) {
 func TestTrashDeleteAndList(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "To delete", Type: "technical", Summary: "will be deleted"})
+	w.NewSpec(NewSpecInput{Title: "To delete", Type: "functional", Summary: "will be deleted"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Task to delete", Summary: "will be deleted"})
 
 	// Delete the task.
@@ -55,7 +55,7 @@ func TestTrashDeleteAndList(t *testing.T) {
 func TestTrashRestoreTask(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "Parent", Type: "technical", Summary: "parent spec"})
+	w.NewSpec(NewSpecInput{Title: "Parent", Type: "functional", Summary: "parent spec"})
 	w.NewTask(NewTaskInput{
 		SpecID:  "SPEC-1",
 		Title:   "Restorable",
@@ -147,7 +147,7 @@ func TestTrashRestoreSpec(t *testing.T) {
 func TestTrashRestoreWithIDConflict(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "Original", Type: "technical", Summary: "original spec"})
+	w.NewSpec(NewSpecInput{Title: "Original", Type: "functional", Summary: "original spec"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "To delete", Summary: "delete me"})
 
 	if err := w.DeleteTask("TASK-1"); err != nil {
@@ -187,7 +187,7 @@ func TestTrashRestoreWithIDConflict(t *testing.T) {
 func TestPurgeAllTrash(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S1", Type: "technical", Summary: "spec one"})
+	w.NewSpec(NewSpecInput{Title: "S1", Type: "functional", Summary: "spec one"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "task one"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "task two"})
 

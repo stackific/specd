@@ -52,7 +52,7 @@ func setupWithKB(t *testing.T) *Workspace {
 	// Create a spec.
 	w.NewSpec(NewSpecInput{
 		Title:   "OAuth with GitHub",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "OAuth flow using GitHub",
 		Body:    "# OAuth\n\nBody.",
 	})

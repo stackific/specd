@@ -20,10 +20,10 @@ type StatusResult struct {
 
 // StatusSpecs holds spec counts.
 type StatusSpecs struct {
-	Total      int `json:"total"`
-	Business   int `json:"business"`
-	Technical  int `json:"technical"`
-	NonTech    int `json:"non_technical"`
+	Total         int `json:"total"`
+	Business      int `json:"business"`
+	Functional    int `json:"functional"`
+	NonFunctional int `json:"non_functional"`
 }
 
 // StatusTasks holds task counts by status.
@@ -79,8 +79,8 @@ func (w *Workspace) Status(detailed bool) (*StatusResult, error) {
 	// Spec counts.
 	w.DB.QueryRow("SELECT COUNT(*) FROM specs").Scan(&result.Specs.Total)
 	w.DB.QueryRow("SELECT COUNT(*) FROM specs WHERE type = 'business'").Scan(&result.Specs.Business)
-	w.DB.QueryRow("SELECT COUNT(*) FROM specs WHERE type = 'technical'").Scan(&result.Specs.Technical)
-	w.DB.QueryRow("SELECT COUNT(*) FROM specs WHERE type = 'non-technical'").Scan(&result.Specs.NonTech)
+	w.DB.QueryRow("SELECT COUNT(*) FROM specs WHERE type = 'functional'").Scan(&result.Specs.Functional)
+	w.DB.QueryRow("SELECT COUNT(*) FROM specs WHERE type = 'non-functional'").Scan(&result.Specs.NonFunctional)
 
 	// Task counts by status.
 	w.DB.QueryRow("SELECT COUNT(*) FROM tasks").Scan(&result.Tasks.Total)
@@ -136,10 +136,37 @@ func (w *Workspace) Status(detailed bool) (*StatusResult, error) {
 	return result, nil
 }
 
+// RejectedFile represents a file in the rejected_files table.
+type RejectedFile struct {
+	Path       string `json:"path"`
+	DetectedAt string `json:"detected_at"`
+	Reason     string `json:"reason"`
+}
+
+// ListRejectedFiles returns all entries from the rejected_files table.
+func (w *Workspace) ListRejectedFiles() ([]RejectedFile, error) {
+	rows, err := w.DB.Query(
+		"SELECT path, detected_at, reason FROM rejected_files ORDER BY detected_at DESC")
+	if err != nil {
+		return nil, fmt.Errorf("query rejected files: %w", err)
+	}
+	defer rows.Close()
+
+	var files []RejectedFile
+	for rows.Next() {
+		var f RejectedFile
+		if err := rows.Scan(&f.Path, &f.DetectedAt, &f.Reason); err != nil {
+			return nil, err
+		}
+		files = append(files, f)
+	}
+	return files, rows.Err()
+}
+
 // FormatStatus returns a human-readable status string.
 func FormatStatus(s *StatusResult) string {
-	out := fmt.Sprintf("Specs: %d (%d business, %d technical, %d non-technical)\n",
-		s.Specs.Total, s.Specs.Business, s.Specs.Technical, s.Specs.NonTech)
+	out := fmt.Sprintf("Specs: %d (%d business, %d functional, %d non-functional)\n",
+		s.Specs.Total, s.Specs.Business, s.Specs.Functional, s.Specs.NonFunctional)
 
 	out += fmt.Sprintf("Tasks: %d total\n", s.Tasks.Total)
 	out += fmt.Sprintf("  backlog: %d, todo: %d, in_progress: %d, blocked: %d\n",

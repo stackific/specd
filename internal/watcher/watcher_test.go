@@ -51,7 +51,7 @@ func TestWatcherDetectsTaskEdit(t *testing.T) {
 	// Create a spec and task via CLI.
 	_, err := w.NewSpec(workspace.NewSpecInput{
 		Title:   "Auth",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "Authentication spec",
 		Body:    "Body.",
 	})
@@ -108,7 +108,7 @@ func TestWatcherDetectsSpecTitleEdit(t *testing.T) {
 
 	specResult, err := w.NewSpec(workspace.NewSpecInput{
 		Title:   "Original Title",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "A test spec",
 		Body:    "Body content.",
 	})
@@ -138,7 +138,7 @@ func TestWatcherSkipsCLIWrite(t *testing.T) {
 
 	_, err := w.NewSpec(workspace.NewSpecInput{
 		Title:   "Test Spec",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "A test spec",
 		Body:    "Body.",
 	})
@@ -181,7 +181,7 @@ func TestWatcherHandlesTaskDeletion(t *testing.T) {
 
 	w.NewSpec(workspace.NewSpecInput{
 		Title:   "S",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "spec s",
 		Body:    "Body.",
 	})

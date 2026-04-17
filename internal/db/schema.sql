@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS specs (
   id           TEXT PRIMARY KEY,                -- "SPEC-42"
   slug         TEXT NOT NULL,
   title        TEXT NOT NULL,
-  type         TEXT NOT NULL CHECK (type IN ('business','technical','non-technical')),
+  type         TEXT NOT NULL CHECK (type IN ('business','functional','non-functional')),
   summary      TEXT NOT NULL,
   body         TEXT NOT NULL,
   path         TEXT NOT NULL,                   -- relative to workspace root

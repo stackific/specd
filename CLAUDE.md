@@ -1,7 +1,17 @@
-Read AGENTS.md
+Read AGENTS.md, first.
+
+# Behaviour
+
+- When the user tells you to stop, plan, or think — stop immediately. Do not continue writing code. Do not "finish up" what you're doing. Stop.
+- Never declare something "fixed" or "done" without verifying it visually through the Playwright MCP server. Build, reload, interact, screenshot. If the screenshot shows a problem, fix it before responding.
+- Do not give up after one attempt. When something doesn't work, diagnose the root cause (inspect computed styles, check which CSS file is loaded, read the framework docs), fix it, and verify again.
+- Address every concern the user raises. Do not skip messages, selectively respond, or bury acknowledgments in a wall of text.
 
 # Rules
 
+- Write production-quality code. Validate all user inputs (trim whitespace, reject empty/whitespace-only values, collapse consecutive spaces). Handle all error paths properly — never render a blank page with a raw error string. Use the htmx native approach for dialog form errors: re-render the form partial with 422 status, preserved values, and inline error banner.
+- Do not take shortcuts or do surface-level work. Think through edge cases, verify changes visually using the Playwright MCP server before declaring them done, and iterate until the result is actually correct.
+- Work with the existing framework (BeerCSS, htmx) rather than fighting it. Read the framework docs first. Understand how framework classes and attributes work before writing custom CSS overrides. Prefer the simplest solution that works within the framework. Never use `!important` to fight framework rules.
 - When reference files exist (e.g. `ref/`), copy them directly instead of rewriting from scratch. Do not "adapt" or "simplify" — use the original as-is and only make the specific changes requested.
 - Before modifying any file, read how it is actually used in context (imports, consumers, layout). Do not assume.
 - Do not empty, gut, or zero out config values (like `social: {}`) unless explicitly asked to. Preserve existing data.

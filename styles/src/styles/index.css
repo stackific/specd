@@ -44,3 +44,11 @@
 
 /* 7. Layout chrome globals */
 @import "./layout.css";
+
+/* 8. Component styles */
+@import "./components/dialog-form.css";
+
+/* 9. Page styles */
+@import "./pages/board.css";
+@import "./pages/detail.css";
+@import "./pages/kb-detail.css";

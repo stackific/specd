@@ -11,7 +11,7 @@ import (
 
 func TestUpdateSpecTitle(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "Original", Type: "technical", Summary: "s", Body: "body"})
+	w.NewSpec(NewSpecInput{Title: "Original", Type: "functional", Summary: "s", Body: "body"})
 
 	newTitle := "Updated Title"
 	err := w.UpdateSpec("SPEC-1", UpdateSpecInput{Title: &newTitle})
@@ -27,7 +27,7 @@ func TestUpdateSpecTitle(t *testing.T) {
 
 func TestUpdateSpecType(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 
 	newType := "business"
 	w.UpdateSpec("SPEC-1", UpdateSpecInput{Type: &newType})
@@ -40,7 +40,7 @@ func TestUpdateSpecType(t *testing.T) {
 
 func TestUpdateSpecSummary(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "old"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "old"})
 
 	newSummary := "new summary"
 	w.UpdateSpec("SPEC-1", UpdateSpecInput{Summary: &newSummary})
@@ -53,7 +53,7 @@ func TestUpdateSpecSummary(t *testing.T) {
 
 func TestUpdateSpecBody(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s", Body: "old body"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s", Body: "old body"})
 
 	newBody := "new body content"
 	w.UpdateSpec("SPEC-1", UpdateSpecInput{Body: &newBody})
@@ -66,8 +66,8 @@ func TestUpdateSpecBody(t *testing.T) {
 
 func TestUpdateSpecPreservesLinks(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
-	w.NewSpec(NewSpecInput{Title: "B", Type: "technical", Summary: "b"})
+	w.NewSpec(NewSpecInput{Title: "A", Type: "functional", Summary: "a"})
+	w.NewSpec(NewSpecInput{Title: "B", Type: "functional", Summary: "b"})
 	w.Link("SPEC-1", "SPEC-2")
 
 	newTitle := "Updated A"
@@ -92,7 +92,7 @@ func TestUpdateSpecNotFound(t *testing.T) {
 
 func TestUpdateSpecPartial(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "Original", Type: "technical", Summary: "orig-summary", Body: "orig-body"})
+	w.NewSpec(NewSpecInput{Title: "Original", Type: "functional", Summary: "orig-summary", Body: "orig-body"})
 
 	// Only update title, everything else preserved.
 	newTitle := "New Title"
@@ -114,7 +114,7 @@ func TestUpdateSpecPartial(t *testing.T) {
 
 func TestRenameSpec(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "Old Name", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "Old Name", Type: "functional", Summary: "s"})
 
 	err := w.RenameSpec("SPEC-1", "Brand New Name")
 	if err != nil {
@@ -141,7 +141,7 @@ func TestRenameSpec(t *testing.T) {
 
 func TestRenameSpecUpdatesTaskPaths(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "Spec A", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "Spec A", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Task 1", Summary: "t"})
 
 	w.RenameSpec("SPEC-1", "Renamed Spec")
@@ -164,7 +164,7 @@ func TestRenameSpecNotFound(t *testing.T) {
 
 func TestDeleteSpec(t *testing.T) {
 	w := setupWorkspace(t)
-	result, _ := w.NewSpec(NewSpecInput{Title: "To Delete", Type: "technical", Summary: "s"})
+	result, _ := w.NewSpec(NewSpecInput{Title: "To Delete", Type: "functional", Summary: "s"})
 
 	err := w.DeleteSpec("SPEC-1")
 	if err != nil {
@@ -193,7 +193,7 @@ func TestDeleteSpec(t *testing.T) {
 
 func TestDeleteSpecCascadesTasks(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
 
 	w.DeleteSpec("SPEC-1")
@@ -217,7 +217,7 @@ func TestDeleteSpecNotFound(t *testing.T) {
 
 func TestUpdateTaskTitle(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Original", Summary: "s"})
 
 	newTitle := "Updated Task"
@@ -234,7 +234,7 @@ func TestUpdateTaskTitle(t *testing.T) {
 
 func TestUpdateTaskBody(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "s", Body: "old body"})
 
 	newBody := "new body\n\n## Acceptance criteria\n\n- [ ] New criterion"
@@ -254,7 +254,7 @@ func TestUpdateTaskBody(t *testing.T) {
 
 func TestUpdateTaskPreservesStatus(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "s", Status: "todo"})
 
 	newTitle := "Updated"
@@ -279,7 +279,7 @@ func TestUpdateTaskNotFound(t *testing.T) {
 
 func TestMoveTask(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "s"})
 
 	err := w.MoveTask("TASK-1", "in_progress")
@@ -295,7 +295,7 @@ func TestMoveTask(t *testing.T) {
 
 func TestMoveTaskFrontmatterSync(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "s"})
 
 	w.MoveTask("TASK-1", "done")
@@ -309,7 +309,7 @@ func TestMoveTaskFrontmatterSync(t *testing.T) {
 
 func TestMoveTaskNoOp(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "s", Status: "todo"})
 
 	// Moving to same status should be no-op.
@@ -329,7 +329,7 @@ func TestMoveTaskNotFound(t *testing.T) {
 
 func TestMoveTaskThroughStatuses(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "s"})
 
 	statuses := []string{"todo", "in_progress", "blocked", "pending_verification", "done"}
@@ -348,7 +348,7 @@ func TestMoveTaskThroughStatuses(t *testing.T) {
 
 func TestRenameTask(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Old Task", Summary: "s"})
 
 	err := w.RenameTask("TASK-1", "New Task Name")
@@ -386,7 +386,7 @@ func TestRenameTaskNotFound(t *testing.T) {
 
 func TestDeleteTask(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	result, _ := w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "s"})
 
 	err := w.DeleteTask("TASK-1")
@@ -421,7 +421,7 @@ func TestDeleteTaskNotFound(t *testing.T) {
 
 func TestDeleteTaskCascadesCriteria(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{
 		SpecID: "SPEC-1", Title: "T", Summary: "s",
 		Body: "## Acceptance criteria\n\n- [ ] C1\n- [ ] C2",
@@ -440,9 +440,9 @@ func TestDeleteTaskCascadesCriteria(t *testing.T) {
 
 func TestReorderSpecBefore(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
-	w.NewSpec(NewSpecInput{Title: "B", Type: "technical", Summary: "b"})
-	w.NewSpec(NewSpecInput{Title: "C", Type: "technical", Summary: "c"})
+	w.NewSpec(NewSpecInput{Title: "A", Type: "functional", Summary: "a"})
+	w.NewSpec(NewSpecInput{Title: "B", Type: "functional", Summary: "b"})
+	w.NewSpec(NewSpecInput{Title: "C", Type: "functional", Summary: "c"})
 
 	// Move C before A.
 	err := w.ReorderSpec("SPEC-3", ReorderInput{Mode: ReorderBefore, TargetID: "SPEC-1"})
@@ -461,9 +461,9 @@ func TestReorderSpecBefore(t *testing.T) {
 
 func TestReorderSpecAfter(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
-	w.NewSpec(NewSpecInput{Title: "B", Type: "technical", Summary: "b"})
-	w.NewSpec(NewSpecInput{Title: "C", Type: "technical", Summary: "c"})
+	w.NewSpec(NewSpecInput{Title: "A", Type: "functional", Summary: "a"})
+	w.NewSpec(NewSpecInput{Title: "B", Type: "functional", Summary: "b"})
+	w.NewSpec(NewSpecInput{Title: "C", Type: "functional", Summary: "c"})
 
 	// Move A after B.
 	err := w.ReorderSpec("SPEC-1", ReorderInput{Mode: ReorderAfter, TargetID: "SPEC-2"})
@@ -482,9 +482,9 @@ func TestReorderSpecAfter(t *testing.T) {
 
 func TestReorderSpecTo(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
-	w.NewSpec(NewSpecInput{Title: "B", Type: "technical", Summary: "b"})
-	w.NewSpec(NewSpecInput{Title: "C", Type: "technical", Summary: "c"})
+	w.NewSpec(NewSpecInput{Title: "A", Type: "functional", Summary: "a"})
+	w.NewSpec(NewSpecInput{Title: "B", Type: "functional", Summary: "b"})
+	w.NewSpec(NewSpecInput{Title: "C", Type: "functional", Summary: "c"})
 
 	// Move C to position 0.
 	err := w.ReorderSpec("SPEC-3", ReorderInput{Mode: ReorderTo, Position: 0})
@@ -500,7 +500,7 @@ func TestReorderSpecTo(t *testing.T) {
 
 func TestReorderSpecTargetNotFound(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
+	w.NewSpec(NewSpecInput{Title: "A", Type: "functional", Summary: "a"})
 
 	err := w.ReorderSpec("SPEC-1", ReorderInput{Mode: ReorderBefore, TargetID: "SPEC-999"})
 	if err == nil {
@@ -512,7 +512,7 @@ func TestReorderSpecTargetNotFound(t *testing.T) {
 
 func TestReorderTaskBefore(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T3", Summary: "t3", Status: "todo"})
@@ -531,7 +531,7 @@ func TestReorderTaskBefore(t *testing.T) {
 
 func TestReorderTaskAfter(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2", Status: "todo"})
 
@@ -549,7 +549,7 @@ func TestReorderTaskAfter(t *testing.T) {
 
 func TestReorderTaskTo(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T3", Summary: "t3", Status: "todo"})
@@ -565,7 +565,7 @@ func TestReorderTaskTo(t *testing.T) {
 
 func TestReorderTaskOnlyAffectsSameStatus(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2", Status: "in_progress"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T3", Summary: "t3", Status: "todo"})
@@ -634,7 +634,7 @@ func TestResolveInsertIndexNotFound(t *testing.T) {
 
 func TestMoveTaskPositionInTargetStatus(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T3", Summary: "t3", Status: "in_progress"})
@@ -655,7 +655,7 @@ func TestMoveTaskPositionInTargetStatus(t *testing.T) {
 
 func TestDeleteTaskCascadesLinks(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2"})
 	w.Link("TASK-1", "TASK-2")
@@ -671,7 +671,7 @@ func TestDeleteTaskCascadesLinks(t *testing.T) {
 
 func TestDeleteTaskCascadesDeps(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2"})
 	w.Depend("TASK-2", []string{"TASK-1"})
@@ -687,8 +687,8 @@ func TestDeleteTaskCascadesDeps(t *testing.T) {
 
 func TestDeleteSpecCascadesLinks(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
-	w.NewSpec(NewSpecInput{Title: "B", Type: "technical", Summary: "b"})
+	w.NewSpec(NewSpecInput{Title: "A", Type: "functional", Summary: "a"})
+	w.NewSpec(NewSpecInput{Title: "B", Type: "functional", Summary: "b"})
 	w.Link("SPEC-1", "SPEC-2")
 
 	w.DeleteSpec("SPEC-1")
@@ -731,7 +731,7 @@ func TestDeleteSpecTrashMetadata(t *testing.T) {
 
 func TestUpdateTaskClearsCriteria(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{
 		SpecID: "SPEC-1", Title: "T", Summary: "t",
 		Body: "## Acceptance criteria\n\n- [ ] C1\n- [ ] C2",

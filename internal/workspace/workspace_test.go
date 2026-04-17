@@ -111,7 +111,7 @@ func TestNewSpecAndRead(t *testing.T) {
 
 	result, err := w.NewSpec(NewSpecInput{
 		Title:   "OAuth with GitHub",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "OAuth flow using GitHub",
 		Body:    "# OAuth\n\nBody.",
 	})
@@ -148,7 +148,7 @@ func TestNewTaskAndRead(t *testing.T) {
 
 	_, err := w.NewSpec(NewSpecInput{
 		Title:   "Auth",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "Auth spec",
 		Body:    "Body.",
 	})
@@ -202,9 +202,9 @@ func TestListSpecs(t *testing.T) {
 	w := setupWorkspace(t)
 
 	for _, s := range []NewSpecInput{
-		{Title: "Spec A", Type: "technical", Summary: "A"},
+		{Title: "Spec A", Type: "functional", Summary: "A"},
 		{Title: "Spec B", Type: "business", Summary: "B"},
-		{Title: "Spec C", Type: "technical", Summary: "C"},
+		{Title: "Spec C", Type: "functional", Summary: "C"},
 	} {
 		if _, err := w.NewSpec(s); err != nil {
 			t.Fatalf("NewSpec: %v", err)
@@ -221,7 +221,7 @@ func TestListSpecs(t *testing.T) {
 	}
 
 	// Filter by type.
-	tech, err := w.ListSpecs(ListSpecsFilter{Type: "technical"})
+	tech, err := w.ListSpecs(ListSpecsFilter{Type: "functional"})
 	if err != nil {
 		t.Fatalf("ListSpecs type: %v", err)
 	}
@@ -242,7 +242,7 @@ func TestListSpecs(t *testing.T) {
 func TestListTasks(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 
 	for _, inp := range []NewTaskInput{
 		{SpecID: "SPEC-1", Title: "T1", Summary: "t1", Status: "todo"},
@@ -355,7 +355,7 @@ func TestInitCreatesKBDir(t *testing.T) {
 
 func TestNewTaskDefaultStatus(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
 
 	task, _ := w.ReadTask("TASK-1")
@@ -366,8 +366,8 @@ func TestNewTaskDefaultStatus(t *testing.T) {
 
 func TestListTasksCombinedFilters(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S1", Type: "technical", Summary: "s1"})
-	w.NewSpec(NewSpecInput{Title: "S2", Type: "technical", Summary: "s2"})
+	w.NewSpec(NewSpecInput{Title: "S1", Type: "functional", Summary: "s1"})
+	w.NewSpec(NewSpecInput{Title: "S2", Type: "functional", Summary: "s2"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2", Status: "in_progress"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-2", Title: "T3", Summary: "t3", Status: "todo"})
@@ -383,7 +383,7 @@ func TestListTasksCombinedFilters(t *testing.T) {
 
 func TestListTasksLimit(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	for i := 0; i < 5; i++ {
 		w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
 	}
@@ -399,7 +399,7 @@ func TestNewSpecWithSpecialChars(t *testing.T) {
 
 	result, err := w.NewSpec(NewSpecInput{
 		Title:   "Special Chars",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "Test: colons, quotes",
 		Body:    "Body with `code` and \"quotes\" and: colons",
 	})

@@ -5,8 +5,8 @@ import "testing"
 func TestCandidatesExcludesSelf(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "Auth system", Type: "technical", Summary: "Authentication and authorization"})
-	w.NewSpec(NewSpecInput{Title: "OAuth provider", Type: "technical", Summary: "OAuth authentication flow"})
+	w.NewSpec(NewSpecInput{Title: "Auth system", Type: "functional", Summary: "Authentication and authorization"})
+	w.NewSpec(NewSpecInput{Title: "OAuth provider", Type: "functional", Summary: "OAuth authentication flow"})
 	w.NewSpec(NewSpecInput{Title: "Billing", Type: "business", Summary: "Payment processing"})
 
 	result, err := w.Candidates("SPEC-1", 20)
@@ -24,9 +24,9 @@ func TestCandidatesExcludesSelf(t *testing.T) {
 func TestCandidatesExcludesLinked(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "Auth system", Type: "technical", Summary: "Authentication"})
-	w.NewSpec(NewSpecInput{Title: "Auth OAuth", Type: "technical", Summary: "OAuth authentication"})
-	w.NewSpec(NewSpecInput{Title: "Auth tokens", Type: "technical", Summary: "Token authentication"})
+	w.NewSpec(NewSpecInput{Title: "Auth system", Type: "functional", Summary: "Authentication"})
+	w.NewSpec(NewSpecInput{Title: "Auth OAuth", Type: "functional", Summary: "OAuth authentication"})
+	w.NewSpec(NewSpecInput{Title: "Auth tokens", Type: "functional", Summary: "Token authentication"})
 
 	w.Link("SPEC-1", "SPEC-2")
 
@@ -45,9 +45,9 @@ func TestCandidatesExcludesLinked(t *testing.T) {
 func TestCandidatesRankedByScore(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "User authentication system", Type: "technical", Summary: "Auth with users and sessions"})
-	w.NewSpec(NewSpecInput{Title: "User session management", Type: "technical", Summary: "Session handling for authenticated users"})
-	w.NewSpec(NewSpecInput{Title: "Logging infrastructure", Type: "technical", Summary: "Centralized log aggregation"})
+	w.NewSpec(NewSpecInput{Title: "User authentication system", Type: "functional", Summary: "Auth with users and sessions"})
+	w.NewSpec(NewSpecInput{Title: "User session management", Type: "functional", Summary: "Session handling for authenticated users"})
+	w.NewSpec(NewSpecInput{Title: "Logging infrastructure", Type: "functional", Summary: "Centralized log aggregation"})
 
 	result, err := w.Candidates("SPEC-1", 20)
 	if err != nil {
@@ -69,10 +69,10 @@ func TestCandidatesRankedByScore(t *testing.T) {
 func TestCandidatesLimit(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "Auth A", Type: "technical", Summary: "Auth A"})
-	w.NewSpec(NewSpecInput{Title: "Auth B", Type: "technical", Summary: "Auth B"})
-	w.NewSpec(NewSpecInput{Title: "Auth C", Type: "technical", Summary: "Auth C"})
-	w.NewSpec(NewSpecInput{Title: "Auth D", Type: "technical", Summary: "Auth D"})
+	w.NewSpec(NewSpecInput{Title: "Auth A", Type: "functional", Summary: "Auth A"})
+	w.NewSpec(NewSpecInput{Title: "Auth B", Type: "functional", Summary: "Auth B"})
+	w.NewSpec(NewSpecInput{Title: "Auth C", Type: "functional", Summary: "Auth C"})
+	w.NewSpec(NewSpecInput{Title: "Auth D", Type: "functional", Summary: "Auth D"})
 
 	result, err := w.Candidates("SPEC-1", 2)
 	if err != nil {
@@ -87,7 +87,7 @@ func TestCandidatesLimit(t *testing.T) {
 func TestTaskCandidates(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "S"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "S"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Design auth schema", Summary: "Database schema for auth"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Implement auth middleware", Summary: "Auth middleware for routes"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Write billing tests", Summary: "Unit tests for billing"})
@@ -118,7 +118,7 @@ func TestCandidatesInvalidID(t *testing.T) {
 
 func TestCandidatesNoMatches(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "X", Type: "technical", Summary: "X"})
+	w.NewSpec(NewSpecInput{Title: "X", Type: "functional", Summary: "X"})
 
 	result, err := w.Candidates("SPEC-1", 20)
 	if err != nil {

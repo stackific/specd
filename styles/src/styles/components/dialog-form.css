@@ -1,0 +1,20 @@
+/* =================================================================
+   Form dialog — sizing and inline error banner
+   =================================================================
+   Prefix: sd- (specd dialog)
+   Applied to <dialog class="sd-dialog-form">.
+   BeerCSS handles field layout, label floating, and textarea sizing.
+   ================================================================= */
+
+.sd-dialog-form {
+  width: min(640px, 92vw);
+  max-width: none;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.sd-form-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}

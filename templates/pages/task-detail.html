@@ -1,0 +1,189 @@
+{{define "content"}}
+<section class="container-xl p-3 m:p-5" id="task-detail">
+  <nav class="mb-4">
+    {{if .Data.ParentSpec}}
+    <a href="/specs/{{.Data.ParentSpec.ID}}" class="chip small no-margin">
+      <i aria-hidden="true">arrow_back</i>
+      <span>{{.Data.ParentSpec.Title}}</span>
+    </a>
+    {{else}}
+    <a href="/" class="chip small no-margin">
+      <i aria-hidden="true">arrow_back</i>
+      <span>Board</span>
+    </a>
+    {{end}}
+  </nav>
+
+  <div class="grid no-space mb-2">
+    <div class="s8">
+      <h1 class="text-4 m:text-5 fw-7 lh-1">{{.Data.Task.Title}}</h1>
+    </div>
+    <div class="s4 right-align">
+      <button class="circle transparent" data-ui="#edit-task-dialog" title="Edit task">
+        <i aria-hidden="true">edit</i>
+      </button>
+      <button class="circle transparent" data-ui="#delete-task-dialog" title="Delete task">
+        <i aria-hidden="true">delete</i>
+      </button>
+    </div>
+  </div>
+
+  <div class="mt-2 middle-align">
+    <span class="ml-2">{{.Data.Task.ID}} · {{.Data.Task.SpecID}}</span>
+    <form
+      method="post"
+      action="/tasks/{{.Data.Task.ID}}/move"
+      class="ml-3"
+      style="display:inline-block"
+    >
+      <div class="field suffix border round small no-margin">
+        <select name="status" class="sd-auto-submit">
+          {{range .Data.Statuses}}
+          <option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>
+          {{end}}
+        </select>
+        <i aria-hidden="true">swap_vert</i>
+      </div>
+    </form>
+  </div>
+
+  <p class="text-2 lh-4 mt-3">{{.Data.Task.Summary}}</p>
+
+  <article class="sd-body surface-container-low round p-4 m:p-5 mt-5">
+    <div class="sd-body-md" data-md-body="{{.Data.Task.Body}}"></div>
+  </article>
+
+  <div class="mt-5">
+    <h2 class="text-2 fw-6 lh-2 mb-3">Acceptance Criteria</h2>
+    {{if .Data.Criteria}}
+      {{range .Data.Criteria}}
+      <div class="middle-align mb-2">
+        {{if .Checked}}
+        <form method="post" action="/tasks/{{$.Data.Task.ID}}/criteria/{{.Position}}/uncheck" class="inline">
+          <label class="checkbox">
+            <input type="checkbox" checked onchange="this.form.submit()" />
+            <span>{{.Text}}</span>
+          </label>
+        </form>
+        {{else}}
+        <form method="post" action="/tasks/{{$.Data.Task.ID}}/criteria/{{.Position}}/check" class="inline">
+          <label class="checkbox">
+            <input type="checkbox" onchange="this.form.submit()" />
+            <span>{{.Text}}</span>
+          </label>
+        </form>
+        {{end}}
+        <form method="post" action="/tasks/{{$.Data.Task.ID}}/criteria/{{.Position}}/remove" class="inline ml-2">
+          <button type="submit" class="circle small transparent" title="Remove criterion">
+            <i aria-hidden="true">close</i>
+          </button>
+        </form>
+      </div>
+      {{end}}
+    {{else}}
+      <p class="text-1 lh-3 mb-3">No criteria yet.</p>
+    {{end}}
+
+    <form method="post" action="/tasks/{{.Data.Task.ID}}/criteria" class="mt-3">
+      <div class="field label border round small">
+        <input type="text" name="text" required minlength="2" pattern=".*\S.*" placeholder=" " />
+        <label>Add criterion</label>
+      </div>
+      <button type="submit" class="small round mt-2">
+        <i aria-hidden="true">add</i>
+        <span>Add</span>
+      </button>
+    </form>
+  </div>
+
+  {{if .Data.Deps}}
+  <div class="mt-5">
+    <h2 class="text-2 fw-6 lh-2 mb-2">Dependencies</h2>
+    {{range .Data.Deps}}
+    <a href="/tasks/{{.ID}}" class="chip no-line mb-1">
+      {{if .Ready}}
+      <i aria-hidden="true">check_circle</i>
+      {{else}}
+      <i aria-hidden="true">block</i>
+      {{end}}
+      <span>{{.ID}}: {{.Title}} ({{.Status}})</span>
+    </a>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if .Data.Links}}
+  <div class="mt-5">
+    <h2 class="text-2 fw-6 lh-2 mb-2">Linked Tasks</h2>
+    {{range .Data.Links}}
+    <a href="/tasks/{{.ID}}" class="chip no-line mb-1">
+      <i aria-hidden="true">link</i>
+      <span>{{.ID}}: {{.Title}} ({{.Status}})</span>
+    </a>
+    {{end}}
+  </div>
+  {{end}}
+
+  {{if .Data.Citations}}
+  <div class="mt-5">
+    <h2 class="text-2 fw-6 lh-2 mb-3">References</h2>
+    {{range .Data.Citations}}
+    <article class="surface-container-low round p-3 mb-2">
+      <p class="text-1 fw-5 lh-2">
+        {{if eq .SourceType "pdf"}}<i class="small" aria-hidden="true">picture_as_pdf</i>
+        {{else if eq .SourceType "md"}}<i class="small" aria-hidden="true">article</i>
+        {{else if eq .SourceType "html"}}<i class="small" aria-hidden="true">code</i>
+        {{else}}<i class="small" aria-hidden="true">text_snippet</i>
+        {{end}}
+        {{.KBDocTitle}} · chunk {{.ChunkPosition}}{{if .Page}} · page {{.Page}}{{end}}
+      </p>
+      <p class="text--1 lh-3 mt-1">{{stripTruncate .ChunkText 200}}</p>
+    </article>
+    {{end}}
+  </div>
+  {{end}}
+</section>
+
+<dialog id="edit-task-dialog" aria-label="Edit task" class="sd-dialog-form">
+  <h5>Edit Task</h5>
+  {{template "edit-task-form" .Data.EditTaskForm}}
+</dialog>
+
+<dialog id="delete-task-dialog" aria-label="Delete task confirmation" style="max-height:none;">
+  <h5>Delete Task?</h5>
+  <p class="mt-3">This will move <strong>{{.Data.Task.ID}}</strong> to trash.</p>
+  <nav class="right-align no-space mt-4">
+    <button type="button" class="transparent link" data-ui="#delete-task-dialog">Cancel</button>
+    <form method="post" action="/tasks/{{.Data.Task.ID}}/delete" class="inline">
+      <button type="submit" class="error ml-2">Delete</button>
+    </form>
+  </nav>
+</dialog>
+{{end}}
+
+{{define "edit-task-form"}}
+<form hx-post="/tasks/{{.ID}}/update" hx-target="this" hx-swap="outerHTML" class="sd-dialog-body">
+  {{if .Error}}
+  <div class="sd-form-error error-container round p-3" role="alert">
+    <i aria-hidden="true">error</i>
+    <span>{{.Error}}</span>
+  </div>
+  {{end}}
+  <div class="field label border">
+    <input type="text" name="title" value="{{.Title}}" required minlength="2" pattern=".*\S.*" placeholder=" " />
+    <label>Title</label>
+  </div>
+  <div class="field label border">
+    <input type="text" name="summary" value="{{.Summary}}" placeholder=" " />
+    <label>Summary (optional, auto-generated)</label>
+  </div>
+  <div class="field textarea label border">
+    <textarea name="body" rows="12" required minlength="20" placeholder=" ">{{.Body}}</textarea>
+    <label>Body (markdown)</label>
+  </div>
+  <nav class="right-align no-space">
+    <button type="button" class="transparent link" data-ui="#edit-task-dialog">Cancel</button>
+    <button type="submit" class="ml-2">Save</button>
+  </nav>
+</form>
+{{end}}

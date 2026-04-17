@@ -34,7 +34,15 @@
 
     {{template "footer" .}}
 
+    {{if .Error}}
+    <div class="snackbar error active" role="alert" aria-live="assertive" aria-atomic="true">
+      <i aria-hidden="true">error</i>
+      <span>{{.Error}}</span>
+    </div>
+    {{end}}
+
     <script src="/assets/htmx.min.js"></script>
+    <script src="/assets/marked.min.js"></script>
     <script type="module" src="/assets/app.js"></script>
   </body>
 </html>

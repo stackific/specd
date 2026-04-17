@@ -1,13 +1,30 @@
 {{define "nav"}}
 <!-- Desktop sidebar: visible on large screens ("l" breakpoint), "max" = expanded by default -->
-<nav class="left l max surface-container" aria-label="Main navigation">
+<nav class="left l surface-container" aria-label="Main navigation">
   <header>
-    <button class="circle extra transparent" aria-label="Toggle sidebar" aria-expanded="true">
-      <i aria-hidden="true">menu_open</i>
+    <button class="circle extra transparent" aria-label="Toggle sidebar" aria-expanded="false">
+      <i aria-hidden="true">menu</i>
     </button>
   </header>
-  <a href="/"><i aria-hidden="true">home</i><span class="fw-5">Home</span></a>
-  <a href="/about"><i aria-hidden="true">info</i><span class="fw-5">About</span></a>
+  <a href="/"{{if isActive .Active "board"}} class="active"{{end}}>
+    <i aria-hidden="true">view_kanban</i><span class="fw-5">Board</span>
+  </a>
+  <a href="/specs"{{if isActive .Active "specs"}} class="active"{{end}}>
+    <i aria-hidden="true">description</i><span class="fw-5">Specs</span>
+  </a>
+  <a href="/kb"{{if isActive .Active "kb"}} class="active"{{end}}>
+    <i aria-hidden="true">menu_book</i><span class="fw-5">KB</span>
+  </a>
+  <a href="/search"{{if isActive .Active "search"}} class="active"{{end}}>
+    <i aria-hidden="true">search</i><span class="fw-5">Search</span>
+  </a>
+  <div class="divider"></div>
+  <a href="/status"{{if isActive .Active "status"}} class="active"{{end}}>
+    <i aria-hidden="true">monitoring</i><span class="fw-5">Status</span>
+  </a>
+  <a href="/trash"{{if isActive .Active "trash"}} class="active"{{end}}>
+    <i aria-hidden="true">delete</i><span class="fw-5">Trash</span>
+  </a>
   <div class="max"></div>
   <button class="my-2 border circle" aria-label="Toggle dark mode">
     <i class="page bottom active" aria-hidden="true">dark_mode</i>
@@ -32,8 +49,25 @@
 <!-- Mobile menu dialog -->
 <dialog id="mobile-menu" class="p-5" aria-label="Mobile menu" style="width:min(360px, 92vw); max-width:none;">
   <nav class="vertical fw-5 text-2">
-    <a href="/"><i aria-hidden="true">home</i><span class="ml-3">Home</span></a>
-    <a href="/about"><i aria-hidden="true">info</i><span class="ml-3">About</span></a>
+    <a href="/"{{if isActive .Active "board"}} class="active"{{end}}>
+      <i aria-hidden="true">view_kanban</i><span class="ml-3">Board</span>
+    </a>
+    <a href="/specs"{{if isActive .Active "specs"}} class="active"{{end}}>
+      <i aria-hidden="true">description</i><span class="ml-3">Specs</span>
+    </a>
+    <a href="/kb"{{if isActive .Active "kb"}} class="active"{{end}}>
+      <i aria-hidden="true">menu_book</i><span class="ml-3">KB</span>
+    </a>
+    <a href="/search"{{if isActive .Active "search"}} class="active"{{end}}>
+      <i aria-hidden="true">search</i><span class="ml-3">Search</span>
+    </a>
+    <div class="divider"></div>
+    <a href="/status"{{if isActive .Active "status"}} class="active"{{end}}>
+      <i aria-hidden="true">monitoring</i><span class="ml-3">Status</span>
+    </a>
+    <a href="/trash"{{if isActive .Active "trash"}} class="active"{{end}}>
+      <i aria-hidden="true">delete</i><span class="ml-3">Trash</span>
+    </a>
   </nav>
 </dialog>
 {{end}}

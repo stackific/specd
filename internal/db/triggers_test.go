@@ -15,7 +15,7 @@ func TestSpecFTSTriggers(t *testing.T) {
 
 	// Insert a spec.
 	_, err = d.Exec(`INSERT INTO specs (id, slug, title, type, summary, body, path, position, content_hash, created_at, updated_at)
-		VALUES ('SPEC-1', 'oauth-github', 'OAuth with GitHub', 'technical', 'OAuth flow using GitHub', 'Full body text about authentication.', 'specd/specs/SPEC-1-oauth-github/spec.md', 0, 'abc123', '2025-01-01T00:00:00Z', '2025-01-01T00:00:00Z')`)
+		VALUES ('SPEC-1', 'oauth-github', 'OAuth with GitHub', 'functional', 'OAuth flow using GitHub', 'Full body text about authentication.', 'specd/specs/SPEC-1-oauth-github/spec.md', 0, 'abc123', '2025-01-01T00:00:00Z', '2025-01-01T00:00:00Z')`)
 	if err != nil {
 		t.Fatalf("insert spec: %v", err)
 	}
@@ -88,7 +88,7 @@ func TestTaskFTSTriggers(t *testing.T) {
 
 	// Need a parent spec first.
 	_, err = d.Exec(`INSERT INTO specs (id, slug, title, type, summary, body, path, position, content_hash, created_at, updated_at)
-		VALUES ('SPEC-1', 'auth', 'Auth', 'technical', 'Auth spec', 'Body', 'specd/specs/SPEC-1-auth/spec.md', 0, 'abc', '2025-01-01T00:00:00Z', '2025-01-01T00:00:00Z')`)
+		VALUES ('SPEC-1', 'auth', 'Auth', 'functional', 'Auth spec', 'Body', 'specd/specs/SPEC-1-auth/spec.md', 0, 'abc', '2025-01-01T00:00:00Z', '2025-01-01T00:00:00Z')`)
 	if err != nil {
 		t.Fatalf("insert spec: %v", err)
 	}

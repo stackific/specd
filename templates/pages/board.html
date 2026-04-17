@@ -1,0 +1,155 @@
+{{define "content"}}
+<section class="p-3 m:p-5" id="board-content">
+  <div class="mb-5" role="toolbar" aria-label="Board controls">
+    <div class="grid no-space">
+      <div class="s6 m4">
+        <h1 class="text-4 m:text-5 fw-7 lh-1">Board</h1>
+      </div>
+      <div class="s6 m8 right-align middle-align">
+        {{if .Data.Specs}}
+        <button class="small round mr-3" data-ui="#board-new-task-dialog">
+          <i aria-hidden="true">add</i>
+          <span class="m l">New Task</span>
+        </button>
+        {{end}}
+        <div class="field suffix border round small" style="display:inline-block; min-width:180px">
+          <select
+            aria-label="Filter by spec"
+            name="spec"
+            hx-get="/"
+            hx-target="#board-content"
+            hx-swap="outerHTML"
+            hx-trigger="change"
+            hx-include="this"
+          >
+            <option value="">All specs</option>
+            {{range .Data.Specs}}
+            <option value="{{.ID}}"{{if eq $.Data.FilterSpec .ID}} selected{{end}}>
+              {{.ID}} — {{.Title}}
+            </option>
+            {{end}}
+          </select>
+          <i aria-hidden="true">filter_list</i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sd-board" id="kanban-board">
+    {{range .Data.Columns}}
+    <div
+      class="sd-col"
+      data-status="{{.Status}}"
+      role="list"
+      aria-label="{{.Label}} column"
+    >
+      <div class="sd-col-header mb-3">
+        <h2 class="text-1 fw-6 lh-2 middle-align">
+          <i class="mr-2" aria-hidden="true">{{.Icon}}</i>{{.Label}}
+          <span class="badge none ml-2">{{len .Tasks}}</span>
+        </h2>
+      </div>
+
+      <div class="sd-col-body" data-status="{{.Status}}">
+        {{if .Tasks}}
+          {{range .Tasks}}
+          <article
+            class="sd-card surface-container-low round p-3 mb-2"
+            draggable="true"
+            data-task-id="{{.ID}}"
+            data-status="{{.Status}}"
+            role="listitem"
+            aria-label="{{.Title}}"
+          >
+            <a href="/tasks/{{.ID}}" class="no-line sd-card-link">
+              <p class="text-1 fw-5 lh-2">{{.Title}}</p>
+            </a>
+            <p class="text--1 lh-3 mt-1">
+              <span>{{.ID}}</span>
+              <span class="mx-1">&middot;</span>
+              <a href="/specs/{{.SpecID}}" class="no-line">{{if .SpecTitle}}{{.SpecTitle}}{{else}}{{.SpecID}}{{end}}</a>
+            </p>
+
+            {{if or (gt .CriteriaTotal 0) .IsBlocked .HasCitations}}
+            <div class="sd-card-meta mt-2">
+              {{if gt .CriteriaTotal 0}}
+              <span class="sd-card-progress" title="{{.CriteriaChecked}}/{{.CriteriaTotal}} criteria done">
+                <progress class="circle tiny" value="{{.CriteriaChecked}}" max="{{.CriteriaTotal}}"></progress>
+                <span class="text--2">{{.CriteriaChecked}}/{{.CriteriaTotal}}</span>
+              </span>
+              {{end}}
+              {{if .IsBlocked}}
+              <span class="sd-card-icon" title="Blocked by dependencies">
+                <i class="text--1 error-text" aria-hidden="true">warning</i>
+              </span>
+              {{end}}
+              {{if .HasCitations}}
+              <span class="sd-card-icon" title="Has KB citations">
+                <i class="text--1" aria-hidden="true">link</i>
+              </span>
+              {{end}}
+            </div>
+            {{end}}
+          </article>
+          {{end}}
+        {{else}}
+          <p class="text--1 lh-3 mt-2 sd-empty">No tasks</p>
+        {{end}}
+      </div>
+    </div>
+    {{end}}
+  </div>
+</section>
+
+{{if .Data.Specs}}
+<dialog id="board-new-task-dialog" aria-label="Create new task" class="sd-dialog-form">
+  <h5>New Task</h5>
+  {{template "board-new-task-form" .Data.BoardTaskForm}}
+</dialog>
+{{end}}
+{{end}}
+
+{{define "board-new-task-form"}}
+<form hx-post="/tasks" hx-target="this" hx-swap="outerHTML" class="sd-dialog-body">
+  {{if .Error}}
+  <div class="sd-form-error error-container round p-3" role="alert">
+    <i aria-hidden="true">error</i>
+    <span>{{.Error}}</span>
+  </div>
+  {{end}}
+  <div class="field label suffix border">
+    <select name="spec_id" required>
+      {{range .Specs}}
+      <option value="{{.ID}}"{{if eq $.SpecID .ID}} selected{{end}}>{{.ID}} — {{.Title}}</option>
+      {{end}}
+    </select>
+    <label>Parent Spec</label>
+    <i aria-hidden="true">arrow_drop_down</i>
+  </div>
+  <div class="field label border">
+    <input type="text" name="title" value="{{.Title}}" required minlength="2" pattern=".*\S.*" placeholder=" " />
+    <label>Title</label>
+  </div>
+  <div class="field label border">
+    <input type="text" name="summary" value="{{.Summary}}" placeholder=" " />
+    <label>Summary (optional, auto-generated)</label>
+  </div>
+  <div class="field label suffix border">
+    <select name="status">
+      <option value="backlog"{{if eq .Status "backlog"}} selected{{end}}>Backlog</option>
+      <option value="todo"{{if eq .Status "todo"}} selected{{end}}>To Do</option>
+      <option value="in_progress"{{if eq .Status "in_progress"}} selected{{end}}>In Progress</option>
+    </select>
+    <label>Initial Status</label>
+    <i aria-hidden="true">arrow_drop_down</i>
+  </div>
+  <div class="field textarea label border">
+    <textarea name="body" rows="12" required minlength="20" placeholder=" ">{{.Body}}</textarea>
+    <label>Body (markdown)</label>
+  </div>
+  <nav class="right-align no-space">
+    <button type="button" class="transparent link" data-ui="#board-new-task-dialog">Cancel</button>
+    <button type="submit" class="ml-2">Create</button>
+  </nav>
+</form>
+{{end}}

@@ -13,7 +13,7 @@ func setupTaskWithCriteria(t *testing.T) (*Workspace, string) {
 
 	w.NewSpec(NewSpecInput{
 		Title:   "Auth",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "Auth spec",
 		Body:    "Body.",
 	})
@@ -155,7 +155,7 @@ func TestAddCriterionToTaskWithoutSection(t *testing.T) {
 
 	w.NewSpec(NewSpecInput{
 		Title:   "S",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "s",
 		Body:    "Body.",
 	})
@@ -203,7 +203,7 @@ func TestReplaceCriteriaSection(t *testing.T) {
 
 func TestListCriteriaEmpty(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t", Body: "No criteria here."})
 
 	criteria, err := w.ListCriteria("TASK-1")
@@ -241,7 +241,7 @@ func TestUncheckCriterionIdempotent(t *testing.T) {
 
 func TestRemoveCriterionRenumbers(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{
 		SpecID: "SPEC-1", Title: "T", Summary: "t",
 		Body: "## Acceptance criteria\n\n- [ ] First\n- [ ] Second\n- [ ] Third",

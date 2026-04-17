@@ -1,0 +1,13 @@
+{{define "content"}}
+<section class="container-xl p-3 m:p-5">
+  <div class="center-align mt-5">
+    <i class="extra" aria-hidden="true">error</i>
+    <h1 class="text-4 m:text-5 fw-7 lh-1 mt-4">{{.Data.Code}}</h1>
+    <p class="text-2 lh-4 mt-3">{{.Data.Message}}</p>
+    <a href="/" class="button round mt-5">
+      <i aria-hidden="true">home</i>
+      <span>Go to Board</span>
+    </a>
+  </div>
+</section>
+{{end}}

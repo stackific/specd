@@ -10,7 +10,7 @@ import (
 
 func TestGetSpecLinksEmpty(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
+	w.NewSpec(NewSpecInput{Title: "A", Type: "functional", Summary: "a"})
 
 	links, err := w.GetSpecLinks("SPEC-1")
 	if err != nil {
@@ -23,7 +23,7 @@ func TestGetSpecLinksEmpty(t *testing.T) {
 
 func TestGetSpecLinksWithLinks(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
+	w.NewSpec(NewSpecInput{Title: "A", Type: "functional", Summary: "a"})
 	w.NewSpec(NewSpecInput{Title: "B", Type: "business", Summary: "b"})
 	w.Link("SPEC-1", "SPEC-2")
 
@@ -46,7 +46,7 @@ func TestGetSpecLinksWithLinks(t *testing.T) {
 
 func TestGetTaskLinksEmpty(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
 
 	links, err := w.GetTaskLinks("TASK-1")
@@ -60,7 +60,7 @@ func TestGetTaskLinksEmpty(t *testing.T) {
 
 func TestGetTaskLinksWithLinks(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2"})
 	w.Link("TASK-1", "TASK-2")
@@ -84,7 +84,7 @@ func TestGetTaskLinksWithLinks(t *testing.T) {
 
 func TestGetSpecProgressNoTasks(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 
 	p, err := w.GetSpecProgress("SPEC-1")
 	if err != nil {
@@ -100,7 +100,7 @@ func TestGetSpecProgressNoTasks(t *testing.T) {
 
 func TestGetSpecProgressMixed(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1", Status: "done"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T3", Summary: "t3", Status: "cancelled"})
@@ -132,7 +132,7 @@ func TestGetSpecProgressMixed(t *testing.T) {
 
 func TestGetTaskDepsEmpty(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
 
 	deps, err := w.GetTaskDeps("TASK-1")
@@ -146,7 +146,7 @@ func TestGetTaskDepsEmpty(t *testing.T) {
 
 func TestGetTaskDepsWithDeps(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Blocker", Summary: "b", Status: "done"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Blocked", Summary: "b"})
 	w.Depend("TASK-2", []string{"TASK-1"})
@@ -168,7 +168,7 @@ func TestGetTaskDepsWithDeps(t *testing.T) {
 
 func TestGetTaskDepsNotReady(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Blocker", Summary: "b", Status: "in_progress"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Blocked", Summary: "b"})
 	w.Depend("TASK-2", []string{"TASK-1"})
@@ -183,8 +183,8 @@ func TestGetTaskDepsNotReady(t *testing.T) {
 
 func TestListSpecsEmpty(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "With Task", Type: "technical", Summary: "s"})
-	w.NewSpec(NewSpecInput{Title: "No Task", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "With Task", Type: "functional", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "No Task", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
 
 	// Only specs without tasks.
@@ -202,7 +202,7 @@ func TestListSpecsEmpty(t *testing.T) {
 
 func TestListSpecsEmptyAllHaveTasks(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
 
 	empty, _ := w.ListSpecs(ListSpecsFilter{Empty: true})
@@ -220,12 +220,12 @@ func TestNewSpecReturnsCandidates(t *testing.T) {
 	md := filepath.Join(w.Root, "auth.md")
 	os.WriteFile(md, []byte("OAuth authentication flow tokens."), 0o644)
 	w.KBAdd(KBAddInput{Source: md, Title: "Auth Guide"})
-	w.NewSpec(NewSpecInput{Title: "User Authentication", Type: "technical", Summary: "Auth system"})
+	w.NewSpec(NewSpecInput{Title: "User Authentication", Type: "functional", Summary: "Auth system"})
 
 	// Create a related spec.
 	result, err := w.NewSpec(NewSpecInput{
 		Title:   "OAuth with GitHub",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "OAuth flow using GitHub as identity provider",
 		Body:    "OAuth authentication implementation.",
 	})
@@ -244,7 +244,7 @@ func TestNewSpecReturnsCandidates(t *testing.T) {
 
 func TestGetSpecProgressWontfix(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "t1", Status: "done"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "t2", Status: "wontfix"})
 
@@ -262,7 +262,7 @@ func TestGetSpecProgressWontfix(t *testing.T) {
 
 func TestGetTaskDepsReadyStatuses(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Done", Summary: "d", Status: "done"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Cancelled", Summary: "c", Status: "cancelled"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Wontfix", Summary: "w", Status: "wontfix"})
@@ -283,7 +283,7 @@ func TestGetTaskDepsReadyStatuses(t *testing.T) {
 
 func TestNewTaskReturnsCandidates(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "Auth", Type: "technical", Summary: "Auth"})
+	w.NewSpec(NewSpecInput{Title: "Auth", Type: "functional", Summary: "Auth"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Design schema", Summary: "DB schema"})
 
 	result, err := w.NewTask(NewTaskInput{

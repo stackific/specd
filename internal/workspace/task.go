@@ -6,6 +6,7 @@ package workspace
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -334,8 +335,11 @@ func (w *Workspace) DeleteTask(taskID string) error {
 		}
 
 		now := time.Now().UTC().Format(time.RFC3339)
-		metadata := fmt.Sprintf(`{"id":"%s","title":"%s","spec_id":"%s","status":"%s","path":"%s"}`,
-			task.ID, task.Title, task.SpecID, task.Status, task.Path)
+		metaBytes, _ := json.Marshal(map[string]string{
+			"id": task.ID, "title": task.Title, "spec_id": task.SpecID,
+			"status": task.Status, "path": task.Path,
+		})
+		metadata := string(metaBytes)
 
 		tx, err := w.DB.Begin()
 		if err != nil {

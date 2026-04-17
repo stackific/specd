@@ -26,7 +26,7 @@ func TestLintOrphanSpec(t *testing.T) {
 	// Create a spec with no tasks and no links.
 	_, err := w.NewSpec(NewSpecInput{
 		Title:   "Orphan spec",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "This spec has no links",
 		Body:    "Body.",
 	})
@@ -56,7 +56,7 @@ func TestLintMissingFile(t *testing.T) {
 
 	_, err := w.NewSpec(NewSpecInput{
 		Title:   "Will delete",
-		Type:    "technical",
+		Type:    "functional",
 		Summary: "File will be deleted",
 		Body:    "Body.",
 	})
@@ -91,13 +91,13 @@ func TestLintMissingSummary(t *testing.T) {
 	// Insert a spec with a single-word summary directly.
 	now := time.Now().UTC().Format(time.RFC3339)
 	w.DB.Exec(`INSERT INTO specs (id, slug, title, type, summary, body, path, position, content_hash, created_at, updated_at)
-		VALUES ('SPEC-1', 'test', 'Test', 'technical', 'x', 'body', 'specd/specs/SPEC-1-test/spec.md', 0, 'hash', ?, ?)`,
+		VALUES ('SPEC-1', 'test', 'Test', 'functional', 'x', 'body', 'specd/specs/SPEC-1-test/spec.md', 0, 'hash', ?, ?)`,
 		now, now)
 
 	// Create the file so it doesn't show as missing.
 	dir := filepath.Join(w.Root, "specd", "specs", "SPEC-1-test")
 	os.MkdirAll(dir, 0o755)
-	os.WriteFile(filepath.Join(dir, "spec.md"), []byte("---\ntitle: Test\ntype: technical\nsummary: x\n---\n\nbody"), 0o644)
+	os.WriteFile(filepath.Join(dir, "spec.md"), []byte("---\ntitle: Test\ntype: functional\nsummary: x\n---\n\nbody"), 0o644)
 
 	result, err := w.Lint()
 	if err != nil {
@@ -162,7 +162,7 @@ func TestTidyUpdatesTimestamp(t *testing.T) {
 func TestLintDepCycle(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "spec s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "spec s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "task one", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "task two", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T3", Summary: "task three", Status: "todo"})

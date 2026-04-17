@@ -6,6 +6,7 @@ package workspace
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -429,8 +430,10 @@ func (w *Workspace) KBRemove(kbID string) error {
 		now := time.Now().UTC().Format(time.RFC3339)
 
 		// Build metadata snapshot.
-		metadata := fmt.Sprintf(`{"id":"%s","title":"%s","source_type":"%s","path":"%s"}`,
-			doc.ID, doc.Title, doc.SourceType, doc.Path)
+		metaBytes, _ := json.Marshal(map[string]string{
+			"id": doc.ID, "title": doc.Title, "source_type": doc.SourceType, "path": doc.Path,
+		})
+		metadata := string(metaBytes)
 
 		tx, err := w.DB.Begin()
 		if err != nil {

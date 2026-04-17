@@ -1,0 +1,78 @@
+{{define "content"}}
+<section class="container-xl p-3 m:p-5">
+  <div class="mb-5">
+    <div class="grid no-space">
+      <div class="s8">
+        <h1 class="text-4 m:text-5 fw-7 lh-1">Trash</h1>
+      </div>
+      {{if .Data.Items}}
+      <div class="s4 right-align">
+        <button class="small round error" data-ui="#purge-dialog">
+          <i aria-hidden="true">delete_forever</i>
+          <span>Purge All</span>
+        </button>
+      </div>
+      {{end}}
+    </div>
+  </div>
+
+  {{if .Data.Items}}
+  <table class="border">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Kind</th>
+        <th>Original ID</th>
+        <th class="m l">Path</th>
+        <th class="m l">Deleted</th>
+        <th class="m l">By</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Data.Items}}
+      <tr>
+        <td>{{.ID}}</td>
+        <td>
+          {{if eq .Kind "spec"}}<span class="chip small no-margin"><i aria-hidden="true" class="small">description</i> spec</span>
+          {{else if eq .Kind "task"}}<span class="chip small no-margin"><i aria-hidden="true" class="small">checklist</i> task</span>
+          {{else}}<span class="chip small no-margin"><i aria-hidden="true" class="small">menu_book</i> kb</span>
+          {{end}}
+        </td>
+        <td class="fw-5">{{.OriginalID}}</td>
+        <td class="m l text--1">{{.OriginalPath}}</td>
+        <td class="m l text--1">{{.DeletedAt}}</td>
+        <td class="m l text--1">{{.DeletedBy}}</td>
+        <td>
+          <form method="post" action="/trash/{{.ID}}/restore" class="inline">
+            <button type="submit" class="small round" title="Restore">
+              <i aria-hidden="true">restore</i>
+              <span class="l">Restore</span>
+            </button>
+          </form>
+        </td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <article class="surface-container-low round p-5">
+    <p class="text-2 lh-3"><i aria-hidden="true">check_circle</i> Trash is empty.</p>
+  </article>
+  {{end}}
+</section>
+
+{{if .Data.Items}}
+<!-- Purge confirmation dialog -->
+<dialog id="purge-dialog" aria-label="Purge trash confirmation" style="max-height:none;">
+  <h5>Purge All Trash?</h5>
+  <p class="mt-3">This will <strong>permanently delete</strong> all trashed items. This cannot be undone.</p>
+  <nav class="right-align no-space mt-4">
+    <button type="button" class="transparent link" data-ui="#purge-dialog">Cancel</button>
+    <form method="post" action="/trash/purge" class="inline">
+      <button type="submit" class="error ml-2">Purge All</button>
+    </form>
+  </nav>
+</dialog>
+{{end}}
+{{end}}

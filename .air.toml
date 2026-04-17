@@ -3,7 +3,7 @@ tmp_dir = "tmp"
 
 [build]
   cmd = "go build -o tmp/specd ./cmd/specd/"
-  bin = "tmp/specd serve"
+  full_bin = "cd tmp/devws && ../specd serve"
   include_ext = ["go", "html"]
   include_dir = [".", "internal", "cmd", "templates"]
   exclude_dir = ["tmp", "dist", "web", "vendor", "assets", "ref"]

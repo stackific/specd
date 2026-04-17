@@ -1,0 +1,118 @@
+/* =================================================================
+   Board page — kanban column layout with drag-and-drop
+   =================================================================
+   Prefix: sd- (specd board)
+   Only layout that BeerCSS grid can't express: horizontal scroll
+   with fixed-width columns for the kanban board.
+   ================================================================= */
+
+.sd-board {
+  display: flex;
+  gap: var(--space-3);
+  overflow-x: auto;
+  padding-bottom: var(--space-3);
+  -webkit-overflow-scrolling: touch;
+}
+
+.sd-col {
+  flex: 0 0 280px;
+  min-width: 280px;
+}
+
+.sd-col-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.sd-col-body {
+  min-height: 60px;
+  border-radius: var(--space-2);
+  transition: background-color 0.15s ease;
+}
+
+/* ── Drop target highlight ────────────────────────────────── */
+
+.sd-col-body.is-drag-over {
+  background-color: var(--surface-container);
+  outline: 2px dashed var(--primary);
+  outline-offset: -2px;
+}
+
+/* ── Task cards ───────────────────────────────────────────── */
+
+.sd-card {
+  display: block;
+  transition: box-shadow 0.15s ease, opacity 0.15s ease;
+  cursor: grab;
+  user-select: none;
+}
+
+.sd-card:active {
+  cursor: grabbing;
+}
+
+.sd-card.is-dragging {
+  opacity: 0.4;
+}
+
+.sd-card-link {
+  display: block;
+  color: inherit;
+}
+
+.sd-card-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Card metadata row (criteria, icons) ──────────────────── */
+
+.sd-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.sd-card-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.sd-card-progress progress {
+  width: 1rem;
+  height: 1rem;
+}
+
+.sd-card-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── Drop placeholder ─────────────────────────────────────── */
+
+.sd-drop-placeholder {
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--primary);
+  margin-bottom: var(--space-2);
+  transition: height 0.1s ease;
+}
+
+/* ── Empty state ──────────────────────────────────────────── */
+
+.sd-empty {
+  padding: var(--space-3) 0;
+  text-align: center;
+  opacity: 0.6;
+}
+
+/* ── Responsive: fluid columns on desktop ─────────────────── */
+
+@media (min-width: 993px) {
+  .sd-col {
+    flex: 1 1 0;
+    min-width: 180px;
+  }
+}

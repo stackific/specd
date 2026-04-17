@@ -1,0 +1,205 @@
+{{define "content"}}
+<section class="container-xl p-3 m:p-5" id="spec-detail">
+  <nav class="mb-4">
+    <a href="/specs" class="chip small no-margin">
+      <i aria-hidden="true">arrow_back</i>
+      <span>Specs</span>
+    </a>
+  </nav>
+
+  <div class="grid no-space mb-2">
+    <div class="s8">
+      <h1 class="text-4 m:text-5 fw-7 lh-1">{{.Data.Spec.Title}}</h1>
+    </div>
+    <div class="s4 right-align">
+      <button class="circle transparent" data-ui="#edit-spec-dialog" title="Edit spec">
+        <i aria-hidden="true">edit</i>
+      </button>
+      <button class="circle transparent" data-ui="#delete-spec-dialog" title="Delete spec">
+        <i aria-hidden="true">delete</i>
+      </button>
+    </div>
+  </div>
+
+  <p class="text-1 mt-2">
+    <span class="chip small no-margin">{{.Data.Spec.Type}}</span>
+    <span class="ml-2">{{.Data.Spec.ID}}</span>
+  </p>
+  <p class="text-2 lh-4 mt-3">{{.Data.Spec.Summary}}</p>
+
+  {{if .Data.Progress}}
+  <div class="mt-4">
+    <progress class="primary" value="{{.Data.Progress.Done}}" max="{{.Data.Progress.Active}}"></progress>
+    <p class="text--1 mt-1">{{.Data.Progress.Done}}/{{.Data.Progress.Active}} tasks done</p>
+  </div>
+  {{end}}
+
+  <article class="sd-body surface-container-low round p-4 m:p-5 mt-5">
+    <div class="sd-body-md" data-md-body="{{.Data.Spec.Body}}"></div>
+  </article>
+
+  {{if .Data.Links}}
+  <div class="mt-5">
+    <h2 class="text-2 fw-6 lh-2 mb-2">Linked Specs</h2>
+    <div class="grid">
+      {{range .Data.Links}}
+      <a href="/specs/{{.ID}}" class="chip s12 m6 l4 no-line">
+        <i aria-hidden="true">link</i>
+        <span>{{.ID}}: {{.Title}}</span>
+      </a>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+
+  {{if .Data.Citations}}
+  <div class="mt-5">
+    <h2 class="text-2 fw-6 lh-2 mb-3">References</h2>
+    {{range .Data.Citations}}
+    <article class="surface-container-low round p-3 mb-2">
+      <p class="text-1 fw-5 lh-2">
+        {{if eq .SourceType "pdf"}}<i class="small" aria-hidden="true">picture_as_pdf</i>
+        {{else if eq .SourceType "md"}}<i class="small" aria-hidden="true">article</i>
+        {{else if eq .SourceType "html"}}<i class="small" aria-hidden="true">code</i>
+        {{else}}<i class="small" aria-hidden="true">text_snippet</i>
+        {{end}}
+        {{.KBDocTitle}} · chunk {{.ChunkPosition}}{{if .Page}} · page {{.Page}}{{end}}
+      </p>
+      <p class="text--1 lh-3 mt-1">{{stripTruncate .ChunkText 200}}</p>
+    </article>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="mt-5">
+    <div class="grid no-space mb-3">
+      <div class="s8">
+        <h2 class="text-2 fw-6 lh-2">Tasks</h2>
+      </div>
+      <div class="s4 right-align">
+        <button class="small round" data-ui="#new-task-dialog">
+          <i aria-hidden="true">add</i>
+          <span>Add Task</span>
+        </button>
+      </div>
+    </div>
+    {{if .Data.Tasks}}
+    <div class="grid">
+      {{range .Data.Tasks}}
+      <a href="/tasks/{{.ID}}" class="s12 m6 l4 no-line">
+        <article class="surface-container-low round p-3">
+          <p class="text-1 fw-5 lh-2">{{.Title}}</p>
+          <p class="text--1 mt-1">
+            <span class="chip small no-margin">{{.Status}}</span>
+            <span class="ml-2">{{.ID}}</span>
+          </p>
+          {{if .CriteriaTotal}}
+          <div class="mt-2">
+            <progress class="primary" value="{{.CriteriaChecked}}" max="{{.CriteriaTotal}}"></progress>
+            <p class="text--2 mt-1">{{.CriteriaChecked}}/{{.CriteriaTotal}} criteria</p>
+          </div>
+          {{end}}
+        </article>
+      </a>
+      {{end}}
+    </div>
+    {{else}}
+    <p class="text-1 lh-3">No tasks yet. Click <strong>Add Task</strong> to create one.</p>
+    {{end}}
+  </div>
+</section>
+
+<dialog id="edit-spec-dialog" aria-label="Edit spec" class="sd-dialog-form">
+  <h5>Edit Spec</h5>
+  {{template "edit-spec-form" .Data.EditSpecForm}}
+</dialog>
+
+<dialog id="delete-spec-dialog" aria-label="Delete spec confirmation" style="max-height:none;">
+  <h5>Delete Spec?</h5>
+  <p class="mt-3">This will move <strong>{{.Data.Spec.ID}}</strong> and all its tasks to trash.</p>
+  <nav class="right-align no-space mt-4">
+    <button type="button" class="transparent link" data-ui="#delete-spec-dialog">Cancel</button>
+    <form method="post" action="/specs/{{.Data.Spec.ID}}/delete" class="inline">
+      <button type="submit" class="error ml-2">Delete</button>
+    </form>
+  </nav>
+</dialog>
+
+<dialog id="new-task-dialog" aria-label="Create new task" class="sd-dialog-form">
+  <h5>New Task</h5>
+  {{template "new-task-form" .Data.TaskForm}}
+</dialog>
+{{end}}
+
+{{define "edit-spec-form"}}
+<form hx-post="/specs/{{.ID}}/update" hx-target="this" hx-swap="outerHTML" class="sd-dialog-body">
+  {{if .Error}}
+  <div class="sd-form-error error-container round p-3" role="alert">
+    <i aria-hidden="true">error</i>
+    <span>{{.Error}}</span>
+  </div>
+  {{end}}
+  <div class="field label border">
+    <input type="text" name="title" value="{{.Title}}" required minlength="2" pattern=".*\S.*" placeholder=" " />
+    <label>Title</label>
+  </div>
+  <div class="field label suffix border">
+    <select name="type" required>
+      <option value="functional"{{if eq .Type "functional"}} selected{{end}}>Functional</option>
+      <option value="business"{{if eq .Type "business"}} selected{{end}}>Business</option>
+      <option value="non-functional"{{if eq .Type "non-functional"}} selected{{end}}>Non-functional</option>
+    </select>
+    <label>Type</label>
+    <i aria-hidden="true">arrow_drop_down</i>
+  </div>
+  <div class="field label border">
+    <input type="text" name="summary" value="{{.Summary}}" placeholder=" " />
+    <label>Summary (optional, auto-generated)</label>
+  </div>
+  <div class="field textarea label border">
+    <textarea name="body" rows="12" required minlength="20" placeholder=" ">{{.Body}}</textarea>
+    <label>Body (markdown)</label>
+  </div>
+  <nav class="right-align no-space">
+    <button type="button" class="transparent link" data-ui="#edit-spec-dialog">Cancel</button>
+    <button type="submit" class="ml-2">Save</button>
+  </nav>
+</form>
+{{end}}
+
+{{define "new-task-form"}}
+<form hx-post="/tasks" hx-target="this" hx-swap="outerHTML" class="sd-dialog-body">
+  {{if .Error}}
+  <div class="sd-form-error error-container round p-3" role="alert">
+    <i aria-hidden="true">error</i>
+    <span>{{.Error}}</span>
+  </div>
+  {{end}}
+  <input type="hidden" name="spec_id" value="{{.SpecID}}" />
+  <div class="field label border">
+    <input type="text" name="title" value="{{.Title}}" required minlength="2" pattern=".*\S.*" placeholder=" " />
+    <label>Title</label>
+  </div>
+  <div class="field label border">
+    <input type="text" name="summary" value="{{.Summary}}" placeholder=" " />
+    <label>Summary (optional, auto-generated)</label>
+  </div>
+  <div class="field label suffix border">
+    <select name="status">
+      <option value="backlog"{{if eq .Status "backlog"}} selected{{end}}>Backlog</option>
+      <option value="todo"{{if eq .Status "todo"}} selected{{end}}>To Do</option>
+      <option value="in_progress"{{if eq .Status "in_progress"}} selected{{end}}>In Progress</option>
+    </select>
+    <label>Initial Status</label>
+    <i aria-hidden="true">arrow_drop_down</i>
+  </div>
+  <div class="field textarea label border">
+    <textarea name="body" rows="12" required minlength="20" placeholder=" ">{{.Body}}</textarea>
+    <label>Body (markdown)</label>
+  </div>
+  <nav class="right-align no-space">
+    <button type="button" class="transparent link" data-ui="#new-task-dialog">Cancel</button>
+    <button type="submit" class="ml-2">Create</button>
+  </nav>
+</form>
+{{end}}

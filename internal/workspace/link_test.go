@@ -10,8 +10,8 @@ import (
 func TestLinkSpecs(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "Auth", Type: "technical", Summary: "Auth"})
-	w.NewSpec(NewSpecInput{Title: "OAuth", Type: "technical", Summary: "OAuth"})
+	w.NewSpec(NewSpecInput{Title: "Auth", Type: "functional", Summary: "Auth"})
+	w.NewSpec(NewSpecInput{Title: "OAuth", Type: "functional", Summary: "OAuth"})
 
 	if err := w.Link("SPEC-1", "SPEC-2"); err != nil {
 		t.Fatalf("Link: %v", err)
@@ -38,8 +38,8 @@ func TestLinkSpecs(t *testing.T) {
 func TestUnlinkSpecs(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "A"})
-	w.NewSpec(NewSpecInput{Title: "B", Type: "technical", Summary: "B"})
+	w.NewSpec(NewSpecInput{Title: "A", Type: "functional", Summary: "A"})
+	w.NewSpec(NewSpecInput{Title: "B", Type: "functional", Summary: "B"})
 	w.Link("SPEC-1", "SPEC-2")
 
 	if err := w.Unlink("SPEC-1", "SPEC-2"); err != nil {
@@ -55,7 +55,7 @@ func TestUnlinkSpecs(t *testing.T) {
 func TestLinkTasks(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "S"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "S"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T1", Summary: "T1"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T2", Summary: "T2"})
 
@@ -72,7 +72,7 @@ func TestLinkTasks(t *testing.T) {
 func TestLinkCrossKindFails(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "S"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "S"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "T"})
 
 	err := w.Link("SPEC-1", "TASK-1")
@@ -84,8 +84,8 @@ func TestLinkCrossKindFails(t *testing.T) {
 func TestLinkIdempotent(t *testing.T) {
 	w := setupWorkspace(t)
 
-	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "A"})
-	w.NewSpec(NewSpecInput{Title: "B", Type: "technical", Summary: "B"})
+	w.NewSpec(NewSpecInput{Title: "A", Type: "functional", Summary: "A"})
+	w.NewSpec(NewSpecInput{Title: "B", Type: "functional", Summary: "B"})
 
 	w.Link("SPEC-1", "SPEC-2")
 	// Second link should not error (INSERT OR IGNORE).
@@ -101,7 +101,7 @@ func TestLinkIdempotent(t *testing.T) {
 
 func TestLinkNonexistentSource(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
+	w.NewSpec(NewSpecInput{Title: "A", Type: "functional", Summary: "a"})
 
 	err := w.Link("SPEC-999", "SPEC-1")
 	if err == nil {
@@ -111,7 +111,7 @@ func TestLinkNonexistentSource(t *testing.T) {
 
 func TestLinkNonexistentTarget(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
+	w.NewSpec(NewSpecInput{Title: "A", Type: "functional", Summary: "a"})
 
 	err := w.Link("SPEC-1", "SPEC-999")
 	if err == nil {
@@ -121,8 +121,8 @@ func TestLinkNonexistentTarget(t *testing.T) {
 
 func TestUnlinkNonexistentLink(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "A", Type: "technical", Summary: "a"})
-	w.NewSpec(NewSpecInput{Title: "B", Type: "technical", Summary: "b"})
+	w.NewSpec(NewSpecInput{Title: "A", Type: "functional", Summary: "a"})
+	w.NewSpec(NewSpecInput{Title: "B", Type: "functional", Summary: "b"})
 
 	err := w.Unlink("SPEC-1", "SPEC-2")
 	if err != nil {
@@ -132,7 +132,7 @@ func TestUnlinkNonexistentLink(t *testing.T) {
 
 func TestLinkTaskNonexistent(t *testing.T) {
 	w := setupWorkspace(t)
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "s"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "s"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "T", Summary: "t"})
 
 	err := w.Link("TASK-1", "TASK-999")

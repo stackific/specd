@@ -1,0 +1,101 @@
+{{define "content"}}
+<section class="container-xl p-3 m:p-5">
+  <h1 class="text-4 m:text-5 fw-7 lh-1 mb-5">Search</h1>
+
+  <form method="get" action="/search" class="mb-5">
+    <div class="field label prefix border">
+      <i aria-hidden="true">search</i>
+      <input type="search" name="q" value="{{.Data.Query}}" autocomplete="off" placeholder=" " />
+      <label>Search specs, tasks, and KB...</label>
+    </div>
+  </form>
+
+  {{if .Data.Results}}
+    {{if .Data.Results.Specs}}
+    <div class="mb-5">
+      <h2 class="text-2 fw-6 lh-2 mb-3">
+        <i aria-hidden="true">description</i> Specs
+        <span class="text--1 fw-4 ml-2">({{len .Data.Results.Specs}})</span>
+      </h2>
+      {{range .Data.Results.Specs}}
+      <a href="/specs/{{.ID}}" class="no-line">
+        <article class="surface-container-low round p-3 mb-2">
+          <div class="middle-align">
+            <p class="text-1 fw-5 lh-2">{{.Title}}</p>
+          </div>
+          <p class="text--1 mt-1">
+            <span class="fw-5">{{.ID}}</span>
+            <span class="chip small no-margin ml-2">{{.MatchType}}</span>
+            <span class="ml-2">score {{printf "%.2f" .Score}}</span>
+          </p>
+          {{if .Summary}}<p class="text-1 lh-3 mt-1">{{.Summary}}</p>{{end}}
+        </article>
+      </a>
+      {{end}}
+    </div>
+    {{end}}
+
+    {{if .Data.Results.Tasks}}
+    <div class="mb-5">
+      <h2 class="text-2 fw-6 lh-2 mb-3">
+        <i aria-hidden="true">checklist</i> Tasks
+        <span class="text--1 fw-4 ml-2">({{len .Data.Results.Tasks}})</span>
+      </h2>
+      {{range .Data.Results.Tasks}}
+      <a href="/tasks/{{.ID}}" class="no-line">
+        <article class="surface-container-low round p-3 mb-2">
+          <div class="middle-align">
+            <p class="text-1 fw-5 lh-2">{{.Title}}</p>
+          </div>
+          <p class="text--1 mt-1">
+            <span class="fw-5">{{.ID}}</span>
+            <span class="chip small no-margin ml-2">{{.MatchType}}</span>
+            <span class="ml-2">score {{printf "%.2f" .Score}}</span>
+          </p>
+          {{if .Summary}}<p class="text-1 lh-3 mt-1">{{.Summary}}</p>{{end}}
+        </article>
+      </a>
+      {{end}}
+    </div>
+    {{end}}
+
+    {{if .Data.Results.KB}}
+    <div class="mb-5">
+      <h2 class="text-2 fw-6 lh-2 mb-3">
+        <i aria-hidden="true">menu_book</i> Knowledge Base
+        <span class="text--1 fw-4 ml-2">({{len .Data.Results.KB}})</span>
+      </h2>
+      {{range .Data.Results.KB}}
+      <a href="/kb/{{.ID}}" class="no-line">
+        <article class="surface-container-low round p-3 mb-2">
+          <div class="middle-align">
+            <p class="text-1 fw-5 lh-2">{{.Title}}</p>
+          </div>
+          <p class="text--1 mt-1">
+            <span class="fw-5">{{.ID}}</span>
+            <span class="chip small no-margin ml-2">{{.MatchType}}</span>
+            <span class="ml-2">score {{printf "%.2f" .Score}}</span>
+          </p>
+          {{if .Summary}}<p class="text-1 lh-3 mt-1">{{truncate .Summary 200}}</p>{{end}}
+        </article>
+      </a>
+      {{end}}
+    </div>
+    {{end}}
+
+    {{if and (not .Data.Results.Specs) (not .Data.Results.Tasks) (not .Data.Results.KB)}}
+    <article class="surface-container-low round p-5">
+      <p class="text-2 lh-3">No results found for "{{.Data.Query}}".</p>
+    </article>
+    {{end}}
+  {{else if .Data.Query}}
+    <article class="surface-container-low round p-5">
+      <p class="text-2 lh-3">No results found for "{{.Data.Query}}".</p>
+    </article>
+  {{else}}
+    <article class="surface-container-low round p-5">
+      <p class="text-2 lh-3">Enter a query to search across specs, tasks, and knowledge base documents.</p>
+    </article>
+  {{end}}
+</section>
+{{end}}

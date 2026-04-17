@@ -6,6 +6,7 @@ package workspace
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -34,7 +35,7 @@ type Spec struct {
 // NewSpecInput holds the parameters for creating a new spec.
 type NewSpecInput struct {
 	Title   string
-	Type    string // business, technical, non-technical
+	Type    string // business, functional, non-functional
 	Summary string
 	Body    string
 }
@@ -360,8 +361,10 @@ func (w *Workspace) DeleteSpec(specID string) error {
 			return fmt.Errorf("read spec for trash: %w", err)
 		}
 
-		metadata := fmt.Sprintf(`{"id":"%s","title":"%s","type":"%s","path":"%s"}`,
-			spec.ID, spec.Title, spec.Type, spec.Path)
+		metaBytes, _ := json.Marshal(map[string]string{
+			"id": spec.ID, "title": spec.Title, "type": spec.Type, "path": spec.Path,
+		})
+		metadata := string(metaBytes)
 
 		tx, err := w.DB.Begin()
 		if err != nil {

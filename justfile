@@ -17,7 +17,13 @@ build: web
 dev:
     #!/usr/bin/env bash
     set -euo pipefail
+    export PATH="$HOME/go/bin:$PATH"
     trap 'kill 0' EXIT
+    # Ensure a dev workspace exists for the serve command.
+    if [ ! -d "tmp/devws/.specd" ]; then
+      mkdir -p tmp/devws
+      go run ./cmd/specd/ init tmp/devws --force
+    fi
     (cd {{webdir}} && pnpm dev) &
     air &
     wait

@@ -25,7 +25,7 @@ func TestRebuildWithSpecsAndTasks(t *testing.T) {
 	w := setupWorkspace(t)
 
 	// Create some data.
-	w.NewSpec(NewSpecInput{Title: "Auth", Type: "technical", Summary: "auth spec"})
+	w.NewSpec(NewSpecInput{Title: "Auth", Type: "functional", Summary: "auth spec"})
 	w.NewSpec(NewSpecInput{Title: "Billing", Type: "business", Summary: "billing spec"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Design schema", Summary: "design db schema", Status: "todo"})
 	w.NewTask(NewTaskInput{SpecID: "SPEC-1", Title: "Implement JWT", Summary: "jwt implementation", Status: "in_progress"})
@@ -76,7 +76,7 @@ func TestRebuildPreservesUserName(t *testing.T) {
 	w := setupWorkspace(t)
 
 	w.DB.SetMeta("user_name", "TestUser")
-	w.NewSpec(NewSpecInput{Title: "S", Type: "technical", Summary: "test spec"})
+	w.NewSpec(NewSpecInput{Title: "S", Type: "functional", Summary: "test spec"})
 
 	_, err := w.Rebuild(false)
 	if err != nil {

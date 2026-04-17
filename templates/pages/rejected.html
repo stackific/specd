@@ -1,0 +1,41 @@
+{{define "content"}}
+<section class="container-xl p-3 m:p-5">
+  <nav class="mb-4">
+    <a href="/status" class="chip small no-margin">
+      <i aria-hidden="true">arrow_back</i>
+      <span>Status</span>
+    </a>
+  </nav>
+
+  <h1 class="text-4 m:text-5 fw-7 lh-1 mb-5">Rejected Files</h1>
+
+  {{if .Data.Files}}
+  <p class="text-1 lh-3 mb-4">
+    These files were found under <code>specd/</code> but were not created by specd.
+    Remove the file and re-add it through the CLI.
+  </p>
+  <table class="border">
+    <thead>
+      <tr>
+        <th>Path</th>
+        <th>Reason</th>
+        <th class="m l">Detected</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Data.Files}}
+      <tr>
+        <td class="fw-5 text--1">{{.Path}}</td>
+        <td class="text--1">{{.Reason}}</td>
+        <td class="m l text--1">{{.DetectedAt}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+  {{else}}
+  <article class="surface-container-low round p-5">
+    <p class="text-2 lh-3"><i aria-hidden="true">check_circle</i> No rejected files.</p>
+  </article>
+  {{end}}
+</section>
+{{end}}

@@ -1,0 +1,124 @@
+{{define "content"}}
+<section class="container-xl p-3 m:p-5" id="kb-reader"
+  data-doc-id="{{.Data.Doc.ID}}"
+  data-source-type="{{.Data.Doc.SourceType}}"
+  data-total-chunks="{{.Data.TotalChunks}}"
+  data-active-chunk="{{.Data.ActiveChunk}}">
+
+  <!-- Back nav + doc header -->
+  <nav class="mb-4">
+    <a href="/kb" class="chip small no-margin">
+      <i aria-hidden="true">arrow_back</i>
+      <span>Knowledge Base</span>
+    </a>
+  </nav>
+
+  <div class="grid no-space mb-2">
+    <div class="s9 m10">
+      <h1 class="text-4 m:text-5 fw-7 lh-1">{{.Data.Doc.Title}}</h1>
+    </div>
+    <div class="s3 m2 right-align">
+      <button class="circle transparent" id="kr-toggle-chunks" title="Toggle chunk list"
+        aria-label="Toggle chunk sidebar" aria-expanded="false">
+        <i aria-hidden="true">view_list</i>
+      </button>
+    </div>
+  </div>
+
+  <div class="mt-2">
+    <span class="chip small no-margin">
+      {{if eq .Data.Doc.SourceType "md"}}<i aria-hidden="true">article</i>
+      {{else if eq .Data.Doc.SourceType "html"}}<i aria-hidden="true">code</i>
+      {{else if eq .Data.Doc.SourceType "pdf"}}<i aria-hidden="true">picture_as_pdf</i>
+      {{else}}<i aria-hidden="true">text_snippet</i>
+      {{end}}
+      <span>{{.Data.Doc.SourceType}}</span>
+    </span>
+    <span class="ml-2">{{.Data.Doc.ID}}</span>
+    {{if .Data.Doc.PageCount}}<span class="ml-2">· {{.Data.Doc.PageCount}} pages</span>{{end}}
+    <span class="ml-2 text--1">Added {{.Data.Doc.AddedAt}}</span>
+  </div>
+
+  {{if .Data.Doc.Note}}<p class="text-2 lh-4 mt-3">{{.Data.Doc.Note}}</p>{{end}}
+
+  {{if .Data.Citations}}
+  <div class="mt-4 mb-2">
+    <h3 class="text-1 fw-6 lh-2 mb-2">Cited By</h3>
+    <div class="grid">
+      {{range .Data.Citations}}
+      <a href="/{{if eq .Kind "spec"}}specs{{else}}tasks{{end}}/{{.ID}}" class="chip s12 m6 l4 no-line">
+        {{if eq .Kind "spec"}}<i aria-hidden="true">description</i>
+        {{else}}<i aria-hidden="true">task_alt</i>
+        {{end}}
+        <span>{{.ID}}: {{.Title}}</span>
+      </a>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+
+  <!-- Chunk navigation bar -->
+  {{if gt .Data.TotalChunks 0}}
+  <nav class="kr-chunk-nav mt-4" aria-label="Chunk navigation">
+    <button class="circle small border" id="kr-prev" title="Previous chunk" aria-label="Previous chunk" disabled>
+      <i aria-hidden="true">chevron_left</i>
+    </button>
+    <span class="kr-chunk-pos" id="kr-pos">
+      <span id="kr-current">—</span> / {{.Data.TotalChunks}}
+    </span>
+    <button class="circle small border" id="kr-next" title="Next chunk" aria-label="Next chunk">
+      <i aria-hidden="true">chevron_right</i>
+    </button>
+    <button class="small border ml-3" id="kr-highlight-toggle" title="Toggle chunk highlight" aria-pressed="true">
+      <i aria-hidden="true">highlight</i>
+      <span>Highlight</span>
+    </button>
+  </nav>
+  {{end}}
+
+  <!-- Main content area with optional chunk sidebar -->
+  <div class="kr-layout mt-4">
+    <!-- Chunk sidebar (hidden by default) -->
+    <aside class="kr-sidebar" id="kr-sidebar" aria-label="Chunk list" hidden>
+      <h3 class="text--1 fw-6 mb-2 p-2">Chunks</h3>
+      <ol class="kr-chunk-list" id="kr-chunk-list">
+        {{range .Data.Chunks}}
+        <li>
+          <button class="kr-chunk-item" data-chunk-pos="{{.Position}}" title="Jump to chunk {{.Position}}">
+            <span class="kr-chunk-num">{{.Position}}</span>
+            <span class="kr-chunk-preview">{{truncate .Text 60}}</span>
+          </button>
+        </li>
+        {{end}}
+      </ol>
+    </aside>
+
+    <!-- Rendered content -->
+    <article class="kr-content surface-container-low round p-4 m:p-5" id="kr-content" role="document">
+      <div class="kr-loading center-align p-5" id="kr-loading">
+        <progress class="circle"></progress>
+        <p class="mt-2 text--1">Loading document...</p>
+      </div>
+    </article>
+  </div>
+
+  {{if .Data.Connections}}
+  <div class="mt-5">
+    <h2 class="text-2 fw-6 lh-2 mb-3">Related Chunks</h2>
+    {{range .Data.Connections}}
+    <a href="/kb/{{.ToDocID}}?chunk={{.ToPosition}}" class="no-line">
+      <article class="surface-container-low round p-3 mb-2">
+        <p class="text-1 fw-5 lh-2">{{.ToDocTitle}} · chunk {{.ToPosition}}{{if .ToPage}} · page {{.ToPage}}{{end}}</p>
+        <p class="text--1 mt-1">strength {{printf "%.2f" .Strength}} · {{.Method}}</p>
+        <p class="text-1 lh-3 mt-1">{{truncate .ToText 200}}</p>
+      </article>
+    </a>
+    {{end}}
+  </div>
+  {{end}}
+</section>
+
+<!-- Chunk data embedded as JSON for client-side rendering -->
+<script id="kr-chunks-data" type="application/json">{{toJSON .Data.Chunks}}</script>
+<script src="/assets/kb-reader.js"></script>
+{{end}}
