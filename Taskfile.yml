@@ -1,0 +1,158 @@
+version: "3"
+
+vars:
+  BINARY: specd
+  MODULE: github.com/stackific/specd
+
+env:
+  CGO_ENABLED: "0"
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list-all
+
+  build:
+    desc: Build the binary
+    cmds:
+      - go build -o bin/{{.BINARY}} .
+
+  run:
+    desc: Build and run
+    cmds:
+      - go run .
+
+  dev:
+    desc: Live reload during development
+    cmds:
+      - air
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./...
+
+  # --- Formatting ---
+
+  fmt:
+    desc: Format all Go files (gofumpt + goimports + gci)
+    cmds:
+      - gofumpt -w .
+      - goimports -w .
+      - gci write --section standard --section default --section "prefix({{.MODULE}})" .
+
+  fmt:check:
+    desc: Check formatting without writing
+    cmds:
+      - test -z "$(gofumpt -d .)" || (echo "gofumpt needs fixing" && exit 1)
+      - test -z "$(goimports -l .)" || (echo "goimports needs fixing" && exit 1)
+      - gci diff --section standard --section default --section "prefix({{.MODULE}})" .
+
+  # --- Linting ---
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run ./...
+
+  lint:fix:
+    desc: Run golangci-lint with auto-fix
+    cmds:
+      - golangci-lint run --fix ./...
+
+  # --- Security ---
+
+  sec:
+    desc: Run all security checks
+    cmds:
+      - task: sec:gosec
+      - task: sec:vulncheck
+      - task: sec:gitleaks
+
+  sec:gosec:
+    desc: Run gosec via golangci-lint
+    cmds:
+      - golangci-lint run --enable-only gosec ./...
+
+  sec:vulncheck:
+    desc: Check dependencies for known vulnerabilities
+    cmds:
+      - govulncheck ./...
+
+  sec:gitleaks:
+    desc: Scan for leaked secrets
+    cmds:
+      - gitleaks detect --no-banner
+
+  # --- Dead code ---
+
+  deadcode:
+    desc: Find unreachable code from main
+    cmds:
+      - deadcode ./...
+
+  # --- Quality gate (runs everything) ---
+
+  check:
+    desc: Run all checks (fmt, lint, test, security)
+    cmds:
+      - task: fmt:check
+      - task: lint
+      - task: test
+      - task: sec
+
+  # --- Git hooks ---
+
+  hooks:install:
+    desc: Install lefthook git hooks
+    cmds:
+      - lefthook install
+
+  hooks:uninstall:
+    desc: Uninstall lefthook git hooks
+    cmds:
+      - lefthook uninstall
+
+  # --- Clean ---
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf bin/ tmp/
+
+  # --- Cross-compilation ---
+
+  build:all:
+    desc: Cross-compile for Windows, Linux, and macOS
+    cmds:
+      - task: build:linux-amd64
+      - task: build:linux-arm64
+      - task: build:darwin-amd64
+      - task: build:darwin-arm64
+      - task: build:windows-amd64
+      - task: build:windows-arm64
+
+  build:linux-amd64:
+    cmds:
+      - GOOS=linux GOARCH=amd64 go build -o bin/{{.BINARY}}-linux-amd64 .
+
+  build:linux-arm64:
+    cmds:
+      - GOOS=linux GOARCH=arm64 go build -o bin/{{.BINARY}}-linux-arm64 .
+
+  build:darwin-amd64:
+    cmds:
+      - GOOS=darwin GOARCH=amd64 go build -o bin/{{.BINARY}}-darwin-amd64 .
+
+  build:darwin-arm64:
+    cmds:
+      - GOOS=darwin GOARCH=arm64 go build -o bin/{{.BINARY}}-darwin-arm64 .
+
+  build:windows-amd64:
+    cmds:
+      - GOOS=windows GOARCH=amd64 go build -o bin/{{.BINARY}}-windows-amd64.exe .
+
+  build:windows-arm64:
+    cmds:
+      - GOOS=windows GOARCH=arm64 go build -o bin/{{.BINARY}}-windows-arm64.exe .

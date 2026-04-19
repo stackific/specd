@@ -1,0 +1,26 @@
+min_version: 2.0.0
+
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: "*.go"
+      run: export PATH="$HOME/go/bin:$PATH" && gofumpt -w {staged_files} && goimports -w {staged_files} && gci write --section standard --section default --section "prefix(github.com/stackific/specd)" {staged_files} && git add {staged_files}
+    golangci-lint:
+      glob: "*.go"
+      run: golangci-lint run --fix ./...
+    gitleaks:
+      run: gitleaks protect --staged --no-banner
+
+commit-msg:
+  commands:
+    conform:
+      run: export PATH="$HOME/go/bin:$PATH" && conform enforce --commit-msg-file {1}
+
+pre-push:
+  parallel: true
+  commands:
+    test:
+      run: go test ./...
+    govulncheck:
+      run: export PATH="$HOME/go/bin:$PATH" && govulncheck ./...
