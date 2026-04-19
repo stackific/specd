@@ -37,6 +37,16 @@ build-all: web
     GOOS=linux   GOARCH=arm64 go build -o dist/{{app}}-linux-arm64        ./cmd/specd/
     GOOS=windows GOARCH=amd64 go build -o dist/{{app}}-windows-amd64.exe  ./cmd/specd/
 
+# Run dev server against qa/run workspace with live reload
+qa:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    export PATH="$HOME/go/bin:$PATH"
+    trap 'kill 0' EXIT
+    (cd {{webdir}} && pnpm dev) &
+    air -c .air-qa.toml &
+    wait
+
 # Remove build artifacts
 clean:
     rm -rf {{app}} dist/ {{webdir}}/dist/

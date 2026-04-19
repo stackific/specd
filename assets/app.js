@@ -82,6 +82,36 @@
     }
   });
 
+  // ── Board filter persistence ────────────────────────────
+  // Saves the selected spec filter to localStorage so it survives
+  // navigation away and back. The early-redirect script in <head>
+  // restores it before first paint. Invalidates if the spec was deleted.
+  function initBoardFilter() {
+    var sel = document.getElementById("board-spec-filter");
+    if (!sel) return;
+
+    // Invalidate: if localStorage has a spec that no longer exists
+    // in the dropdown (deleted), clear it so next visit shows all.
+    var saved = localStorage.getItem("sd-board-spec");
+    if (saved) {
+      var found = false;
+      for (var i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === saved) { found = true; break; }
+      }
+      if (!found) localStorage.removeItem("sd-board-spec");
+    }
+
+    // Persist on change.
+    sel.addEventListener("change", function () {
+      if (sel.value) {
+        localStorage.setItem("sd-board-spec", sel.value);
+      } else {
+        localStorage.removeItem("sd-board-spec");
+      }
+    });
+  }
+  initBoardFilter();
+
   // ── Markdown body rendering ──────────────────────────────
   renderMarkdownBodies();
 
@@ -90,6 +120,7 @@
 
   // Re-init after htmx swaps (board reload, detail reload).
   document.body.addEventListener("htmx:afterSwap", function () {
+    initBoardFilter();
     initKanbanDnD();
     renderMarkdownBodies();
   });
@@ -101,8 +132,10 @@
     var draggedCard = null;
     var draggedTaskID = null;
     var sourceStatus = null;
+    var placeholder = null;
+    // Track the resolved drop target so drop uses the same index the user saw.
+    var dropTarget = null; // { status, position }
 
-    // Attach drag events to all cards.
     board.querySelectorAll(".sd-card[draggable]").forEach(function (card) {
       card.addEventListener("dragstart", function (e) {
         draggedCard = card;
@@ -115,61 +148,84 @@
 
       card.addEventListener("dragend", function () {
         card.classList.remove("is-dragging");
-        clearDropHighlights();
-        removePlaceholders();
+        clearPlaceholder();
         draggedCard = null;
         draggedTaskID = null;
         sourceStatus = null;
+        dropTarget = null;
       });
     });
 
-    // Attach drop zone events to column bodies.
     board.querySelectorAll(".sd-col-body").forEach(function (colBody) {
       colBody.addEventListener("dragover", function (e) {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
-        colBody.classList.add("is-drag-over");
 
-        // Show placeholder between cards.
-        var afterCard = getCardAfterCursor(colBody, e.clientY);
-        removePlaceholders();
-        var placeholder = document.createElement("div");
+        // Get visible cards (exclude the dragged one).
+        var cards = Array.from(
+          colBody.querySelectorAll(".sd-card:not(.is-dragging)")
+        );
+        var afterCard = cardAfterCursor(cards, e.clientY);
+
+        // Compute position index before any DOM changes.
+        var position = afterCard ? cards.indexOf(afterCard) : cards.length;
+        var targetStatus = colBody.dataset.status;
+
+        // Skip if this is the same slot the card is already in.
+        // position is an index in the filtered list (without dragged card),
+        // srcIdx is the index in the full list (with dragged card).
+        // Only position === srcIdx is a true no-op in the filtered list.
+        if (targetStatus === sourceStatus) {
+          var srcCards = Array.from(
+            colBody.querySelectorAll(".sd-card")
+          );
+          var srcIdx = srcCards.indexOf(draggedCard);
+          if (position === srcIdx) {
+            clearPlaceholder();
+            dropTarget = null;
+            return;
+          }
+        }
+
+        // Only update DOM if insertion point actually changed.
+        var ref = afterCard ? afterCard.dataset.taskId : "_end";
+        if (dropTarget && dropTarget.ref === ref && dropTarget.status === targetStatus) {
+          return;
+        }
+
+        clearPlaceholder();
+        placeholder = document.createElement("div");
         placeholder.className = "sd-drop-placeholder";
         if (afterCard) {
           colBody.insertBefore(placeholder, afterCard);
         } else {
           colBody.appendChild(placeholder);
         }
+
+        dropTarget = { status: targetStatus, position: position, ref: ref };
       });
 
       colBody.addEventListener("dragleave", function (e) {
-        // Only remove highlight if leaving the column entirely.
         if (!colBody.contains(e.relatedTarget)) {
-          colBody.classList.remove("is-drag-over");
-          removePlaceholders();
+          clearPlaceholder();
+          dropTarget = null;
         }
       });
 
       colBody.addEventListener("drop", function (e) {
         e.preventDefault();
-        colBody.classList.remove("is-drag-over");
-        removePlaceholders();
+        clearPlaceholder();
 
-        if (!draggedTaskID) return;
+        if (!draggedTaskID || !dropTarget) return;
 
-        var targetStatus = colBody.dataset.status;
-        var afterCard = getCardAfterCursor(colBody, e.clientY);
-
-        // Compute the target position index.
-        var cards = Array.from(colBody.querySelectorAll(".sd-card:not(.is-dragging)"));
-        var targetPos = afterCard ? cards.indexOf(afterCard) : cards.length;
-
-        var url = targetStatus !== sourceStatus
+        var url = dropTarget.status !== sourceStatus
           ? "/api/board/move"
           : "/api/board/reorder";
-        var payload = targetStatus !== sourceStatus
-          ? { task_id: draggedTaskID, status: targetStatus }
-          : { task_id: draggedTaskID, position: targetPos };
+        var payload = dropTarget.status !== sourceStatus
+          ? { task_id: draggedTaskID, status: dropTarget.status, position: dropTarget.position }
+          : { task_id: draggedTaskID, position: dropTarget.position };
+
+        dropTarget = null;
 
         fetch(url, {
           method: "POST",
@@ -200,10 +256,8 @@
       });
     });
 
-    function getCardAfterCursor(colBody, y) {
-      var cards = Array.from(
-        colBody.querySelectorAll(".sd-card:not(.is-dragging)")
-      );
+    // Find the card whose top-center is just below the cursor.
+    function cardAfterCursor(cards, y) {
       var closest = null;
       var closestOffset = Number.NEGATIVE_INFINITY;
       cards.forEach(function (card) {
@@ -217,16 +271,11 @@
       return closest;
     }
 
-    function clearDropHighlights() {
-      board.querySelectorAll(".sd-col-body.is-drag-over").forEach(function (el) {
-        el.classList.remove("is-drag-over");
-      });
-    }
-
-    function removePlaceholders() {
-      board.querySelectorAll(".sd-drop-placeholder").forEach(function (el) {
-        el.remove();
-      });
+    function clearPlaceholder() {
+      if (placeholder && placeholder.parentNode) {
+        placeholder.remove();
+      }
+      placeholder = null;
     }
   }
 

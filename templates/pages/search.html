@@ -5,12 +5,16 @@
   <form method="get" action="/search" class="mb-5">
     <div class="field label prefix border">
       <i aria-hidden="true">search</i>
-      <input type="search" name="q" value="{{.Data.Query}}" autocomplete="off" placeholder=" " />
+      <input type="search" name="q" value="{{.Data.Query}}" autocomplete="off" autofocus placeholder=" " />
       <label>Search specs, tasks, and KB...</label>
     </div>
   </form>
 
-  {{if .Data.Results}}
+  {{if .Data.Error}}
+    <article class="surface-container-low round p-5">
+      <p class="text-2 lh-3">{{.Data.Error}}</p>
+    </article>
+  {{else if .Data.Results}}
     {{if .Data.Results.Specs}}
     <div class="mb-5">
       <h2 class="text-2 fw-6 lh-2 mb-3">
@@ -93,9 +97,9 @@
       <p class="text-2 lh-3">No results found for "{{.Data.Query}}".</p>
     </article>
   {{else}}
-    <article class="surface-container-low round p-5">
+    <div class="surface-container-low round p-5 no-elevate">
       <p class="text-2 lh-3">Enter a query to search across specs, tasks, and knowledge base documents.</p>
-    </article>
+    </div>
   {{end}}
 </section>
 {{end}}

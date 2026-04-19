@@ -63,7 +63,7 @@ func TestWatcherDetectsTaskEdit(t *testing.T) {
 		SpecID:  "SPEC-1",
 		Title:   "Design schema",
 		Summary: "Design the DB schema",
-		Body:    "# Design schema\n\n## Acceptance criteria\n\n- [ ] Users table\n- [ ] Sessions table",
+		Body:    "## Design schema\n\n## Acceptance criteria\n\n- [ ] Users table\n- [ ] Sessions table",
 	})
 	if err != nil {
 		t.Fatalf("NewTask: %v", err)

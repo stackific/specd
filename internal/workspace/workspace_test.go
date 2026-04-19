@@ -113,7 +113,7 @@ func TestNewSpecAndRead(t *testing.T) {
 		Title:   "OAuth with GitHub",
 		Type:    "functional",
 		Summary: "OAuth flow using GitHub",
-		Body:    "# OAuth\n\nBody.",
+		Body:    "## Overview\n\nOAuth body.",
 	})
 	if err != nil {
 		t.Fatalf("NewSpec: %v", err)
@@ -160,7 +160,7 @@ func TestNewTaskAndRead(t *testing.T) {
 		SpecID:  "SPEC-1",
 		Title:   "Design schema",
 		Summary: "Design DB schema",
-		Body:    "# Schema\n\n## Acceptance criteria\n\n- [ ] Users table\n- [x] Sessions table",
+		Body:    "## Schema\n\n## Acceptance criteria\n\n- [ ] Users table\n- [x] Sessions table",
 	})
 	if err != nil {
 		t.Fatalf("NewTask: %v", err)

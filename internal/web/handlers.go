@@ -17,11 +17,37 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/stackific/specd/internal/workspace"
 )
+
+// idNum extracts the numeric suffix from an ID like "TASK-12" or "SPEC-3".
+func idNum(id string) int {
+	if i := strings.LastIndex(id, "-"); i >= 0 {
+		if n, err := strconv.Atoi(id[i+1:]); err == nil {
+			return n
+		}
+	}
+	return 0
+}
+
+// sortTasksByID sorts tasks by numeric ID ascending.
+func sortTasksByID(tasks []workspace.Task) {
+	sort.Slice(tasks, func(i, j int) bool {
+		return idNum(tasks[i].ID) < idNum(tasks[j].ID)
+	})
+}
+
+// sortSpecsByID sorts specs by numeric ID ascending.
+func sortSpecsByID(specs []workspace.Spec) {
+	sort.Slice(specs, func(i, j int) bool {
+		return idNum(specs[i].ID) < idNum(specs[j].ID)
+	})
+}
 
 // validSpecTypes is the set of accepted spec type values.
 var validSpecTypes = map[string]bool{
@@ -40,6 +66,56 @@ var validTaskStatuses = map[string]bool{
 	"done":                 true,
 	"cancelled":            true,
 	"wontfix":              true,
+}
+
+// bodyHasH1 reports whether the body contains an H1 heading (# Title).
+// Titles must come from frontmatter, not from markdown headings.
+var h1Re = regexp.MustCompile(`(?m)^#\s+`)
+
+func bodyHasH1(body string) bool {
+	return h1Re.MatchString(body)
+}
+
+// h1Line matches a full H1 heading line (# Title\n).
+var h1Line = regexp.MustCompile(`(?m)^#\s+[^\n]*\n?`)
+
+// stripH1 removes all H1 heading lines from the body.
+func stripH1(body string) string {
+	out := h1Line.ReplaceAllString(body, "")
+	return strings.TrimLeft(out, "\n")
+}
+
+// stripCriteriaFromBody removes the "## Acceptance criteria" section from the
+// body. Criteria are managed via the UI, not the body text.
+func stripCriteriaFromBody(body string) string {
+	const header = "## Acceptance criteria"
+	idx := strings.Index(body, header)
+	if idx < 0 {
+		return body
+	}
+	before := strings.TrimRight(body[:idx], "\n")
+	rest := body[idx+len(header):]
+	if nlIdx := strings.IndexByte(rest, '\n'); nlIdx >= 0 {
+		rest = rest[nlIdx+1:]
+	} else {
+		return before
+	}
+	endIdx := -1
+	for i := 0; i < len(rest); {
+		if strings.HasPrefix(rest[i:], "## ") {
+			endIdx = i
+			break
+		}
+		nlPos := strings.IndexByte(rest[i:], '\n')
+		if nlPos < 0 {
+			break
+		}
+		i = i + nlPos + 1
+	}
+	if endIdx >= 0 {
+		return before + "\n\n" + rest[endIdx:]
+	}
+	return before
 }
 
 // trimFormValue returns the trimmed form value, collapsing consecutive spaces.
@@ -155,7 +231,7 @@ var kanbanStatuses = []struct {
 	{"todo", "To Do", "checklist"},
 	{"in_progress", "In Progress", "pending"},
 	{"blocked", "Blocked", "block"},
-	{"pending_verification", "Verification", "verified"},
+	{"pending_verification", "QA", "verified"},
 	{"done", "Done", "check_circle"},
 	{"cancelled", "Cancelled", "cancel"},
 	{"wontfix", "Won't Fix", "do_not_disturb_on"},
@@ -355,8 +431,9 @@ func (s *Server) renderBoardPartial(w http.ResponseWriter, r *http.Request) {
 
 // MoveRequest represents the JSON body for a task move via drag-and-drop.
 type MoveRequest struct {
-	TaskID string `json:"task_id"`
-	Status string `json:"status"`
+	TaskID   string `json:"task_id"`
+	Status   string `json:"status"`
+	Position *int   `json:"position,omitempty"`
 }
 
 // ReorderRequest represents the JSON body for a task reorder via drag-and-drop.
@@ -384,6 +461,17 @@ func (s *Server) handleDragMove(w http.ResponseWriter, r *http.Request) {
 	if err := s.w.MoveTask(req.TaskID, req.Status); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// If a position was specified, reorder within the new column.
+	if req.Position != nil {
+		if err := s.w.ReorderTask(req.TaskID, workspace.ReorderInput{
+			Mode:     workspace.ReorderTo,
+			Position: *req.Position,
+		}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	s.renderBoardPartial(w, r)
@@ -494,6 +582,8 @@ func (s *Server) handleCreateSpec(w http.ResponseWriter, r *http.Request) {
 		form.Error = "Body is required — describe the spec in enough detail for an AI agent to act on it"
 	} else if len(form.Body) < 20 {
 		form.Error = "Body must be at least 20 characters"
+	} else if bodyHasH1(form.Body) {
+		form.Error = "Do not use heading 1 (# Title) in the body — the title comes from the title field"
 	}
 
 	if form.Error != "" {
@@ -580,7 +670,7 @@ func (s *Server) handleSpecDetail(w http.ResponseWriter, r *http.Request) {
 			AllSpecs:  allSpecs,
 			EditSpecForm: &EditSpecFormData{
 				ID: spec.ID, Title: spec.Title, Type: spec.Type,
-				Summary: spec.Summary, Body: spec.Body,
+				Summary: spec.Summary, Body: stripH1(spec.Body),
 			},
 			TaskForm: &TaskFormData{SpecID: specID, Status: "backlog"},
 		},
@@ -609,6 +699,8 @@ func (s *Server) handleUpdateSpec(w http.ResponseWriter, r *http.Request) {
 		form.Error = "Body is required"
 	} else if len(form.Body) < 20 {
 		form.Error = "Body must be at least 20 characters"
+	} else if bodyHasH1(form.Body) {
+		form.Error = "Do not use heading 1 (# Title) in the body — the title comes from the title field"
 	}
 
 	if form.Error != "" {
@@ -658,6 +750,7 @@ type TaskDetailData struct {
 	Citations    []workspace.CitationDetail
 	ParentSpec   *workspace.Spec
 	Statuses     []StatusOption
+	AllTasks     []workspace.Task // for link/depend dropdowns
 	EditTaskForm *EditTaskFormData
 }
 
@@ -700,6 +793,8 @@ func (s *Server) handleTaskDetail(w http.ResponseWriter, r *http.Request) {
 	deps, _ := s.w.GetTaskDeps(taskID)
 	citations, _ := s.w.GetCitations(taskID)
 	parentSpec, _ := s.w.ReadSpec(task.SpecID)
+	allTasks, _ := s.w.ListTasks(workspace.ListTasksFilter{})
+	sortTasksByID(allTasks)
 
 	s.renderPage(w, r, "task-detail", PageData{
 		Title:  task.Title,
@@ -712,9 +807,10 @@ func (s *Server) handleTaskDetail(w http.ResponseWriter, r *http.Request) {
 			Citations:  citations,
 			ParentSpec: parentSpec,
 			Statuses:   allStatuses(task.Status),
+			AllTasks:   allTasks,
 			EditTaskForm: &EditTaskFormData{
 				ID: task.ID, Title: task.Title,
-				Summary: task.Summary, Body: task.Body,
+				Summary: task.Summary, Body: stripCriteriaFromBody(stripH1(task.Body)),
 			},
 		},
 	})
@@ -746,6 +842,8 @@ func (s *Server) handleCreateTask(w http.ResponseWriter, r *http.Request) {
 		errMsg = "Body is required — describe the task in enough detail for an AI agent to act on it"
 	} else if len(body) < 20 {
 		errMsg = "Body must be at least 20 characters"
+	} else if bodyHasH1(body) {
+		errMsg = "Do not use heading 1 (# Title) in the body — the title comes from the title field"
 	}
 
 	if errMsg != "" {
@@ -817,6 +915,8 @@ func (s *Server) handleUpdateTask(w http.ResponseWriter, r *http.Request) {
 		form.Error = "Body is required"
 	} else if len(form.Body) < 20 {
 		form.Error = "Body must be at least 20 characters"
+	} else if bodyHasH1(form.Body) {
+		form.Error = "Do not use heading 1 (# Title) in the body — the title comes from the title field"
 	}
 
 	if form.Error != "" {
@@ -939,8 +1039,17 @@ func (s *Server) handleRemoveCriterion(w http.ResponseWriter, r *http.Request) {
 	s.reloadTaskDetail(w, r, taskID)
 }
 
-// reloadTaskDetail re-renders the task detail page as an htmx partial.
+// reloadTaskDetail re-renders the task detail page as an htmx partial,
+// or redirects for non-htmx requests.
 func (s *Server) reloadTaskDetail(w http.ResponseWriter, r *http.Request, taskID string) {
+	taskPath := fmt.Sprintf("/tasks/%s", taskID)
+
+	// Non-htmx requests: redirect to avoid rendering raw HTML.
+	if r.Header.Get("HX-Request") != "true" {
+		http.Redirect(w, r, taskPath, http.StatusSeeOther)
+		return
+	}
+
 	task, err := s.w.ReadTask(taskID)
 	if err != nil {
 		redirectWithError(w, r, "/", err.Error())
@@ -952,8 +1061,9 @@ func (s *Server) reloadTaskDetail(w http.ResponseWriter, r *http.Request, taskID
 	deps, _ := s.w.GetTaskDeps(taskID)
 	citations, _ := s.w.GetCitations(taskID)
 	parentSpec, _ := s.w.ReadSpec(task.SpecID)
+	allTasks, _ := s.w.ListTasks(workspace.ListTasksFilter{})
+	sortTasksByID(allTasks)
 
-	r.Header.Set("HX-Request", "true")
 	s.renderPage(w, r, "task-detail", PageData{
 		Title:  task.Title,
 		Active: "board",
@@ -965,10 +1075,200 @@ func (s *Server) reloadTaskDetail(w http.ResponseWriter, r *http.Request, taskID
 			Citations:  citations,
 			ParentSpec: parentSpec,
 			Statuses:   allStatuses(task.Status),
+			AllTasks:   allTasks,
 			EditTaskForm: &EditTaskFormData{
 				ID: task.ID, Title: task.Title,
-				Summary: task.Summary, Body: task.Body,
+				Summary: task.Summary, Body: stripCriteriaFromBody(stripH1(task.Body)),
 			},
+		},
+	})
+}
+
+// =====================================================================
+// Links, dependencies, citations — inline mutations
+// =====================================================================
+
+// handleLinkSpec handles POST /specs/{id}/link to add a linked spec.
+func (s *Server) handleLinkSpec(w http.ResponseWriter, r *http.Request) {
+	specID := r.PathValue("id")
+	target := trimFormValue(r, "target")
+	if target == "" || target == specID {
+		s.reloadSpecDetail(w, r, specID)
+		return
+	}
+	if err := s.w.Link(specID, target); err != nil {
+		redirectWithError(w, r, fmt.Sprintf("/specs/%s", specID), err.Error())
+		return
+	}
+	s.reloadSpecDetail(w, r, specID)
+}
+
+// handleUnlinkSpec handles POST /specs/{id}/unlink to remove a linked spec.
+func (s *Server) handleUnlinkSpec(w http.ResponseWriter, r *http.Request) {
+	specID := r.PathValue("id")
+	target := trimFormValue(r, "target")
+	if target == "" {
+		s.reloadSpecDetail(w, r, specID)
+		return
+	}
+	if err := s.w.Unlink(specID, target); err != nil {
+		redirectWithError(w, r, fmt.Sprintf("/specs/%s", specID), err.Error())
+		return
+	}
+	s.reloadSpecDetail(w, r, specID)
+}
+
+// handleUnciteSpec handles POST /specs/{id}/uncite to remove a citation.
+func (s *Server) handleUnciteSpec(w http.ResponseWriter, r *http.Request) {
+	specID := r.PathValue("id")
+	ref := trimFormValue(r, "ref")
+	if ref == "" {
+		s.reloadSpecDetail(w, r, specID)
+		return
+	}
+	ci, err := workspace.ParseCitationRef(ref)
+	if err != nil {
+		redirectWithError(w, r, fmt.Sprintf("/specs/%s", specID), err.Error())
+		return
+	}
+	if err := s.w.Uncite(specID, []workspace.CitationInput{*ci}); err != nil {
+		redirectWithError(w, r, fmt.Sprintf("/specs/%s", specID), err.Error())
+		return
+	}
+	s.reloadSpecDetail(w, r, specID)
+}
+
+// handleLinkTask handles POST /tasks/{id}/link to add a linked task.
+func (s *Server) handleLinkTask(w http.ResponseWriter, r *http.Request) {
+	taskID := r.PathValue("id")
+	target := trimFormValue(r, "target")
+	if target == "" || target == taskID {
+		s.reloadTaskDetail(w, r, taskID)
+		return
+	}
+	if err := s.w.Link(taskID, target); err != nil {
+		redirectWithError(w, r, fmt.Sprintf("/tasks/%s", taskID), err.Error())
+		return
+	}
+	s.reloadTaskDetail(w, r, taskID)
+}
+
+// handleUnlinkTask handles POST /tasks/{id}/unlink to remove a linked task.
+func (s *Server) handleUnlinkTask(w http.ResponseWriter, r *http.Request) {
+	taskID := r.PathValue("id")
+	target := trimFormValue(r, "target")
+	if target == "" {
+		s.reloadTaskDetail(w, r, taskID)
+		return
+	}
+	if err := s.w.Unlink(taskID, target); err != nil {
+		redirectWithError(w, r, fmt.Sprintf("/tasks/%s", taskID), err.Error())
+		return
+	}
+	s.reloadTaskDetail(w, r, taskID)
+}
+
+// handleDependTask handles POST /tasks/{id}/depend to add a dependency.
+func (s *Server) handleDependTask(w http.ResponseWriter, r *http.Request) {
+	taskID := r.PathValue("id")
+	blocker := trimFormValue(r, "blocker")
+	if blocker == "" || blocker == taskID {
+		s.reloadTaskDetail(w, r, taskID)
+		return
+	}
+	if err := s.w.Depend(taskID, []string{blocker}); err != nil {
+		redirectWithError(w, r, fmt.Sprintf("/tasks/%s", taskID), err.Error())
+		return
+	}
+	s.reloadTaskDetail(w, r, taskID)
+}
+
+// handleUndependTask handles POST /tasks/{id}/undepend to remove a dependency.
+func (s *Server) handleUndependTask(w http.ResponseWriter, r *http.Request) {
+	taskID := r.PathValue("id")
+	blocker := trimFormValue(r, "blocker")
+	if blocker == "" {
+		s.reloadTaskDetail(w, r, taskID)
+		return
+	}
+	if err := s.w.Undepend(taskID, []string{blocker}); err != nil {
+		redirectWithError(w, r, fmt.Sprintf("/tasks/%s", taskID), err.Error())
+		return
+	}
+	s.reloadTaskDetail(w, r, taskID)
+}
+
+// handleUnciteTask handles POST /tasks/{id}/uncite to remove a citation.
+func (s *Server) handleUnciteTask(w http.ResponseWriter, r *http.Request) {
+	taskID := r.PathValue("id")
+	ref := trimFormValue(r, "ref")
+	if ref == "" {
+		s.reloadTaskDetail(w, r, taskID)
+		return
+	}
+	ci, err := workspace.ParseCitationRef(ref)
+	if err != nil {
+		redirectWithError(w, r, fmt.Sprintf("/tasks/%s", taskID), err.Error())
+		return
+	}
+	if err := s.w.Uncite(taskID, []workspace.CitationInput{*ci}); err != nil {
+		redirectWithError(w, r, fmt.Sprintf("/tasks/%s", taskID), err.Error())
+		return
+	}
+	s.reloadTaskDetail(w, r, taskID)
+}
+
+// reloadSpecDetail re-renders the spec detail page as an htmx partial,
+// or redirects for non-htmx requests.
+func (s *Server) reloadSpecDetail(w http.ResponseWriter, r *http.Request, specID string) {
+	specPath := fmt.Sprintf("/specs/%s", specID)
+
+	if r.Header.Get("HX-Request") != "true" {
+		http.Redirect(w, r, specPath, http.StatusSeeOther)
+		return
+	}
+
+	spec, err := s.w.ReadSpec(specID)
+	if err != nil {
+		redirectWithError(w, r, "/specs", err.Error())
+		return
+	}
+
+	tasks, _ := s.w.ListTasks(workspace.ListTasksFilter{SpecID: specID})
+	links, _ := s.w.GetSpecLinks(specID)
+	citations, _ := s.w.GetCitations(specID)
+	progress, _ := s.w.GetSpecProgress(specID)
+	allSpecs, _ := s.w.ListSpecs(workspace.ListSpecsFilter{})
+
+	detailTasks := make([]SpecDetailTask, 0, len(tasks))
+	for _, t := range tasks {
+		dt := SpecDetailTask{Task: t}
+		if criteria, err := s.w.ListCriteria(t.ID); err == nil {
+			dt.CriteriaTotal = len(criteria)
+			for _, c := range criteria {
+				if c.Checked {
+					dt.CriteriaChecked++
+				}
+			}
+		}
+		detailTasks = append(detailTasks, dt)
+	}
+
+	s.renderPage(w, r, "spec-detail", PageData{
+		Title:  spec.Title,
+		Active: "specs",
+		Data: SpecDetailData{
+			Spec:      spec,
+			Tasks:     detailTasks,
+			Links:     links,
+			Citations: citations,
+			Progress:  progress,
+			AllSpecs:  allSpecs,
+			EditSpecForm: &EditSpecFormData{
+				ID: spec.ID, Title: spec.Title, Type: spec.Type,
+				Summary: spec.Summary, Body: stripH1(spec.Body),
+			},
+			TaskForm: &TaskFormData{SpecID: specID, Status: "backlog"},
 		},
 	})
 }
@@ -977,17 +1277,14 @@ func (s *Server) reloadTaskDetail(w http.ResponseWriter, r *http.Request, taskID
 // KB browser
 // =====================================================================
 
-// KBData holds KB document list, search results, and add form state.
+// KBData holds KB document list and add form state.
 type KBData struct {
-	Docs          []workspace.KBDoc
-	KBForm        *KBFormData
-	Query         string
-	FilterType    string
-	SearchResults []workspace.KBSearchResult
+	Docs       []workspace.KBDoc
+	KBForm     *KBFormData
+	FilterType string
 }
 
 func (s *Server) handleKB(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("q")
 	filterType := r.URL.Query().Get("type")
 
 	filter := workspace.KBListFilter{}
@@ -1000,23 +1297,13 @@ func (s *Server) handleKB(w http.ResponseWriter, r *http.Request) {
 		docs = []workspace.KBDoc{}
 	}
 
-	var searchResults []workspace.KBSearchResult
-	if query != "" {
-		searchResults, _ = s.w.KBSearch(query, 20)
-		if searchResults == nil {
-			searchResults = []workspace.KBSearchResult{}
-		}
-	}
-
 	s.renderPage(w, r, "kb", PageData{
 		Title:  "Knowledge Base",
 		Active: "kb",
 		Data: KBData{
-			Docs:          docs,
-			KBForm:        &KBFormData{},
-			Query:         query,
-			FilterType:    filterType,
-			SearchResults: searchResults,
+			Docs:       docs,
+			KBForm:     &KBFormData{},
+			FilterType: filterType,
 		},
 	})
 }
@@ -1297,20 +1584,39 @@ func (s *Server) handleAPIKBRaw(w http.ResponseWriter, r *http.Request) {
 type SearchData struct {
 	Query   string
 	Results *workspace.SearchResults
+	Error   string
 }
 
 func (s *Server) handleSearch(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("q")
+	raw := r.URL.Query().Get("q")
 
-	var results *workspace.SearchResults
+	// Trim and collapse consecutive spaces.
+	query := strings.TrimSpace(raw)
+	for strings.Contains(query, "  ") {
+		query = strings.ReplaceAll(query, "  ", " ")
+	}
+
+	var data SearchData
+	data.Query = query
+
 	if query != "" {
-		results, _ = s.w.Search(query, "all", 20)
+		// Reject whitespace-only or too-short queries.
+		if len(strings.TrimSpace(query)) == 0 {
+			data.Error = "Please enter a search query"
+		} else {
+			results, err := s.w.Search(query, "all", 20)
+			if err != nil {
+				data.Error = "Search failed: " + err.Error()
+			} else {
+				data.Results = results
+			}
+		}
 	}
 
 	s.renderPage(w, r, "search", PageData{
 		Title:  "Search",
 		Active: "search",
-		Data:   SearchData{Query: query, Results: results},
+		Data:   data,
 	})
 }
 

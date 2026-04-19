@@ -1,0 +1,67 @@
+Deployment Runbook - Production Environment
+============================================
+
+Last updated: 2025-03-15
+Author: Platform Team
+
+Pre-deployment Checklist
+------------------------
+1. All CI tests passing on main branch
+2. Database migrations reviewed and tested on staging
+3. Feature flags configured for gradual rollout
+4. Monitoring dashboards verified
+5. Rollback procedure documented and tested
+6. On-call engineer notified and available
+
+Deployment Steps
+----------------
+Step 1: Create release branch from main
+  - git checkout main && git pull
+  - git checkout -b release/v2.4.0
+  - Verify all commits included
+
+Step 2: Run database migrations
+  - Apply migrations to staging first
+  - Verify data integrity with spot checks
+  - Apply to production with read replica lag monitoring
+  - Expected migration time: ~5 minutes for current schema
+
+Step 3: Deploy application servers
+  - Rolling deployment across 3 availability zones
+  - Health check interval: 30 seconds
+  - Minimum healthy percentage: 66%
+  - Deployment window: 10 minutes per zone
+
+Step 4: Verify deployment
+  - Check application health endpoints
+  - Verify key user flows (login, dashboard, API)
+  - Monitor error rates for 15 minutes
+  - Compare latency p50/p95/p99 with baseline
+
+Post-deployment
+---------------
+- Update deployment log in Confluence
+- Close deployment ticket in Jira
+- Send notification to #deployments Slack channel
+- Monitor for 1 hour post-deploy
+
+Rollback Procedure
+------------------
+If critical issues detected:
+1. Revert to previous container image tag
+2. Run database rollback migration if needed
+3. Verify rollback success
+4. Page incident commander if data corruption suspected
+
+Emergency Contacts
+------------------
+- Platform Lead: ext 4501
+- Database Admin: ext 4502
+- Security: ext 4503
+- VP Engineering: ext 4504
+
+Known Issues
+------------
+- Migration v2.3.9 takes 8+ minutes on large datasets
+- Health check may false-positive during cache warmup (first 60s)
+- Websocket connections require manual reconnect after deploy

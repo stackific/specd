@@ -219,7 +219,7 @@ func (w *Workspace) KBList(filter KBListFilter) ([]KBDoc, error) {
 		args = append(args, filter.SourceType)
 	}
 
-	query += " ORDER BY id ASC"
+	query += " ORDER BY added_at DESC"
 
 	rows, err := w.DB.Query(query, args...)
 	if err != nil {
@@ -303,7 +303,7 @@ func (w *Workspace) KBSearch(query string, limit int) ([]KBSearchResult, error) 
 		limit = 20
 	}
 
-	ftsQuery := sanitizeFTS(query)
+	ftsQuery := sanitizeBM25(query)
 	if ftsQuery == "" {
 		return nil, nil
 	}

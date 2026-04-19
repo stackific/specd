@@ -29,7 +29,7 @@ func (w *Workspace) ListCriteria(taskID string) ([]CriterionRow, error) {
 	}
 	defer rows.Close()
 
-	var criteria []CriterionRow
+	criteria := make([]CriterionRow, 0)
 	for rows.Next() {
 		var c CriterionRow
 		var checked int

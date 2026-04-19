@@ -24,6 +24,15 @@
     <!-- BeerCSS runtime (ESM — sets window.ui as side effect, wires data-ui on load) -->
     <script type="module" src="/assets/beer.min.js"></script>
     <script type="module" src="/assets/material-dynamic-colors.min.js"></script>
+    <!-- Restore board filter preference before first paint -->
+    <script>
+      (function () {
+        if (location.pathname !== "/" && location.pathname !== "") return;
+        if (location.search.indexOf("spec=") !== -1) return;
+        var s = localStorage.getItem("sd-board-spec");
+        if (s) location.replace("/?spec=" + encodeURIComponent(s));
+      })();
+    </script>
   </head>
   <body class="surface">
     {{template "nav" .}}
@@ -42,6 +51,7 @@
     {{end}}
 
     <script src="/assets/htmx.min.js"></script>
+    <script>htmx.config.historyCacheSize = 0;</script>
     <script src="/assets/marked.min.js"></script>
     <script type="module" src="/assets/app.js"></script>
   </body>

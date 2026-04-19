@@ -1,15 +1,17 @@
 {{define "content"}}
 <section class="container-xl p-3 m:p-5">
-  <div class="mb-5">
-    <div class="grid no-space">
-      <div class="s8">
-        <h1 class="text-4 m:text-5 fw-7 lh-1">Specs</h1>
-      </div>
-      <div class="s4 right-align">
-        <button class="round" data-ui="#new-spec-dialog">
-          <i aria-hidden="true">add</i>
-          <span>New Spec</span>
-        </button>
+  <div class="sd-board-toolbar mb-5">
+    <h1 class="text-4 m:text-5 fw-7 lh-1">Specs</h1>
+    <div class="sd-board-controls">
+      <button class="round" data-ui="#new-spec-dialog">
+        <i aria-hidden="true">add</i>
+        <span class="m l">New Spec</span>
+      </button>
+      <div class="small field round fill no-margin no-elevate sd-board-filter">
+        <select aria-label="View mode" id="specs-view-select">
+          <option value="card">Card view</option>
+          <option value="list">List view</option>
+        </select>
       </div>
     </div>
   </div>
@@ -18,7 +20,8 @@
   {{range .Data.Groups}}
   <div class="mb-5">
     <h2 class="text-2 fw-6 lh-2 mb-3">{{.Label}}</h2>
-    <div class="grid">
+    <!-- Card view -->
+    <div class="sd-specs-cards grid" data-specs-cards>
       {{range .Specs}}
       <article class="s12 m6 l4 surface-container-low round p-4 mb-3">
         <a href="/specs/{{.Spec.ID}}" class="no-line">
@@ -38,6 +41,34 @@
       </article>
       {{end}}
     </div>
+    <!-- List view -->
+    <table class="border sd-kb-table sd-specs-table" data-specs-table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Title</th>
+          <th class="m l">Summary</th>
+          <th>Progress</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Specs}}
+        <tr>
+          <td class="sd-kb-id">
+            <a href="/specs/{{.Spec.ID}}" class="chip small no-margin no-line secondary" title="{{.Spec.Type}}">
+              <i aria-hidden="true">description</i>
+              <span>{{.Spec.ID}}</span>
+            </a>
+          </td>
+          <td class="fw-5"><a href="/specs/{{.Spec.ID}}" class="no-line">{{.Spec.Title}}</a></td>
+          <td class="m l text--1">{{.Spec.Summary}}</td>
+          <td class="text--1" style="white-space:nowrap">
+            {{if .Progress}}{{.Progress.Done}}/{{.Progress.Active}} tasks{{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
   </div>
   {{end}}
   {{else}}
@@ -51,6 +82,28 @@
   <h5>New Spec</h5>
   {{template "new-spec-form" .Data.SpecForm}}
 </dialog>
+
+<script>
+(function () {
+  var sel = document.getElementById("specs-view-select");
+  if (!sel) return;
+  var saved = localStorage.getItem("specs-view");
+  if (saved === "list" || saved === "card") sel.value = saved;
+  applyView(sel.value);
+  sel.addEventListener("change", function () {
+    localStorage.setItem("specs-view", sel.value);
+    applyView(sel.value);
+  });
+  function applyView(mode) {
+    document.querySelectorAll("[data-specs-cards]").forEach(function (el) {
+      el.style.display = mode === "card" ? "" : "none";
+    });
+    document.querySelectorAll("[data-specs-table]").forEach(function (el) {
+      el.style.display = mode === "list" ? "table" : "none";
+    });
+  }
+})();
+</script>
 {{end}}
 
 {{define "new-spec-form"}}

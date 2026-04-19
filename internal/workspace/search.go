@@ -4,7 +4,9 @@ package workspace
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
+	"unicode"
 )
 
 // SearchResult represents a single search hit.
@@ -34,16 +36,21 @@ func (w *Workspace) Search(query string, kind string, limit int) (*SearchResults
 		kind = "all"
 	}
 
-	// Sanitize query for FTS5: escape double quotes.
-	ftsQuery := sanitizeFTS(query)
-	if ftsQuery == "" {
+	// Sanitize query for FTS5 BM25 (extract word tokens).
+	bm25Query := sanitizeBM25(query)
+	// Sanitize query for trigram (quote original for substring match).
+	trigramQuery := sanitizeTrigram(query)
+	// If the query contains special characters, always include trigram results.
+	hasSpecial := queryHasSpecialChars(query)
+
+	if bm25Query == "" && trigramQuery == "" {
 		return &SearchResults{}, nil
 	}
 
 	results := &SearchResults{}
 
 	if kind == "all" || kind == "spec" {
-		specs, err := w.searchSpecs(ftsQuery, limit)
+		specs, err := w.searchSpecs(bm25Query, trigramQuery, hasSpecial, limit)
 		if err != nil {
 			return nil, fmt.Errorf("search specs: %w", err)
 		}
@@ -51,7 +58,7 @@ func (w *Workspace) Search(query string, kind string, limit int) (*SearchResults
 	}
 
 	if kind == "all" || kind == "task" {
-		tasks, err := w.searchTasks(ftsQuery, limit)
+		tasks, err := w.searchTasks(bm25Query, trigramQuery, hasSpecial, limit)
 		if err != nil {
 			return nil, fmt.Errorf("search tasks: %w", err)
 		}
@@ -59,7 +66,7 @@ func (w *Workspace) Search(query string, kind string, limit int) (*SearchResults
 	}
 
 	if kind == "all" || kind == "kb" {
-		kb, err := w.searchKB(ftsQuery, limit)
+		kb, err := w.searchKB(bm25Query, trigramQuery, hasSpecial, limit)
 		if err != nil {
 			return nil, fmt.Errorf("search kb: %w", err)
 		}
@@ -70,39 +77,39 @@ func (w *Workspace) Search(query string, kind string, limit int) (*SearchResults
 }
 
 // searchSpecs searches specs using BM25 with trigram fallback.
-func (w *Workspace) searchSpecs(ftsQuery string, limit int) ([]SearchResult, error) {
-	// BM25 primary search.
-	rows, err := w.DB.Query(`
-		SELECT s.id, s.title, s.summary, bm25(specs_fts) AS score
-		FROM specs_fts
-		JOIN specs s ON s.rowid = specs_fts.rowid
-		WHERE specs_fts MATCH ?
-		ORDER BY score
-		LIMIT ?`, ftsQuery, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
+func (w *Workspace) searchSpecs(bm25Query, trigramQuery string, forceTrigramToo bool, limit int) ([]SearchResult, error) {
 	var results []SearchResult
 	seen := map[string]bool{}
-	for rows.Next() {
-		var r SearchResult
-		rows.Scan(&r.ID, &r.Title, &r.Summary, &r.Score)
-		r.Kind = "spec"
-		r.MatchType = "bm25"
-		r.Score = -r.Score // BM25 returns negative scores; invert for ranking
-		results = append(results, r)
-		seen[r.ID] = true
+
+	// BM25 primary search (only if we extracted word tokens).
+	if bm25Query != "" {
+		rows, err := w.DB.Query(`
+			SELECT s.id, s.title, s.summary, bm25(specs_fts) AS score
+			FROM specs_fts
+			JOIN specs s ON s.rowid = specs_fts.rowid
+			WHERE specs_fts MATCH ?
+			ORDER BY score
+			LIMIT ?`, bm25Query, limit)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var r SearchResult
+				rows.Scan(&r.ID, &r.Title, &r.Summary, &r.Score)
+				r.Kind = "spec"
+				r.MatchType = "bm25"
+				r.Score = -r.Score
+				results = append(results, r)
+				seen[r.ID] = true
+			}
+		}
 	}
 
-	// Trigram fallback if BM25 returned fewer than 3 hits.
-	if len(results) < 3 {
-		trigram, err := w.trigramSearch("spec", ftsQuery, limit, seen)
-		if err != nil {
-			return results, nil // don't fail on trigram error
+	// Trigram fallback if BM25 returned fewer than 3 hits, or if query has special chars.
+	if (len(results) < 3 || forceTrigramToo) && trigramQuery != "" {
+		trigram, err := w.trigramSearch("spec", trigramQuery, limit, seen)
+		if err == nil {
+			results = append(results, trigram...)
 		}
-		results = append(results, trigram...)
 	}
 
 	if len(results) > limit {
@@ -112,37 +119,37 @@ func (w *Workspace) searchSpecs(ftsQuery string, limit int) ([]SearchResult, err
 }
 
 // searchTasks searches tasks using BM25 with trigram fallback.
-func (w *Workspace) searchTasks(ftsQuery string, limit int) ([]SearchResult, error) {
-	rows, err := w.DB.Query(`
-		SELECT t.id, t.title, t.summary, bm25(tasks_fts) AS score
-		FROM tasks_fts
-		JOIN tasks t ON t.rowid = tasks_fts.rowid
-		WHERE tasks_fts MATCH ?
-		ORDER BY score
-		LIMIT ?`, ftsQuery, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
+func (w *Workspace) searchTasks(bm25Query, trigramQuery string, forceTrigramToo bool, limit int) ([]SearchResult, error) {
 	var results []SearchResult
 	seen := map[string]bool{}
-	for rows.Next() {
-		var r SearchResult
-		rows.Scan(&r.ID, &r.Title, &r.Summary, &r.Score)
-		r.Kind = "task"
-		r.MatchType = "bm25"
-		r.Score = -r.Score
-		results = append(results, r)
-		seen[r.ID] = true
+
+	if bm25Query != "" {
+		rows, err := w.DB.Query(`
+			SELECT t.id, t.title, t.summary, bm25(tasks_fts) AS score
+			FROM tasks_fts
+			JOIN tasks t ON t.rowid = tasks_fts.rowid
+			WHERE tasks_fts MATCH ?
+			ORDER BY score
+			LIMIT ?`, bm25Query, limit)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var r SearchResult
+				rows.Scan(&r.ID, &r.Title, &r.Summary, &r.Score)
+				r.Kind = "task"
+				r.MatchType = "bm25"
+				r.Score = -r.Score
+				results = append(results, r)
+				seen[r.ID] = true
+			}
+		}
 	}
 
-	if len(results) < 3 {
-		trigram, err := w.trigramSearch("task", ftsQuery, limit, seen)
-		if err != nil {
-			return results, nil
+	if (len(results) < 3 || forceTrigramToo) && trigramQuery != "" {
+		trigram, err := w.trigramSearch("task", trigramQuery, limit, seen)
+		if err == nil {
+			results = append(results, trigram...)
 		}
-		results = append(results, trigram...)
 	}
 
 	if len(results) > limit {
@@ -152,45 +159,44 @@ func (w *Workspace) searchTasks(ftsQuery string, limit int) ([]SearchResult, err
 }
 
 // searchKB searches KB chunks using BM25 with trigram fallback.
-func (w *Workspace) searchKB(ftsQuery string, limit int) ([]SearchResult, error) {
-	rows, err := w.DB.Query(`
-		SELECT d.id, d.title, k.text, bm25(kb_chunks_fts) AS score
-		FROM kb_chunks_fts
-		JOIN kb_chunks k ON k.id = kb_chunks_fts.rowid
-		JOIN kb_docs d ON d.id = k.doc_id
-		WHERE kb_chunks_fts MATCH ?
-		ORDER BY score
-		LIMIT ?`, ftsQuery, limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
+func (w *Workspace) searchKB(bm25Query, trigramQuery string, forceTrigramToo bool, limit int) ([]SearchResult, error) {
 	var results []SearchResult
 	seen := map[string]bool{}
-	for rows.Next() {
-		var r SearchResult
-		var chunkText string
-		rows.Scan(&r.ID, &r.Title, &chunkText, &r.Score)
-		r.Kind = "kb"
-		r.MatchType = "bm25"
-		r.Score = -r.Score
-		// Truncate chunk text for summary.
-		if len(chunkText) > 200 {
-			r.Summary = chunkText[:200] + "..."
-		} else {
-			r.Summary = chunkText
+
+	if bm25Query != "" {
+		rows, err := w.DB.Query(`
+			SELECT d.id, d.title, k.text, bm25(kb_chunks_fts) AS score
+			FROM kb_chunks_fts
+			JOIN kb_chunks k ON k.id = kb_chunks_fts.rowid
+			JOIN kb_docs d ON d.id = k.doc_id
+			WHERE kb_chunks_fts MATCH ?
+			ORDER BY score
+			LIMIT ?`, bm25Query, limit)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var r SearchResult
+				var chunkText string
+				rows.Scan(&r.ID, &r.Title, &chunkText, &r.Score)
+				r.Kind = "kb"
+				r.MatchType = "bm25"
+				r.Score = -r.Score
+				if len(chunkText) > 200 {
+					r.Summary = chunkText[:200] + "..."
+				} else {
+					r.Summary = chunkText
+				}
+				results = append(results, r)
+				seen[r.ID] = true
+			}
 		}
-		results = append(results, r)
-		seen[r.ID] = true
 	}
 
-	if len(results) < 3 {
-		trigram, err := w.trigramSearch("kb", ftsQuery, limit, seen)
-		if err != nil {
-			return results, nil
+	if (len(results) < 3 || forceTrigramToo) && trigramQuery != "" {
+		trigram, err := w.trigramSearch("kb", trigramQuery, limit, seen)
+		if err == nil {
+			results = append(results, trigram...)
 		}
-		results = append(results, trigram...)
 	}
 
 	if len(results) > limit {
@@ -259,9 +265,13 @@ func (w *Workspace) trigramSearch(kind, query string, limit int, seen map[string
 	return results, nil
 }
 
-// sanitizeFTS prepares a query string for FTS5 MATCH.
-// Wraps individual terms with implicit OR by quoting them.
-func sanitizeFTS(query string) string {
+// wordTokenRe extracts alphanumeric word tokens from a query string.
+var wordTokenRe = regexp.MustCompile(`[\p{L}\p{N}]+`)
+
+// sanitizeBM25 prepares a query string for FTS5 BM25 MATCH.
+// Extracts only alphanumeric word tokens, stripping special characters
+// that would cause FTS5 syntax errors (slashes, hyphens, etc.).
+func sanitizeBM25(query string) string {
 	query = strings.TrimSpace(query)
 	if query == "" {
 		return ""
@@ -279,10 +289,46 @@ func sanitizeFTS(query string) string {
 		return query
 	}
 
-	// Split into words and join — FTS5 implicitly ANDs unquoted terms.
-	words := strings.Fields(query)
-	if len(words) == 0 {
+	// Extract only alphanumeric tokens to avoid FTS5 syntax errors
+	// from special characters like /, -, :, etc.
+	tokens := wordTokenRe.FindAllString(query, -1)
+	if len(tokens) == 0 {
 		return ""
 	}
-	return strings.Join(words, " ")
+
+	// Quote each token individually for safety.
+	quoted := make([]string, len(tokens))
+	for i, t := range tokens {
+		quoted[i] = `"` + t + `"`
+	}
+	return strings.Join(quoted, " ")
+}
+
+// sanitizeTrigram prepares a query string for FTS5 trigram MATCH.
+// Quotes the original string as a phrase for exact substring matching.
+// The trigram tokenizer requires at least 3 characters.
+func sanitizeTrigram(query string) string {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return ""
+	}
+	// Trigram needs at least 3 characters to produce any trigrams.
+	if len(query) < 3 {
+		return ""
+	}
+	// Escape internal double quotes and wrap in quotes for phrase matching.
+	escaped := strings.ReplaceAll(query, `"`, `""`)
+	return `"` + escaped + `"`
+}
+
+// queryHasSpecialChars returns true if the query contains non-alphanumeric,
+// non-space characters that FTS5 BM25 would strip, meaning the user likely
+// intends an exact substring match better served by trigram.
+func queryHasSpecialChars(query string) bool {
+	for _, r := range query {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && !unicode.IsSpace(r) {
+			return true
+		}
+	}
+	return false
 }

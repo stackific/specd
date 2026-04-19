@@ -54,7 +54,7 @@ func setupWithKB(t *testing.T) *Workspace {
 		Title:   "OAuth with GitHub",
 		Type:    "functional",
 		Summary: "OAuth flow using GitHub",
-		Body:    "# OAuth\n\nBody.",
+		Body:    "## Overview\n\nOAuth flow body.",
 	})
 
 	// Create a task under the spec.
@@ -62,7 +62,7 @@ func setupWithKB(t *testing.T) *Workspace {
 		SpecID:  "SPEC-1",
 		Title:   "Implement OAuth",
 		Summary: "Implement the OAuth flow",
-		Body:    "# Implement\n\nBody.",
+		Body:    "## Details\n\nImplementation body.",
 	})
 
 	// Add a KB doc.

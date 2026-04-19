@@ -54,7 +54,7 @@ function purgeOwnCss() {
         // Custom extractor preserves colon-prefixed responsive classes (m:p-3, l:text-4).
         defaultExtractor: (content) => content.match(/[\w-/:]+(?<!:)/g) || [],
         safelist: {
-          standard: [/^is-/, /^active$/, /^dark$/, /^ms$/],
+          standard: [/^is-/, /^active$/, /^dark$/, /^ms$/, /^sd-drop-/],
           deep: [/active$/, /dark$/, /kr-/],
           greedy: [/^field/, /^chip/, /^dialog/, /^nav/, /^snackbar/],
         },

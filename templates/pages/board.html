@@ -1,36 +1,33 @@
 {{define "content"}}
 <section class="p-3 m:p-5" id="board-content">
-  <div class="mb-5" role="toolbar" aria-label="Board controls">
-    <div class="grid no-space">
-      <div class="s6 m4">
-        <h1 class="text-4 m:text-5 fw-7 lh-1">Board</h1>
-      </div>
-      <div class="s6 m8 right-align middle-align">
-        {{if .Data.Specs}}
-        <button class="small round mr-3" data-ui="#board-new-task-dialog">
-          <i aria-hidden="true">add</i>
-          <span class="m l">New Task</span>
-        </button>
-        {{end}}
-        <div class="field suffix border round small" style="display:inline-block; min-width:180px">
-          <select
-            aria-label="Filter by spec"
-            name="spec"
-            hx-get="/"
-            hx-target="#board-content"
-            hx-swap="outerHTML"
-            hx-trigger="change"
-            hx-include="this"
-          >
-            <option value="">All specs</option>
-            {{range .Data.Specs}}
-            <option value="{{.ID}}"{{if eq $.Data.FilterSpec .ID}} selected{{end}}>
-              {{.ID}} — {{.Title}}
-            </option>
-            {{end}}
-          </select>
-          <i aria-hidden="true">filter_list</i>
-        </div>
+  <div class="sd-board-toolbar mb-5" role="toolbar" aria-label="Board controls">
+    <h1 class="text-4 m:text-5 fw-7 lh-1">Tasks</h1>
+    <div class="sd-board-controls">
+      {{if .Data.Specs}}
+      <button class="sd-board-btn round" data-ui="#board-new-task-dialog">
+        <i aria-hidden="true">add</i>
+        <span class="m l">New Task</span>
+      </button>
+      {{end}}
+      <div class="small field round fill no-margin no-elevate sd-board-filter">
+        <select
+          aria-label="Filter by spec"
+          id="board-spec-filter"
+          name="spec"
+          hx-get="/"
+          hx-target="#board-content"
+          hx-swap="outerHTML"
+          hx-trigger="change"
+          hx-push-url="true"
+          hx-include="this"
+        >
+          <option value="">All specs</option>
+          {{range .Data.Specs}}
+          <option value="{{.ID}}"{{if eq $.Data.FilterSpec .ID}} selected{{end}}>
+            {{.ID}} — {{.Title}}
+          </option>
+          {{end}}
+        </select>
       </div>
     </div>
   </div>

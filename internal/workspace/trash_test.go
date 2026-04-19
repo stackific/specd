@@ -60,7 +60,7 @@ func TestTrashRestoreTask(t *testing.T) {
 		SpecID:  "SPEC-1",
 		Title:   "Restorable",
 		Summary: "will be restored",
-		Body:    "# Restorable\n\n## Acceptance criteria\n\n- [ ] Criterion 1",
+		Body:    "## Restorable\n\n## Acceptance criteria\n\n- [ ] Criterion 1",
 	})
 
 	// Delete the task.

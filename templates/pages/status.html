@@ -6,15 +6,13 @@
   <div class="grid mb-5">
     <!-- Specs card -->
     <article class="s12 m6 l3 surface-container-low round p-4">
-      <i class="large" aria-hidden="true">description</i>
       <h2 class="text-3 fw-7 mt-2">{{.Data.Status.Specs.Total}}</h2>
       <p class="text-1 fw-5">Specs</p>
-      <p class="text--1 mt-1">{{.Data.Status.Specs.Business}} business · {{.Data.Status.Specs.Functional}} functional · {{.Data.Status.Specs.NonFunctional}} non-functional</p>
+      <p class="text--1 mt-1">{{.Data.Status.Specs.Business}} business · {{.Data.Status.Specs.Functional}} fn. · {{.Data.Status.Specs.NonFunctional}} non-fn.</p>
     </article>
 
     <!-- Tasks card -->
     <article class="s12 m6 l3 surface-container-low round p-4">
-      <i class="large" aria-hidden="true">checklist</i>
       <h2 class="text-3 fw-7 mt-2">{{.Data.Status.Tasks.Total}}</h2>
       <p class="text-1 fw-5">Tasks</p>
       {{with .Data.Status.Tasks}}
@@ -24,7 +22,6 @@
 
     <!-- KB card -->
     <article class="s12 m6 l3 surface-container-low round p-4">
-      <i class="large" aria-hidden="true">menu_book</i>
       <h2 class="text-3 fw-7 mt-2">{{.Data.Status.KB.Total}}</h2>
       <p class="text-1 fw-5">KB Docs</p>
       <p class="text--1 mt-1">{{.Data.Status.KB.Chunks}} chunks · {{.Data.Status.KB.Connections}} connections</p>
@@ -35,11 +32,10 @@
 
     <!-- Health card -->
     <article class="s12 m6 l3 surface-container-low round p-4">
-      <i class="large" aria-hidden="true">monitoring</i>
       {{if .Data.Status.Tidy.Stale}}
-      <h2 class="text-3 fw-7 mt-2 error-text">Stale</h2>
+      <h2 class="text-3 fw-7 mt-2 error-text">Stale 💤</h2>
       {{else}}
-      <h2 class="text-3 fw-7 mt-2">OK</h2>
+      <h2 class="text-3 fw-7 mt-2">OK ✅</h2>
       {{end}}
       <p class="text-1 fw-5">Tidy</p>
       <p class="text--1 mt-1">Last {{.Data.Status.Tidy.DaysAgo}}d ago</p>
@@ -47,8 +43,8 @@
   </div>
 
   <!-- Task breakdown -->
-  <div class="mb-5">
-    <h2 class="text-2 fw-6 lh-2 mb-3">Tasks by Status</h2>
+  <div>
+    <h2 class="text-2 fw-6 lh-2 mt-5">Tasks by Status</h2>
     <table class="border">
       <thead>
         <tr>
@@ -70,7 +66,7 @@
   </div>
 
   <!-- Lint issues -->
-  <div class="mb-5">
+  <div class="mt-5 mb-1">
     <h2 class="text-2 fw-6 lh-2 mb-3">Lint</h2>
     {{if .Data.LintIssues}}
     <table class="border">
@@ -105,7 +101,7 @@
   </div>
 
   <!-- Trash summary -->
-  <div class="mb-5">
+  <div class="mt-5 mb-1">
     <h2 class="text-2 fw-6 lh-2 mb-2">Trash</h2>
     {{if gt .Data.Status.Trash.Total 0}}
     <p class="text-1 lh-3">
@@ -118,7 +114,7 @@
   </div>
 
   <!-- Rejected files summary -->
-  <div class="mb-5">
+  <div class="mt-5 mb-1">
     <h2 class="text-2 fw-6 lh-2 mb-2">Rejected Files</h2>
     {{if gt .Data.Status.Rejected 0}}
     <p class="text-1 lh-3">

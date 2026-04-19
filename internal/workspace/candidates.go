@@ -222,7 +222,7 @@ func sortCandidateTasks(c []CandidateTask) {
 // kbChunkCandidates searches KB chunks by text and returns candidates
 // for citation. Uses BM25 search.
 func (w *Workspace) kbChunkCandidates(searchText string, limit int) ([]CandidateKBChunk, error) {
-	ftsQuery := sanitizeFTS(searchText)
+	ftsQuery := sanitizeBM25(searchText)
 	if ftsQuery == "" {
 		return nil, nil
 	}

@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/stackific/specd/internal/workspace"
 )
@@ -68,6 +69,54 @@ func NewServer(w *workspace.Workspace, templateFS, distFS, assetsFS fs.FS) (*Ser
 		},
 		// add returns the sum of two integers (for template arithmetic).
 		"add": func(a, b int) int { return a + b },
+		// timeAgo formats an RFC3339 timestamp as a human-readable relative time.
+		"timeAgo": func(s string) string {
+			t, err := time.Parse(time.RFC3339, s)
+			if err != nil {
+				return s
+			}
+			d := time.Since(t)
+			switch {
+			case d < time.Minute:
+				return "just now"
+			case d < time.Hour:
+				m := int(d.Minutes())
+				if m == 1 {
+					return "1 minute ago"
+				}
+				return fmt.Sprintf("%d minutes ago", m)
+			case d < 24*time.Hour:
+				h := int(d.Hours())
+				if h == 1 {
+					return "1 hour ago"
+				}
+				return fmt.Sprintf("%d hours ago", h)
+			case d < 7*24*time.Hour:
+				days := int(d.Hours() / 24)
+				if days == 1 {
+					return "yesterday"
+				}
+				return fmt.Sprintf("%d days ago", days)
+			case d < 30*24*time.Hour:
+				w := int(d.Hours() / 24 / 7)
+				if w == 1 {
+					return "a week ago"
+				}
+				return fmt.Sprintf("%d weeks ago", w)
+			case d < 365*24*time.Hour:
+				m := int(d.Hours() / 24 / 30)
+				if m == 1 {
+					return "a month ago"
+				}
+				return fmt.Sprintf("%d months ago", m)
+			default:
+				y := int(d.Hours() / 24 / 365)
+				if y == 1 {
+					return "a year ago"
+				}
+				return fmt.Sprintf("%d years ago", y)
+			}
+		},
 		// truncate returns the first n characters of s, appending "..." if truncated.
 		"truncate": func(s string, n int) string {
 			if len(s) <= n {
@@ -92,6 +141,46 @@ func NewServer(w *workspace.Workspace, templateFS, distFS, assetsFS fs.FS) (*Ser
 				return out
 			}
 			return out[:n] + "..."
+		},
+		// stripCriteria removes the "## Acceptance criteria" section
+		// from task body to avoid duplicate rendering (body + UI widgets).
+		"stripCriteria": func(body string) string {
+			const header = "## Acceptance criteria"
+			idx := strings.Index(body, header)
+			if idx < 0 {
+				return body
+			}
+			before := strings.TrimRight(body[:idx], "\n")
+			// Find the end of the section: next ## heading or end of file.
+			rest := body[idx+len(header):]
+			if nlIdx := strings.IndexByte(rest, '\n'); nlIdx >= 0 {
+				rest = rest[nlIdx+1:]
+			} else {
+				return before
+			}
+			endIdx := -1
+			for i := 0; i < len(rest); {
+				if strings.HasPrefix(rest[i:], "## ") {
+					endIdx = i
+					break
+				}
+				nlPos := strings.IndexByte(rest[i:], '\n')
+				if nlPos < 0 {
+					break
+				}
+				i = i + nlPos + 1
+			}
+			if endIdx >= 0 {
+				return before + "\n\n" + rest[endIdx:]
+			}
+			return before
+		},
+		// stripH1 removes H1 heading lines from the body — titles come
+		// from frontmatter, not from markdown headings.
+		"stripH1": func(body string) string {
+			h1 := regexp.MustCompile(`(?m)^#\s+[^\n]*\n?`)
+			out := h1.ReplaceAllString(body, "")
+			return strings.TrimLeft(out, "\n")
 		},
 		// toJSON marshals a value to JSON and returns it as template.JS
 		// so html/template does not double-escape it inside <script> tags.
@@ -200,6 +289,16 @@ func NewServer(w *workspace.Workspace, templateFS, distFS, assetsFS fs.FS) (*Ser
 	mux.HandleFunc("POST /tasks/{id}/move", s.handleMoveTask)
 	mux.HandleFunc("POST /tasks/{id}/reorder", s.handleReorderTask)
 	mux.HandleFunc("POST /tasks/{id}/delete", s.handleDeleteTask)
+
+	// Link, dependency, and citation mutations.
+	mux.HandleFunc("POST /specs/{id}/link", s.handleLinkSpec)
+	mux.HandleFunc("POST /specs/{id}/unlink", s.handleUnlinkSpec)
+	mux.HandleFunc("POST /specs/{id}/uncite", s.handleUnciteSpec)
+	mux.HandleFunc("POST /tasks/{id}/link", s.handleLinkTask)
+	mux.HandleFunc("POST /tasks/{id}/unlink", s.handleUnlinkTask)
+	mux.HandleFunc("POST /tasks/{id}/depend", s.handleDependTask)
+	mux.HandleFunc("POST /tasks/{id}/undepend", s.handleUndependTask)
+	mux.HandleFunc("POST /tasks/{id}/uncite", s.handleUnciteTask)
 
 	// Criteria mutations.
 	mux.HandleFunc("POST /tasks/{id}/criteria", s.handleAddCriterion)

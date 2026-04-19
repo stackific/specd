@@ -1,0 +1,102 @@
+- generic [active] [ref=e1]:
+  - navigation "Main navigation" [ref=e2]:
+    - button "Toggle sidebar" [ref=e4] [cursor=pointer]:
+      - generic: menu
+    - link "Board" [ref=e5] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e6]: view_kanban
+      - generic [ref=e7]: Board
+    - link "Specs" [ref=e8] [cursor=pointer]:
+      - /url: /specs
+      - generic [ref=e9]: description
+      - generic [ref=e10]: Specs
+    - link "KB" [ref=e11] [cursor=pointer]:
+      - /url: /kb
+      - generic [ref=e12]: menu_book
+      - generic [ref=e13]: KB
+    - link "Search" [ref=e14] [cursor=pointer]:
+      - /url: /search
+      - generic [ref=e15]: search
+      - generic [ref=e16]: Search
+    - link "Status" [ref=e18] [cursor=pointer]:
+      - /url: /status
+      - generic [ref=e19]: monitoring
+      - generic [ref=e20]: Status
+    - link "Trash" [ref=e21] [cursor=pointer]:
+      - /url: /trash
+      - generic [ref=e22]: delete
+      - generic [ref=e23]: Trash
+    - button "Toggle dark mode" [ref=e24] [cursor=pointer]:
+      - generic: light_mode
+  - main [ref=e25]:
+    - generic [ref=e295]:
+      - toolbar "Board controls" [ref=e296]:
+        - generic [ref=e297]:
+          - heading "Board" [level=1] [ref=e299]
+          - generic [ref=e300]
+      - generic [ref=e304]:
+        - list "Backlog column" [ref=e305]:
+          - heading "Backlog 4" [level=2] [ref=e307]
+          - generic [ref=e310]
+        - list "To Do column" [ref=e357]:
+          - heading "To Do 4" [level=2] [ref=e359]
+          - generic [ref=e362]
+        - list "In Progress column" [ref=e403]:
+          - heading "In Progress 1" [level=2] [ref=e405]
+          - listitem "Set up Stripe integration" [ref=e409]
+        - list "Blocked column" [ref=e418]:
+          - heading "Blocked 1" [level=2] [ref=e420]
+          - listitem "Add password reset flow" [ref=e424]
+        - list "Verification column" [ref=e435]:
+          - heading "Verification 0" [level=2] [ref=e437]
+          - paragraph [ref=e441]: No tasks
+        - list "Done column" [ref=e442]:
+          - heading "Done 1" [level=2] [ref=e444]
+          - listitem "Implement token bucket algorithm" [ref=e448]
+        - list "Cancelled column" [ref=e457]:
+          - heading "Cancelled 0" [level=2] [ref=e459]
+          - paragraph [ref=e463]: No tasks
+        - list "Won't Fix column" [ref=e464]:
+          - heading "Won't Fix 0" [level=2] [ref=e466]
+          - paragraph [ref=e470]: No tasks
+    - option "SPEC-1 — User Authentication" [selected]
+    - option "SPEC-2 — Payment Processing"
+    - option "SPEC-3 — API Rate Limiting"
+    - option "SPEC-4 — Data Export Pipeline"
+    - option "SPEC-5 — Observability Stack"
+    - option "Backlog" [selected]
+    - option "To Do"
+    - option "In Progress"
+    - option "SPEC-1 — User Authentication" [selected]
+    - option "SPEC-2 — Payment Processing"
+    - option "SPEC-3 — API Rate Limiting"
+    - option "SPEC-4 — Data Export Pipeline"
+    - option "SPEC-5 — Observability Stack"
+    - option "Backlog" [selected]
+    - option "To Do"
+    - option "In Progress"
+    - option "SPEC-1 — User Authentication" [selected]
+    - option "SPEC-2 — Payment Processing"
+    - option "SPEC-3 — API Rate Limiting"
+    - option "SPEC-4 — Data Export Pipeline"
+    - option "SPEC-5 — Observability Stack"
+    - option "Backlog" [selected]
+    - option "To Do"
+    - option "In Progress"
+  - contentinfo "Site footer" [ref=e202]:
+    - heading "Site footer" [level=2] [ref=e203]
+    - separator [ref=e204]
+    - generic [ref=e205]:
+      - generic [ref=e206]:
+        - link "specd home" [ref=e207] [cursor=pointer]:
+          - /url: /
+        - paragraph [ref=e208]:
+          - text: Stackific Inc. is a software engineering practice focused on making AI genuinely useful. Stackific builds own products, works with startups and enterprises for shaping the AI architectures and implementation and AI engineering efficiency. Stackific also teaches real insight from work through
+          - link "Stackdemy" [ref=e209] [cursor=pointer]:
+            - /url: https://stackdemy.com
+          - text: ", their technical education platform."
+      - navigation "Footer" [ref=e210]:
+        - generic [ref=e211]:
+          - generic [ref=e212]
+          - generic [ref=e217]
+          - generic [ref=e222]

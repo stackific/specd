@@ -1,7 +1,7 @@
 {{define "content"}}
 <section class="container-xl p-3 m:p-5" id="spec-detail">
   <nav class="mb-4">
-    <a href="/specs" class="chip small no-margin">
+    <a href="/specs" class="chip tertiary small no-margin">
       <i aria-hidden="true">arrow_back</i>
       <span>Specs</span>
     </a>
@@ -12,6 +12,9 @@
       <h1 class="text-4 m:text-5 fw-7 lh-1">{{.Data.Spec.Title}}</h1>
     </div>
     <div class="s4 right-align">
+      <button class="circle small" data-ui="#new-task-dialog" title="Add task">
+        <i aria-hidden="true">add</i>
+      </button>
       <button class="circle transparent" data-ui="#edit-spec-dialog" title="Edit spec">
         <i aria-hidden="true">edit</i>
       </button>
@@ -35,42 +38,53 @@
   {{end}}
 
   <article class="sd-body surface-container-low round p-4 m:p-5 mt-5">
-    <div class="sd-body-md" data-md-body="{{.Data.Spec.Body}}"></div>
+    <div class="sd-body-md" data-md-body="{{stripH1 .Data.Spec.Body}}"></div>
   </article>
 
-  {{if .Data.Links}}
+  {{/* ── Linked Specs (editable) ──────────────────────────── */}}
   <div class="mt-5">
     <h2 class="text-2 fw-6 lh-2 mb-2">Linked Specs</h2>
-    <div class="grid">
-      {{range .Data.Links}}
-      <a href="/specs/{{.ID}}" class="chip s12 m6 l4 no-line">
+    {{if .Data.Links}}
+    {{range .Data.Links}}
+    <div class="sd-criterion mb-1">
+      <a href="/specs/{{.ID}}" class="chip no-line">
         <i aria-hidden="true">link</i>
         <span>{{.ID}}: {{.Title}}</span>
       </a>
-      {{end}}
+      <form method="post" action="/specs/{{$.Data.Spec.ID}}/unlink"
+            hx-post="/specs/{{$.Data.Spec.ID}}/unlink"
+            hx-target="#spec-detail" hx-swap="outerHTML" class="sd-criterion-remove">
+        <input type="hidden" name="target" value="{{.ID}}" />
+        <button type="submit" class="circle small transparent" title="Unlink {{.ID}}">
+          <i aria-hidden="true">close</i>
+        </button>
+      </form>
     </div>
-  </div>
-  {{end}}
-
-  {{if .Data.Citations}}
-  <div class="mt-5">
-    <h2 class="text-2 fw-6 lh-2 mb-3">References</h2>
-    {{range .Data.Citations}}
-    <article class="surface-container-low round p-3 mb-2">
-      <p class="text-1 fw-5 lh-2">
-        {{if eq .SourceType "pdf"}}<i class="small" aria-hidden="true">picture_as_pdf</i>
-        {{else if eq .SourceType "md"}}<i class="small" aria-hidden="true">article</i>
-        {{else if eq .SourceType "html"}}<i class="small" aria-hidden="true">code</i>
-        {{else}}<i class="small" aria-hidden="true">text_snippet</i>
-        {{end}}
-        {{.KBDocTitle}} · chunk {{.ChunkPosition}}{{if .Page}} · page {{.Page}}{{end}}
-      </p>
-      <p class="text--1 lh-3 mt-1">{{stripTruncate .ChunkText 200}}</p>
-    </article>
     {{end}}
+    {{else}}
+    <p class="text--1 lh-3 mb-2">No linked specs.</p>
+    {{end}}
+    <form method="post" action="/specs/{{.Data.Spec.ID}}/link"
+          hx-post="/specs/{{.Data.Spec.ID}}/link"
+          hx-target="#spec-detail" hx-swap="outerHTML" class="sd-criterion-add mt-2">
+      <div class="field border round no-margin" style="flex:1;min-width:0">
+        <select name="target">
+          <option value="">Link a spec...</option>
+          {{range .Data.AllSpecs}}
+            {{if ne .ID $.Data.Spec.ID}}
+            <option value="{{.ID}}">{{.ID}} — {{.Title}}</option>
+            {{end}}
+          {{end}}
+        </select>
+      </div>
+      <button type="submit" class="large round">
+        <i aria-hidden="true">add</i>
+        <span>Link</span>
+      </button>
+    </form>
   </div>
-  {{end}}
 
+  {{/* ── Tasks (table view) ───────────────────────────────── */}}
   <div class="mt-5">
     <div class="grid no-space mb-3">
       <div class="s8">
@@ -84,29 +98,75 @@
       </div>
     </div>
     {{if .Data.Tasks}}
-    <div class="grid">
-      {{range .Data.Tasks}}
-      <a href="/tasks/{{.ID}}" class="s12 m6 l4 no-line">
-        <article class="surface-container-low round p-3">
-          <p class="text-1 fw-5 lh-2">{{.Title}}</p>
-          <p class="text--1 mt-1">
-            <span class="chip small no-margin">{{.Status}}</span>
-            <span class="ml-2">{{.ID}}</span>
-          </p>
-          {{if .CriteriaTotal}}
-          <div class="mt-2">
-            <progress class="primary" value="{{.CriteriaChecked}}" max="{{.CriteriaTotal}}"></progress>
-            <p class="text--2 mt-1">{{.CriteriaChecked}}/{{.CriteriaTotal}} criteria</p>
-          </div>
-          {{end}}
-        </article>
-      </a>
-      {{end}}
-    </div>
+    <table class="border">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Title</th>
+          <th>Status</th>
+          <th class="m l">Progress</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Data.Tasks}}
+        <tr>
+          <td class="sd-kb-id">
+            <a href="/tasks/{{.ID}}" class="chip small no-margin no-line secondary">
+              <i aria-hidden="true">task_alt</i>
+              <span>{{.ID}}</span>
+            </a>
+          </td>
+          <td class="fw-5"><a href="/tasks/{{.ID}}" class="no-line">{{.Title}}</a></td>
+          <td><span class="chip small no-margin">{{.Status}}</span></td>
+          <td class="m l">
+            {{if .CriteriaTotal}}
+            <div class="middle-align">
+              <progress class="circle tiny" value="{{.CriteriaChecked}}" max="{{.CriteriaTotal}}"></progress>
+              <span class="text--2 ml-2">{{.CriteriaChecked}}/{{.CriteriaTotal}}</span>
+            </div>
+            {{end}}
+          </td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
     {{else}}
     <p class="text-1 lh-3">No tasks yet. Click <strong>Add Task</strong> to create one.</p>
     {{end}}
   </div>
+
+  {{/* ── References (with delete) ─────────────────────────── */}}
+  {{if .Data.Citations}}
+  <div class="mt-5">
+    <h2 class="text-2 fw-6 lh-2 mb-3">References</h2>
+    {{range .Data.Citations}}
+    <div class="sd-criterion mb-2">
+      <a href="/kb/{{.KBDocID}}?chunk={{.ChunkPosition}}" class="no-line" style="flex:1;min-width:0">
+        <article class="surface-container-low round p-3">
+          <p class="text-1 fw-5 lh-2">
+            {{if eq .SourceType "pdf"}}<i class="small" aria-hidden="true">picture_as_pdf</i>
+            {{else if eq .SourceType "md"}}<i class="small" aria-hidden="true">article</i>
+            {{else if eq .SourceType "html"}}<i class="small" aria-hidden="true">code</i>
+            {{else}}<i class="small" aria-hidden="true">text_snippet</i>
+            {{end}}
+            {{.KBDocTitle}} · chunk {{.ChunkPosition}}{{if .Page}} · page {{.Page}}{{end}}
+          </p>
+          <p class="text--1 lh-3 mt-1">{{stripTruncate .ChunkText 200}}</p>
+        </article>
+      </a>
+      <form method="post" action="/specs/{{$.Data.Spec.ID}}/uncite"
+            hx-post="/specs/{{$.Data.Spec.ID}}/uncite"
+            hx-target="#spec-detail" hx-swap="outerHTML"
+            hx-confirm="Remove this reference?" class="sd-criterion-remove">
+        <input type="hidden" name="ref" value="{{.KBDocID}}:{{.ChunkPosition}}" />
+        <button type="submit" class="circle small transparent" title="Remove reference">
+          <i aria-hidden="true">close</i>
+        </button>
+      </form>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
 </section>
 
 <dialog id="edit-spec-dialog" aria-label="Edit spec" class="sd-dialog-form">

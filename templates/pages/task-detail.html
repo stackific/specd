@@ -2,12 +2,12 @@
 <section class="container-xl p-3 m:p-5" id="task-detail">
   <nav class="mb-4">
     {{if .Data.ParentSpec}}
-    <a href="/specs/{{.Data.ParentSpec.ID}}" class="chip small no-margin">
+    <a href="/specs/{{.Data.ParentSpec.ID}}" class="chip tertiary small no-margin">
       <i aria-hidden="true">arrow_back</i>
-      <span>{{.Data.ParentSpec.Title}}</span>
+      <span>{{.Data.ParentSpec.ID}} — {{.Data.ParentSpec.Title}}</span>
     </a>
     {{else}}
-    <a href="/" class="chip small no-margin">
+    <a href="/" class="chip tertiary small no-margin">
       <i aria-hidden="true">arrow_back</i>
       <span>Board</span>
     </a>
@@ -15,10 +15,24 @@
   </nav>
 
   <div class="grid no-space mb-2">
-    <div class="s8">
-      <h1 class="text-4 m:text-5 fw-7 lh-1">{{.Data.Task.Title}}</h1>
+    <div class="s8 middle-align">
+      <h1 class="text-4 m:text-5 fw-7 lh-1">{{.Data.Task.ID}} — {{.Data.Task.Title}}</h1>
     </div>
-    <div class="s4 right-align">
+    <div class="s4 right-align middle-align">
+      <form
+        method="post"
+        action="/tasks/{{.Data.Task.ID}}/move"
+        style="display:inline-block"
+      >
+        <div class="field suffix border round small no-margin">
+          <select name="status" class="sd-auto-submit">
+            {{range .Data.Statuses}}
+            <option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>
+            {{end}}
+          </select>
+          <i aria-hidden="true">swap_vert</i>
+        </div>
+      </form>
       <button class="circle transparent" data-ui="#edit-task-dialog" title="Edit task">
         <i aria-hidden="true">edit</i>
       </button>
@@ -28,117 +42,178 @@
     </div>
   </div>
 
-  <div class="mt-2 middle-align">
-    <span class="ml-2">{{.Data.Task.ID}} · {{.Data.Task.SpecID}}</span>
-    <form
-      method="post"
-      action="/tasks/{{.Data.Task.ID}}/move"
-      class="ml-3"
-      style="display:inline-block"
-    >
-      <div class="field suffix border round small no-margin">
-        <select name="status" class="sd-auto-submit">
-          {{range .Data.Statuses}}
-          <option value="{{.Value}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>
-          {{end}}
-        </select>
-        <i aria-hidden="true">swap_vert</i>
-      </div>
-    </form>
-  </div>
-
   <p class="text-2 lh-4 mt-3">{{.Data.Task.Summary}}</p>
 
   <article class="sd-body surface-container-low round p-4 m:p-5 mt-5">
-    <div class="sd-body-md" data-md-body="{{.Data.Task.Body}}"></div>
+    <div class="sd-body-md" data-md-body="{{stripH1 (stripCriteria .Data.Task.Body)}}"></div>
   </article>
 
+  {{/* ── Acceptance Criteria ──────────────────────────────── */}}
   <div class="mt-5">
     <h2 class="text-2 fw-6 lh-2 mb-3">Acceptance Criteria</h2>
     {{if .Data.Criteria}}
       {{range .Data.Criteria}}
-      <div class="middle-align mb-2">
+      <div class="sd-criterion mb-2">
         {{if .Checked}}
-        <form method="post" action="/tasks/{{$.Data.Task.ID}}/criteria/{{.Position}}/uncheck" class="inline">
+        <form method="post" action="/tasks/{{$.Data.Task.ID}}/criteria/{{.Position}}/uncheck"
+              hx-post="/tasks/{{$.Data.Task.ID}}/criteria/{{.Position}}/uncheck"
+              hx-target="#task-detail" hx-swap="outerHTML" class="sd-criterion-check">
           <label class="checkbox">
-            <input type="checkbox" checked onchange="this.form.submit()" />
+            <input type="checkbox" checked onchange="this.form.requestSubmit()" />
             <span>{{.Text}}</span>
           </label>
         </form>
         {{else}}
-        <form method="post" action="/tasks/{{$.Data.Task.ID}}/criteria/{{.Position}}/check" class="inline">
+        <form method="post" action="/tasks/{{$.Data.Task.ID}}/criteria/{{.Position}}/check"
+              hx-post="/tasks/{{$.Data.Task.ID}}/criteria/{{.Position}}/check"
+              hx-target="#task-detail" hx-swap="outerHTML" class="sd-criterion-check">
           <label class="checkbox">
-            <input type="checkbox" onchange="this.form.submit()" />
+            <input type="checkbox" onchange="this.form.requestSubmit()" />
             <span>{{.Text}}</span>
           </label>
         </form>
         {{end}}
-        <form method="post" action="/tasks/{{$.Data.Task.ID}}/criteria/{{.Position}}/remove" class="inline ml-2">
-          <button type="submit" class="circle small transparent" title="Remove criterion">
-            <i aria-hidden="true">close</i>
-          </button>
-        </form>
+        <button type="button" class="circle small transparent sd-criterion-remove"
+          title="Remove criterion"
+          onclick="sdCriterionConfirmRemove('{{$.Data.Task.ID}}', {{.Position}})">
+          <i aria-hidden="true">close</i>
+        </button>
       </div>
       {{end}}
     {{else}}
       <p class="text-1 lh-3 mb-3">No criteria yet.</p>
     {{end}}
 
-    <form method="post" action="/tasks/{{.Data.Task.ID}}/criteria" class="mt-3">
-      <div class="field label border round small">
-        <input type="text" name="text" required minlength="2" pattern=".*\S.*" placeholder=" " />
-        <label>Add criterion</label>
+    <form method="post" action="/tasks/{{.Data.Task.ID}}/criteria"
+          hx-post="/tasks/{{.Data.Task.ID}}/criteria"
+          hx-target="#task-detail" hx-swap="outerHTML" class="sd-criterion-add mt-3">
+      <div class="field border round no-margin">
+        <input type="text" name="text" required minlength="2" pattern=".*\S.*" placeholder="Add criterion" />
       </div>
-      <button type="submit" class="small round mt-2">
+      <button type="submit" class="large round">
         <i aria-hidden="true">add</i>
         <span>Add</span>
       </button>
     </form>
   </div>
 
-  {{if .Data.Deps}}
+  {{/* ── Dependencies (editable) ──────────────────────────── */}}
   <div class="mt-5">
     <h2 class="text-2 fw-6 lh-2 mb-2">Dependencies</h2>
+    {{if .Data.Deps}}
     {{range .Data.Deps}}
-    <a href="/tasks/{{.ID}}" class="chip no-line mb-1">
-      {{if .Ready}}
-      <i aria-hidden="true">check_circle</i>
-      {{else}}
-      <i aria-hidden="true">block</i>
-      {{end}}
-      <span>{{.ID}}: {{.Title}} ({{.Status}})</span>
-    </a>
+    <div class="sd-criterion mb-1">
+      <a href="/tasks/{{.ID}}" class="chip no-line">
+        {{if .Ready}}<i aria-hidden="true">check_circle</i>
+        {{else}}<i aria-hidden="true">block</i>
+        {{end}}
+        <span>{{.ID}}: {{.Title}} ({{.Status}})</span>
+      </a>
+      <form method="post" action="/tasks/{{$.Data.Task.ID}}/undepend"
+            hx-post="/tasks/{{$.Data.Task.ID}}/undepend"
+            hx-target="#task-detail" hx-swap="outerHTML" class="sd-criterion-remove">
+        <input type="hidden" name="blocker" value="{{.ID}}" />
+        <button type="submit" class="circle small transparent" title="Remove dependency">
+          <i aria-hidden="true">close</i>
+        </button>
+      </form>
+    </div>
     {{end}}
+    {{else}}
+    <p class="text--1 lh-3 mb-2">No dependencies.</p>
+    {{end}}
+    <form method="post" action="/tasks/{{.Data.Task.ID}}/depend"
+          hx-post="/tasks/{{.Data.Task.ID}}/depend"
+          hx-target="#task-detail" hx-swap="outerHTML" class="sd-criterion-add mt-2">
+      <div class="field border round no-margin" style="flex:1;min-width:0">
+        <select name="blocker">
+          <option value="">Blocked by...</option>
+          {{range .Data.AllTasks}}
+            {{if ne .ID $.Data.Task.ID}}
+            <option value="{{.ID}}">{{.ID}} — {{.Title}}</option>
+            {{end}}
+          {{end}}
+        </select>
+      </div>
+      <button type="submit" class="large round">
+        <i aria-hidden="true">add</i>
+        <span>Add</span>
+      </button>
+    </form>
   </div>
-  {{end}}
 
-  {{if .Data.Links}}
+  {{/* ── Linked Tasks (editable) ──────────────────────────── */}}
   <div class="mt-5">
     <h2 class="text-2 fw-6 lh-2 mb-2">Linked Tasks</h2>
+    {{if .Data.Links}}
     {{range .Data.Links}}
-    <a href="/tasks/{{.ID}}" class="chip no-line mb-1">
-      <i aria-hidden="true">link</i>
-      <span>{{.ID}}: {{.Title}} ({{.Status}})</span>
-    </a>
+    <div class="sd-criterion mb-1">
+      <a href="/tasks/{{.ID}}" class="chip no-line">
+        <i aria-hidden="true">link</i>
+        <span>{{.ID}}: {{.Title}} ({{.Status}})</span>
+      </a>
+      <form method="post" action="/tasks/{{$.Data.Task.ID}}/unlink"
+            hx-post="/tasks/{{$.Data.Task.ID}}/unlink"
+            hx-target="#task-detail" hx-swap="outerHTML" class="sd-criterion-remove">
+        <input type="hidden" name="target" value="{{.ID}}" />
+        <button type="submit" class="circle small transparent" title="Unlink {{.ID}}">
+          <i aria-hidden="true">close</i>
+        </button>
+      </form>
+    </div>
     {{end}}
+    {{else}}
+    <p class="text--1 lh-3 mb-2">No linked tasks.</p>
+    {{end}}
+    <form method="post" action="/tasks/{{.Data.Task.ID}}/link"
+          hx-post="/tasks/{{.Data.Task.ID}}/link"
+          hx-target="#task-detail" hx-swap="outerHTML" class="sd-criterion-add mt-2">
+      <div class="field border round no-margin" style="flex:1;min-width:0">
+        <select name="target">
+          <option value="">Link a task...</option>
+          {{range .Data.AllTasks}}
+            {{if ne .ID $.Data.Task.ID}}
+            <option value="{{.ID}}">{{.ID}} — {{.Title}}</option>
+            {{end}}
+          {{end}}
+        </select>
+      </div>
+      <button type="submit" class="large round">
+        <i aria-hidden="true">add</i>
+        <span>Link</span>
+      </button>
+    </form>
   </div>
-  {{end}}
 
+  {{/* ── References ───────────────────────────────────────── */}}
   {{if .Data.Citations}}
   <div class="mt-5">
     <h2 class="text-2 fw-6 lh-2 mb-3">References</h2>
     {{range .Data.Citations}}
-    <article class="surface-container-low round p-3 mb-2">
-      <p class="text-1 fw-5 lh-2">
-        {{if eq .SourceType "pdf"}}<i class="small" aria-hidden="true">picture_as_pdf</i>
-        {{else if eq .SourceType "md"}}<i class="small" aria-hidden="true">article</i>
-        {{else if eq .SourceType "html"}}<i class="small" aria-hidden="true">code</i>
-        {{else}}<i class="small" aria-hidden="true">text_snippet</i>
-        {{end}}
-        {{.KBDocTitle}} · chunk {{.ChunkPosition}}{{if .Page}} · page {{.Page}}{{end}}
-      </p>
-      <p class="text--1 lh-3 mt-1">{{stripTruncate .ChunkText 200}}</p>
-    </article>
+    <div class="sd-criterion mb-2">
+      <a href="/kb/{{.KBDocID}}?chunk={{.ChunkPosition}}" class="no-line" style="flex:1;min-width:0">
+        <article class="surface-container-low round p-3">
+          <p class="text-1 fw-5 lh-2">
+            {{if eq .SourceType "pdf"}}<i class="small" aria-hidden="true">picture_as_pdf</i>
+            {{else if eq .SourceType "md"}}<i class="small" aria-hidden="true">article</i>
+            {{else if eq .SourceType "html"}}<i class="small" aria-hidden="true">code</i>
+            {{else}}<i class="small" aria-hidden="true">text_snippet</i>
+            {{end}}
+            {{.KBDocTitle}} · chunk {{.ChunkPosition}}{{if .Page}} · page {{.Page}}{{end}}
+          </p>
+          <p class="text--1 lh-3 mt-1">{{stripTruncate .ChunkText 200}}</p>
+        </article>
+      </a>
+      <form method="post" action="/tasks/{{$.Data.Task.ID}}/uncite"
+            hx-post="/tasks/{{$.Data.Task.ID}}/uncite"
+            hx-target="#task-detail" hx-swap="outerHTML"
+            class="sd-criterion-remove">
+        <input type="hidden" name="ref" value="{{.KBDocID}}:{{.ChunkPosition}}" />
+        <button type="submit" class="circle small transparent" title="Remove reference">
+          <i aria-hidden="true">close</i>
+        </button>
+      </form>
+    </div>
     {{end}}
   </div>
   {{end}}
@@ -159,6 +234,30 @@
     </form>
   </nav>
 </dialog>
+
+<dialog id="remove-criterion-dialog" aria-label="Remove criterion confirmation" style="max-height:none;">
+  <h5>Remove Criterion?</h5>
+  <p class="mt-3">This criterion will be permanently removed.</p>
+  <nav class="right-align no-space mt-4">
+    <button type="button" class="transparent link" data-ui="#remove-criterion-dialog">Cancel</button>
+    <button type="button" class="error ml-2" id="remove-criterion-confirm">Remove</button>
+  </nav>
+</dialog>
+
+<script>
+function sdCriterionConfirmRemove(taskID, position) {
+  var dialog = document.getElementById("remove-criterion-dialog");
+  var btn = document.getElementById("remove-criterion-confirm");
+  btn.onclick = function () {
+    ui("#remove-criterion-dialog");
+    htmx.ajax("POST", "/tasks/" + taskID + "/criteria/" + position + "/remove", {
+      target: "#task-detail",
+      swap: "outerHTML"
+    });
+  };
+  ui("#remove-criterion-dialog");
+}
+</script>
 {{end}}
 
 {{define "edit-task-form"}}

@@ -1,112 +1,64 @@
 {{define "content"}}
 <section class="container-xl p-3 m:p-5">
-  <div class="mb-5">
-    <div class="grid no-space">
-      <div class="s8">
-        <h1 class="text-4 m:text-5 fw-7 lh-1">Knowledge Base</h1>
-      </div>
-      <div class="s4 right-align">
-        <button class="round" data-ui="#add-kb-dialog">
-          <i aria-hidden="true">add</i>
-          <span>Add Document</span>
-        </button>
+  <div class="sd-board-toolbar mb-5">
+    <h1 class="text-4 m:text-5 fw-7 lh-1">Knowledge Base</h1>
+    <div class="sd-board-controls">
+      <button class="round" data-ui="#add-kb-dialog">
+        <i aria-hidden="true">add</i>
+        <span class="m l">Add Document</span>
+      </button>
+      <div class="small field round fill no-margin no-elevate sd-board-filter">
+        <select aria-label="Filter by type" onchange="window.location.href=this.value">
+          <option value="/kb"{{if not .Data.FilterType}} selected{{end}}>All types</option>
+          <option value="/kb?type=md"{{if eq .Data.FilterType "md"}} selected{{end}}>Markdown</option>
+          <option value="/kb?type=html"{{if eq .Data.FilterType "html"}} selected{{end}}>HTML</option>
+          <option value="/kb?type=pdf"{{if eq .Data.FilterType "pdf"}} selected{{end}}>PDF</option>
+          <option value="/kb?type=txt"{{if eq .Data.FilterType "txt"}} selected{{end}}>Text</option>
+        </select>
       </div>
     </div>
   </div>
-
-  <form method="get" action="/kb" class="mb-4">
-    <div class="grid no-space">
-      <div class="s12 m8 l6">
-        <div class="field label prefix border">
-          <i aria-hidden="true">search</i>
-          <input type="search" name="q" value="{{.Data.Query}}" autocomplete="off" placeholder=" " />
-          <label>Search KB chunks...</label>
-        </div>
-      </div>
-    </div>
-    {{if .Data.FilterType}}
-    <input type="hidden" name="type" value="{{.Data.FilterType}}" />
-    {{end}}
-  </form>
-
-  <nav class="mb-4" aria-label="Filter by type">
-    <a href="/kb" class="chip small{{if not .Data.FilterType}} fill{{end}}">All</a>
-    <a href="/kb?type=md{{if .Data.Query}}&q={{.Data.Query}}{{end}}" class="chip small{{if eq .Data.FilterType "md"}} fill{{end}}">
-      <i aria-hidden="true">article</i>
-      <span>Markdown</span>
-    </a>
-    <a href="/kb?type=html{{if .Data.Query}}&q={{.Data.Query}}{{end}}" class="chip small{{if eq .Data.FilterType "html"}} fill{{end}}">
-      <i aria-hidden="true">code</i>
-      <span>HTML</span>
-    </a>
-    <a href="/kb?type=pdf{{if .Data.Query}}&q={{.Data.Query}}{{end}}" class="chip small{{if eq .Data.FilterType "pdf"}} fill{{end}}">
-      <i aria-hidden="true">picture_as_pdf</i>
-      <span>PDF</span>
-    </a>
-    <a href="/kb?type=txt{{if .Data.Query}}&q={{.Data.Query}}{{end}}" class="chip small{{if eq .Data.FilterType "txt"}} fill{{end}}">
-      <i aria-hidden="true">text_snippet</i>
-      <span>Text</span>
-    </a>
-  </nav>
-
-  {{if .Data.SearchResults}}
-  <div class="mb-5">
-    <h2 class="text-2 fw-6 lh-2 mb-3">Search Results</h2>
-    {{range .Data.SearchResults}}
-    <a href="/kb/{{.DocID}}?chunk={{.ChunkPosition}}" class="no-line">
-      <article class="surface-container-low round p-3 mb-2">
-        <p class="text-1 fw-5 lh-2">
-          {{.DocTitle}} · chunk {{.ChunkPosition}}{{if .Page}} · page {{.Page}}{{end}}
-        </p>
-        <p class="text--1 mt-1">score {{printf "%.2f" .Score}} · {{.MatchType}}</p>
-        <p class="text-1 lh-3 mt-1">{{.Text}}</p>
-      </article>
-    </a>
-    {{end}}
-  </div>
-  {{else if .Data.Query}}
-  <p class="text-2 lh-3 mb-5">No results found for "{{.Data.Query}}".</p>
-  {{end}}
 
   {{if .Data.Docs}}
-  <h2 class="text-2 fw-6 lh-2 mb-3">Documents</h2>
-  <table class="border">
+  <table class="border sd-kb-table" id="kb-doc-table">
     <thead>
       <tr>
-        <th>ID</th>
-        <th>Title</th>
-        <th>Type</th>
-        <th class="m l">Added</th>
-        <th>Actions</th>
+        <th></th>
+        <th class="sd-sortable" data-sort="title" role="button" tabindex="0" aria-label="Sort by title">
+          Document <i class="small sd-sort-icon" aria-hidden="true"></i>
+        </th>
+        <th class="m l sd-sortable sd-sorted-desc" data-sort="added" role="button" tabindex="0" aria-label="Sort by date added">
+          Added <i class="small sd-sort-icon" aria-hidden="true">arrow_downward</i>
+        </th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
       {{range .Data.Docs}}
-      <tr>
-        <td><span class="chip small no-margin">{{.ID}}</span></td>
-        <td class="fw-5"><a href="/kb/{{.ID}}">{{.Title}}</a></td>
-        <td>
-          {{if eq .SourceType "md"}}<i aria-hidden="true">article</i>
-          {{else if eq .SourceType "html"}}<i aria-hidden="true">code</i>
-          {{else if eq .SourceType "pdf"}}<i aria-hidden="true">picture_as_pdf</i>
-          {{else}}<i aria-hidden="true">text_snippet</i>
-          {{end}}
-          {{.SourceType}}
+      <tr data-title="{{.Title}}" data-added="{{.AddedAt}}">
+        <td class="sd-kb-id">
+          <a href="/kb/{{.ID}}" class="chip small no-margin no-line secondary" title="{{.SourceType}}">
+            {{if eq .SourceType "md"}}<i aria-hidden="true">article</i>
+            {{else if eq .SourceType "html"}}<i aria-hidden="true">code</i>
+            {{else if eq .SourceType "pdf"}}<i aria-hidden="true">picture_as_pdf</i>
+            {{else}}<i aria-hidden="true">text_snippet</i>
+            {{end}}
+            <span>{{.ID}}</span>
+          </a>
         </td>
-        <td class="m l text--1">{{.AddedAt}}</td>
+        <td class="fw-5"><a href="/kb/{{.ID}}" class="no-line">{{.Title}}</a></td>
+        <td class="m l text--1" title="{{.AddedAt}}">{{timeAgo .AddedAt}}</td>
         <td>
-          <form method="post" action="/kb/{{.ID}}/delete" class="inline"
-            onsubmit="return confirm('Remove {{.ID}}? It will be moved to trash.')">
-            <button type="submit" class="circle small transparent" title="Remove">
-              <i aria-hidden="true">delete</i>
-            </button>
-          </form>
+          <button type="button" class="circle small transparent" title="Remove"
+            onclick="sdKbConfirmDelete('{{.ID}}')">
+            <i aria-hidden="true">delete</i>
+          </button>
         </td>
       </tr>
       {{end}}
     </tbody>
   </table>
-  {{else if not .Data.Query}}
+  {{else}}
   <article class="surface-container-low round p-5">
     <p class="text-2 lh-3">No KB documents yet. Click <strong>Add Document</strong> to upload one.</p>
   </article>
@@ -118,11 +70,71 @@
   <p class="text--1 mt-2">Upload a file (md, html, pdf, txt) or provide a URL.</p>
   {{template "add-kb-form" .Data.KBForm}}
 </dialog>
+
+<dialog id="delete-kb-dialog" aria-label="Delete KB document confirmation" style="max-height:none;">
+  <h5>Remove Document?</h5>
+  <p class="mt-3">This will move <strong id="delete-kb-id"></strong> to trash. Citations referencing this document will also be removed.</p>
+  <nav class="right-align no-space mt-4">
+    <button type="button" class="transparent link" data-ui="#delete-kb-dialog">Cancel</button>
+    <form method="post" id="delete-kb-form" class="inline">
+      <button type="submit" class="error ml-2">Delete</button>
+    </form>
+  </nav>
+</dialog>
 <script>
   document.getElementById("kb-file-input").addEventListener("change", function () {
     var el = document.getElementById("kb-file-name");
     el.textContent = this.files.length ? this.files[0].name : "md, html, pdf, or txt";
   });
+
+  // KB delete confirmation dialog.
+  function sdKbConfirmDelete(kbID) {
+    document.getElementById("delete-kb-id").textContent = kbID;
+    document.getElementById("delete-kb-form").action = "/kb/" + kbID + "/delete";
+    var dlg = document.getElementById("delete-kb-dialog");
+    if (dlg.showModal) dlg.showModal(); else ui("#delete-kb-dialog");
+  }
+
+  // Client-side table sorting for Title and Added columns.
+  (function () {
+    var table = document.getElementById("kb-doc-table");
+    if (!table) return;
+    var headers = table.querySelectorAll("th.sd-sortable");
+
+    headers.forEach(function (th) {
+      function activate() {
+        var key = th.getAttribute("data-sort");
+        var asc = th.classList.contains("sd-sorted-asc");
+        var desc = th.classList.contains("sd-sorted-desc");
+        var newDir = desc ? "asc" : (asc ? "desc" : "asc");
+
+        // Clear all sort states.
+        headers.forEach(function (h) {
+          h.classList.remove("sd-sorted-asc", "sd-sorted-desc");
+          h.querySelector(".sd-sort-icon").textContent = "";
+        });
+
+        th.classList.add(newDir === "asc" ? "sd-sorted-asc" : "sd-sorted-desc");
+        th.querySelector(".sd-sort-icon").textContent =
+          newDir === "asc" ? "arrow_upward" : "arrow_downward";
+
+        var tbody = table.querySelector("tbody");
+        var rows = Array.from(tbody.querySelectorAll("tr"));
+        rows.sort(function (a, b) {
+          var va = (a.getAttribute("data-" + key) || "").toLowerCase();
+          var vb = (b.getAttribute("data-" + key) || "").toLowerCase();
+          var cmp = va < vb ? -1 : va > vb ? 1 : 0;
+          return newDir === "asc" ? cmp : -cmp;
+        });
+        rows.forEach(function (r) { tbody.appendChild(r); });
+      }
+
+      th.addEventListener("click", activate);
+      th.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); }
+      });
+    });
+  })();
 </script>
 {{end}}
 

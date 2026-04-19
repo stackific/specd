@@ -31,14 +31,6 @@
   transition: background-color 0.15s ease;
 }
 
-/* ── Drop target highlight ────────────────────────────────── */
-
-.sd-col-body.is-drag-over {
-  background-color: var(--surface-container);
-  outline: 2px dashed var(--primary);
-  outline-offset: -2px;
-}
-
 /* ── Task cards ───────────────────────────────────────────── */
 
 .sd-card {
@@ -93,11 +85,12 @@
 /* ── Drop placeholder ─────────────────────────────────────── */
 
 .sd-drop-placeholder {
-  height: 4px;
-  border-radius: 2px;
-  background-color: var(--primary);
+  min-height: 5rem;
+  border-radius: 0.75rem;
+  border: 2px dashed var(--primary);
+  background-color: var(--primary-container);
+  opacity: 0.4;
   margin-bottom: var(--space-2);
-  transition: height 0.1s ease;
 }
 
 /* ── Empty state ──────────────────────────────────────────── */
@@ -106,6 +99,44 @@
   padding: var(--space-3) 0;
   text-align: center;
   opacity: 0.6;
+}
+
+/* ── Board toolbar: heading + controls ─────────────────────── */
+
+.sd-board-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sd-board-toolbar > h1 {
+  flex-shrink: 0;
+}
+
+.sd-board-controls {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.sd-board-btn {
+  flex-shrink: 0;
+}
+
+.sd-board-filter {
+  flex-shrink: 0;
+  
+}
+
+/* On small and tablet screens, filter takes remaining width */
+@media (max-width: 992px) {
+  .sd-board-filter {
+    flex: 1;
+    min-width: 180px;
+  }
 }
 
 /* ── Responsive: fluid columns on desktop ─────────────────── */

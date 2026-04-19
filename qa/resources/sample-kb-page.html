@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>API Rate Limiting - Developer Documentation</title>
+  <style>
+    body { font-family: Georgia, serif; max-width: 800px; margin: 2em auto; line-height: 1.6; color: #333; }
+    h1 { color: #1a1a2e; border-bottom: 2px solid #e94560; padding-bottom: 0.3em; }
+    h2 { color: #16213e; margin-top: 2em; }
+    h3 { color: #0f3460; }
+    code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; }
+    pre { background: #1a1a2e; color: #e0e0e0; padding: 1em; border-radius: 6px; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+    th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+    th { background: #16213e; color: white; }
+    .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 1em; margin: 1em 0; }
+    .info { background: #d1ecf1; border-left: 4px solid #17a2b8; padding: 1em; margin: 1em 0; }
+  </style>
+</head>
+<body>
+
+<h1>API Rate Limiting</h1>
+
+<p>Our API enforces rate limits to ensure fair usage and maintain service reliability for all consumers. This document describes the rate limiting mechanisms, response headers, and best practices for handling rate-limited responses.</p>
+
+<h2>Rate Limit Tiers</h2>
+
+<table>
+  <tr>
+    <th>Plan</th>
+    <th>Requests/minute</th>
+    <th>Requests/hour</th>
+    <th>Burst limit</th>
+  </tr>
+  <tr>
+    <td>Free</td>
+    <td>60</td>
+    <td>1,000</td>
+    <td>10</td>
+  </tr>
+  <tr>
+    <td>Pro</td>
+    <td>300</td>
+    <td>10,000</td>
+    <td>50</td>
+  </tr>
+  <tr>
+    <td>Enterprise</td>
+    <td>1,000</td>
+    <td>100,000</td>
+    <td>200</td>
+  </tr>
+</table>
+
+<h2>Response Headers</h2>
+
+<p>Every API response includes rate limit information in the following headers:</p>
+
+<pre>
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1625097600
+Retry-After: 30
+</pre>
+
+<ul>
+  <li><code>X-RateLimit-Limit</code>: Maximum requests allowed in the current window</li>
+  <li><code>X-RateLimit-Remaining</code>: Requests remaining in the current window</li>
+  <li><code>X-RateLimit-Reset</code>: Unix timestamp when the rate limit resets</li>
+  <li><code>Retry-After</code>: Seconds to wait before retrying (only on 429 responses)</li>
+</ul>
+
+<h2>Handling Rate Limits</h2>
+
+<div class="warning">
+  <strong>Important:</strong> Clients that repeatedly ignore rate limits may be temporarily banned. Always implement exponential backoff.
+</div>
+
+<h3>Exponential Backoff Strategy</h3>
+
+<p>When receiving a <code>429 Too Many Requests</code> response, implement the following retry strategy:</p>
+
+<ol>
+  <li>Wait for the duration specified in the <code>Retry-After</code> header</li>
+  <li>If no header present, wait <code>2^attempt</code> seconds (1s, 2s, 4s, 8s...)</li>
+  <li>Add random jitter of 0-1 seconds to prevent thundering herd</li>
+  <li>Maximum retry attempts: 5</li>
+  <li>Maximum backoff: 60 seconds</li>
+</ol>
+
+<h3>Example Implementation</h3>
+
+<pre>
+async function fetchWithRetry(url, options, maxRetries = 5) {
+  for (let attempt = 0; attempt &lt; maxRetries; attempt++) {
+    const response = await fetch(url, options);
+
+    if (response.status !== 429) {
+      return response;
+    }
+
+    const retryAfter = response.headers.get('Retry-After');
+    const delay = retryAfter
+      ? parseInt(retryAfter) * 1000
+      : Math.min(Math.pow(2, attempt) * 1000, 60000);
+
+    await sleep(delay + Math.random() * 1000);
+  }
+
+  throw new Error('Max retries exceeded');
+}
+</pre>
+
+<h2>Best Practices</h2>
+
+<div class="info">
+  <strong>Tip:</strong> Cache responses locally to reduce the number of API calls. Most resources include <code>Cache-Control</code> and <code>ETag</code> headers for conditional requests.
+</div>
+
+<ol>
+  <li><strong>Monitor your usage:</strong> Track the <code>X-RateLimit-Remaining</code> header to proactively reduce request volume before hitting limits.</li>
+  <li><strong>Batch requests:</strong> Use bulk endpoints where available instead of making individual requests.</li>
+  <li><strong>Cache aggressively:</strong> Store responses locally and use conditional requests (<code>If-None-Match</code>) to reduce unnecessary API calls.</li>
+  <li><strong>Use webhooks:</strong> Subscribe to webhooks for real-time updates instead of polling.</li>
+  <li><strong>Implement circuit breakers:</strong> If the API is consistently returning errors, back off entirely for a period.</li>
+</ol>
+
+<h2>Endpoint-Specific Limits</h2>
+
+<p>Some endpoints have additional restrictions beyond the plan-level limits:</p>
+
+<table>
+  <tr>
+    <th>Endpoint</th>
+    <th>Additional Limit</th>
+    <th>Reason</th>
+  </tr>
+  <tr>
+    <td><code>POST /search</code></td>
+    <td>10 req/min</td>
+    <td>Computationally expensive</td>
+  </tr>
+  <tr>
+    <td><code>POST /exports</code></td>
+    <td>5 req/hour</td>
+    <td>Resource intensive</td>
+  </tr>
+  <tr>
+    <td><code>POST /bulk/*</code></td>
+    <td>20 req/min</td>
+    <td>High database load</td>
+  </tr>
+</table>
+
+<script>
+  // This script should be stripped by bluemonday sanitization
+  alert("If you see this, sanitization failed!");
+  document.cookie = "stolen=true";
+</script>
+
+</body>
+</html>

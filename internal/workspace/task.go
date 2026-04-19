@@ -51,6 +51,10 @@ type NewTaskResult struct {
 
 // NewTask creates a new task under the given spec.
 func (w *Workspace) NewTask(input NewTaskInput) (*NewTaskResult, error) {
+	if err := validateNoH1(input.Body); err != nil {
+		return nil, err
+	}
+
 	var result *NewTaskResult
 
 	if input.Status == "" {
@@ -149,6 +153,11 @@ type UpdateTaskInput struct {
 
 // UpdateTask updates mutable fields on a task.
 func (w *Workspace) UpdateTask(taskID string, input UpdateTaskInput) error {
+	if input.Body != nil {
+		if err := validateNoH1(*input.Body); err != nil {
+			return err
+		}
+	}
 	return w.WithLock(func() error {
 		task, err := w.ReadTask(taskID)
 		if err != nil {

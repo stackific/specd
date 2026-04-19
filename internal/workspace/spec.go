@@ -49,6 +49,10 @@ type NewSpecResult struct {
 
 // NewSpec creates a new spec in the workspace.
 func (w *Workspace) NewSpec(input NewSpecInput) (*NewSpecResult, error) {
+	if err := validateNoH1(input.Body); err != nil {
+		return nil, err
+	}
+
 	var result *NewSpecResult
 
 	err := w.WithLock(func() error {
@@ -200,6 +204,11 @@ type UpdateSpecInput struct {
 
 // UpdateSpec updates mutable fields on a spec.
 func (w *Workspace) UpdateSpec(specID string, input UpdateSpecInput) error {
+	if input.Body != nil {
+		if err := validateNoH1(*input.Body); err != nil {
+			return err
+		}
+	}
 	return w.WithLock(func() error {
 		spec, err := w.ReadSpec(specID)
 		if err != nil {

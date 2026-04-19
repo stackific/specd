@@ -5,6 +5,7 @@ package watcher
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -144,6 +145,13 @@ func (wt *Watcher) debounce(event fsnotify.Event) {
 	}
 
 	wt.timers[path] = time.AfterFunc(200*time.Millisecond, func() {
+		// Check if watcher is shutting down before processing.
+		select {
+		case <-wt.done:
+			return
+		default:
+		}
+
 		wt.mu.Lock()
 		delete(wt.timers, path)
 		wt.mu.Unlock()
@@ -417,14 +425,18 @@ func (wt *Watcher) syncTask(relPath string, data []byte, contentHash string) {
 
 		// Re-sync acceptance criteria.
 		criteria := frontmatter.ParseCriteria(doc.Body)
-		wt.w.DB.Exec("DELETE FROM task_criteria WHERE task_id = ?", taskID)
+		if _, err := wt.w.DB.Exec("DELETE FROM task_criteria WHERE task_id = ?", taskID); err != nil {
+			return fmt.Errorf("delete criteria: %w", err)
+		}
 		for i, c := range criteria {
 			checked := 0
 			if c.Checked {
 				checked = 1
 			}
-			wt.w.DB.Exec(`INSERT INTO task_criteria (task_id, position, text, checked)
-				VALUES (?, ?, ?, ?)`, taskID, i+1, c.Text, checked)
+			if _, err := wt.w.DB.Exec(`INSERT INTO task_criteria (task_id, position, text, checked)
+				VALUES (?, ?, ?, ?)`, taskID, i+1, c.Text, checked); err != nil {
+				return fmt.Errorf("insert criterion %d: %w", i+1, err)
+			}
 		}
 
 		return nil
@@ -441,7 +453,8 @@ func (wt *Watcher) syncTask(relPath string, data []byte, contentHash string) {
 func (wt *Watcher) deleteSpecByWatcher(specID string) {
 	err := wt.w.WithLock(func() error {
 		now := time.Now().UTC().Format(time.RFC3339)
-		metadata := fmt.Sprintf(`{"id":"%s"}`, specID)
+		metaB, _ := json.Marshal(map[string]string{"id": specID})
+		metadata := string(metaB)
 
 		tx, err := wt.w.DB.Begin()
 		if err != nil {
@@ -457,7 +470,9 @@ func (wt *Watcher) deleteSpecByWatcher(specID string) {
 		}
 
 		// Delete citations (not FK-cascaded).
-		tx.Exec("DELETE FROM citations WHERE from_kind = 'spec' AND from_id = ?", specID)
+		if _, err := tx.Exec("DELETE FROM citations WHERE from_kind = 'spec' AND from_id = ?", specID); err != nil {
+			return fmt.Errorf("delete spec citations: %w", err)
+		}
 
 		_, err = tx.Exec("DELETE FROM specs WHERE id = ?", specID)
 		if err != nil {
@@ -478,7 +493,8 @@ func (wt *Watcher) deleteSpecByWatcher(specID string) {
 func (wt *Watcher) deleteTaskByWatcher(taskID string) {
 	err := wt.w.WithLock(func() error {
 		now := time.Now().UTC().Format(time.RFC3339)
-		metadata := fmt.Sprintf(`{"id":"%s"}`, taskID)
+		metaB, _ := json.Marshal(map[string]string{"id": taskID})
+		metadata := string(metaB)
 
 		tx, err := wt.w.DB.Begin()
 		if err != nil {
@@ -493,7 +509,9 @@ func (wt *Watcher) deleteTaskByWatcher(taskID string) {
 			return err
 		}
 
-		tx.Exec("DELETE FROM citations WHERE from_kind = 'task' AND from_id = ?", taskID)
+		if _, err := tx.Exec("DELETE FROM citations WHERE from_kind = 'task' AND from_id = ?", taskID); err != nil {
+			return fmt.Errorf("delete task citations: %w", err)
+		}
 
 		_, err = tx.Exec("DELETE FROM tasks WHERE id = ?", taskID)
 		if err != nil {
@@ -514,7 +532,8 @@ func (wt *Watcher) deleteTaskByWatcher(taskID string) {
 func (wt *Watcher) deleteKBByWatcher(kbID string) {
 	err := wt.w.WithLock(func() error {
 		now := time.Now().UTC().Format(time.RFC3339)
-		metadata := fmt.Sprintf(`{"id":"%s"}`, kbID)
+		metaB, _ := json.Marshal(map[string]string{"id": kbID})
+		metadata := string(metaB)
 
 		tx, err := wt.w.DB.Begin()
 		if err != nil {

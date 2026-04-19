@@ -79,7 +79,7 @@ func (w *Workspace) Rebuild(force bool) (*RebuildResult, error) {
 				result.RejectedFiles = append(result.RejectedFiles, filepath.Join("specd", "specs", entry.Name()))
 				w.DB.Exec(`INSERT OR IGNORE INTO rejected_files (path, detected_at, reason)
 					VALUES (?, ?, ?)`,
-					filepath.Join("specd", "specs", entry.Name()), now, "non-canonical spec directory name")
+					filepath.Join("specd", "specs", entry.Name()), now, "non-canonical spec directory name") // best-effort
 				continue
 			}
 
@@ -205,8 +205,10 @@ func (w *Workspace) Rebuild(force bool) (*RebuildResult, error) {
 					if c.Checked {
 						checked = 1
 					}
-					w.DB.Exec(`INSERT INTO task_criteria (task_id, position, text, checked)
-						VALUES (?, ?, ?, ?)`, taskID, i+1, c.Text, checked)
+					if _, err := w.DB.Exec(`INSERT INTO task_criteria (task_id, position, text, checked)
+						VALUES (?, ?, ?, ?)`, taskID, i+1, c.Text, checked); err != nil {
+						return fmt.Errorf("rebuild criterion for %s: %w", taskID, err)
+					}
 				}
 
 				// Rebuild task links.

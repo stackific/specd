@@ -1,0 +1,76 @@
+System Architecture Overview - Microservices Platform
+=====================================================
+
+This document provides a comprehensive overview of the microservices architecture used in our platform. It covers service boundaries, communication patterns, data management strategies, and operational concerns across all major subsystems.
+
+1. Service Catalog
+------------------
+
+1.1 API Gateway Service
+The API Gateway serves as the single entry point for all client requests. It handles authentication token validation, request routing, rate limiting, and response transformation. The gateway is implemented as a reverse proxy using Envoy with custom Lua filters for business logic. All external traffic must pass through the gateway; direct service-to-service calls from external clients are forbidden.
+
+1.2 User Service
+The User Service manages user accounts, profiles, preferences, and authentication credentials. It owns the users database and exposes gRPC endpoints for internal consumers and REST endpoints via the gateway for external clients. User data is stored in PostgreSQL with read replicas for query scaling. Profile images are stored in object storage (S3-compatible) with CDN distribution.
+
+1.3 Order Service
+The Order Service handles the complete order lifecycle from cart creation through fulfillment. It manages shopping carts, order placement, payment initiation, and order status tracking. The service uses event sourcing to maintain a complete audit trail of all order state changes. Events are published to Kafka for downstream consumers including the notification service and analytics pipeline.
+
+1.4 Inventory Service
+The Inventory Service tracks product availability, manages stock levels, and handles reservation logic during the checkout flow. It uses an eventually consistent model with the Order Service, communicating via domain events. Stock levels are maintained in Redis for low-latency reads with PostgreSQL as the system of record. The service supports warehouse-level granularity for multi-location fulfillment.
+
+1.5 Payment Service
+The Payment Service integrates with external payment processors (Stripe, PayPal, bank transfers) and manages the payment lifecycle including authorization, capture, refund, and chargeback handling. It maintains its own ledger for reconciliation purposes. All payment data is encrypted at rest and in transit with PCI DSS compliance requirements strictly enforced. The service operates in a separate network segment with additional access controls.
+
+1.6 Notification Service
+The Notification Service sends communications across multiple channels: email, SMS, push notifications, and in-app messages. It consumes events from other services and applies notification preferences and throttling rules. Templates are managed through a separate admin interface. The service uses a priority queue system to ensure critical notifications (security alerts, payment confirmations) are delivered before marketing messages.
+
+1.7 Search Service
+The Search Service provides full-text search capabilities across products, orders, and user-generated content. It maintains Elasticsearch indexes that are populated via change data capture (CDC) from source databases. The service supports faceted search, autocomplete, and relevance tuning. Index rebuilds can be triggered manually or are performed automatically on schema changes.
+
+1.8 Analytics Service
+The Analytics Service collects and processes event data for business intelligence and operational metrics. It ingests events from Kafka, performs stream processing for real-time dashboards, and loads transformed data into the data warehouse (BigQuery) for batch analysis. The service also manages A/B test configuration and result calculation.
+
+2. Communication Patterns
+--------------------------
+
+2.1 Synchronous Communication
+Services use gRPC for internal synchronous communication. The API Gateway translates external REST requests to internal gRPC calls. Circuit breakers (implemented via Istio) protect against cascade failures. Timeout policies are configured per-endpoint based on expected response times. The standard timeout is 5 seconds for most calls, with 30 seconds for complex queries.
+
+2.2 Asynchronous Communication
+Domain events are published to Apache Kafka topics. Each service owns its output topics and subscribes to topics from other services as needed. Events follow a canonical schema registered in the Schema Registry (Avro format). Consumer groups ensure exactly-once processing semantics. Dead letter queues capture failed messages for manual investigation and replay.
+
+2.3 Service Mesh
+Istio provides the service mesh layer handling mTLS encryption, traffic management, observability, and policy enforcement. All service-to-service communication passes through Envoy sidecars. The mesh provides automatic retries, circuit breaking, and canary deployment capabilities without application code changes.
+
+3. Data Management
+-------------------
+
+3.1 Database per Service
+Each service owns its database and no other service may access it directly. This ensures loose coupling and allows services to choose the most appropriate storage technology. Current databases include PostgreSQL (User, Order, Payment), Redis (Inventory cache, Session), Elasticsearch (Search), and BigQuery (Analytics).
+
+3.2 Event Sourcing
+The Order Service uses event sourcing as its primary data model. Every state change is recorded as an immutable event. The current state is derived by replaying events. This provides a complete audit trail and enables temporal queries ("what was the order status at 3pm yesterday?"). Snapshots are taken every 100 events to optimize replay performance.
+
+3.3 CQRS Pattern
+Services that require different read and write models implement Command Query Responsibility Segregation. The Order Service maintains a write model optimized for transactional consistency and a read model (materialized view) optimized for query performance. The read model is updated asynchronously via domain events with eventual consistency guarantees.
+
+3.4 Data Consistency
+Cross-service data consistency is achieved through the Saga pattern. Long-running business transactions are broken into a sequence of local transactions with compensating actions for rollback. The Order Service orchestrates the checkout saga which involves Inventory (reserve stock), Payment (authorize payment), and Notification (send confirmation) services.
+
+4. Operational Concerns
+------------------------
+
+4.1 Deployment
+All services are containerized and deployed to Kubernetes. Deployments use rolling updates with configurable surge and unavailability percentages. Health checks (liveness and readiness probes) ensure only healthy pods receive traffic. Canary deployments are supported via Istio traffic splitting for gradual rollouts of risky changes.
+
+4.2 Observability
+The three pillars of observability are implemented across all services. Structured logging (JSON format) is collected by Fluentd and stored in Elasticsearch. Metrics are exposed in Prometheus format and visualized in Grafana. Distributed tracing uses OpenTelemetry with Jaeger as the backend. All three systems are correlated via trace IDs propagated through request headers.
+
+4.3 Scaling
+Horizontal pod autoscaling is configured based on CPU utilization (target 70%) and custom metrics (request latency p99). The Search Service additionally scales based on query queue depth. Vertical scaling is managed through resource requests and limits. The Cluster Autoscaler adds or removes nodes based on pending pod scheduling.
+
+4.4 Disaster Recovery
+All databases are backed up daily with point-in-time recovery capability. Kafka topics are replicated across availability zones. The platform supports active-passive failover to a secondary region with an RTO of 15 minutes and RPO of 5 minutes. Regular disaster recovery drills are conducted quarterly to verify recovery procedures.
+
+4.5 Security
+Zero-trust networking is enforced through the service mesh. All inter-service communication uses mTLS. External access requires JWT authentication through the API Gateway. Secrets are managed through HashiCorp Vault with automatic rotation. Container images are scanned for vulnerabilities in the CI pipeline. Network policies restrict pod-to-pod communication to explicitly allowed paths.

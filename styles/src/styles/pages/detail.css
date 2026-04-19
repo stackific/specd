@@ -112,3 +112,72 @@
   color: var(--primary);
   text-decoration: underline;
 }
+
+/* ── Acceptance criteria rows ─────────────────────────────── */
+
+.sd-criterion {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sd-criterion-check {
+  flex: 1;
+  min-width: 0;
+}
+
+.sd-criterion-remove {
+  flex-shrink: 0;
+}
+
+/* ── Add criterion inline form ────────────────────────────── */
+
+.sd-criterion-add {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.sd-criterion-add .field {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── KB table: ID tight, right cols shrink, title stretches ── */
+
+.sd-kb-id {
+  width: 1%;
+  white-space: nowrap;
+  padding-right: 0;
+}
+
+.sd-kb-table th:last-child,
+.sd-kb-table td:last-child {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.sd-sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sd-sortable:hover {
+  opacity: 0.8;
+}
+
+.sd-sort-icon {
+  vertical-align: middle;
+  font-size: 1rem;
+}
+
+/* ── Specs table (list view) — hidden by default ─────────── */
+
+.sd-specs-table {
+  display: none;
+}
+
+.sd-specs-table td:nth-child(2) {
+  width: 20%;
+  min-width: 12rem;
+}

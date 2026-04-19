@@ -22,7 +22,7 @@ func setupTaskWithCriteria(t *testing.T) (*Workspace, string) {
 		SpecID:  "SPEC-1",
 		Title:   "Schema design",
 		Summary: "Design it",
-		Body:    "# Schema\n\n## Acceptance criteria\n\n- [ ] Users table\n- [ ] Sessions table\n- [x] Migrations",
+		Body:    "## Schema\n\n## Acceptance criteria\n\n- [ ] Users table\n- [ ] Sessions table\n- [x] Migrations",
 	})
 	if err != nil {
 		t.Fatalf("NewTask: %v", err)
@@ -164,7 +164,7 @@ func TestAddCriterionToTaskWithoutSection(t *testing.T) {
 		SpecID:  "SPEC-1",
 		Title:   "No criteria",
 		Summary: "Task with no criteria section",
-		Body:    "# Just a body\n\nNo criteria here.",
+		Body:    "## Overview\n\nNo criteria here.",
 	})
 
 	_, err := w.AddCriterion(result.ID, "New criterion")

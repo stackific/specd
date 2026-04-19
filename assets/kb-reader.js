@@ -64,6 +64,19 @@
       if (currentChunk < totalChunks - 1) navigateToChunk(currentChunk + 1);
     });
   }
+  // Keyboard shortcuts for chunk navigation.
+  document.addEventListener("keydown", function (e) {
+    // Skip if user is typing in an input/textarea.
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    if (e.key === "ArrowLeft" && currentChunk > 0) {
+      e.preventDefault();
+      navigateToChunk(currentChunk - 1);
+    } else if (e.key === "ArrowRight" && currentChunk < totalChunks - 1) {
+      e.preventDefault();
+      navigateToChunk(currentChunk + 1);
+    }
+  });
+
   if (toggleBtn && sidebar) {
     toggleBtn.addEventListener("click", function () {
       var hidden = sidebar.hidden;
@@ -697,15 +710,21 @@
   function stripMarkdown(s) {
     return s
       .replace(/^#{1,6}\s+/gm, "")        // heading markers
+      .replace(/\*\*\*(.+?)\*\*\*/g, "$1") // bold italic
       .replace(/\*\*(.+?)\*\*/g, "$1")     // bold
       .replace(/__(.+?)__/g, "$1")          // bold alt
       .replace(/\*(.+?)\*/g, "$1")          // italic
       .replace(/_(.+?)_/g, "$1")            // italic alt
+      .replace(/~~(.+?)~~/g, "$1")          // strikethrough
       .replace(/`([^`]+)`/g, "$1")          // inline code
+      .replace(/```[\s\S]*?```/g, "")       // fenced code blocks
       .replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1") // images
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")  // links
       .replace(/^\s*[-*+]\s+/gm, "")       // unordered list markers
       .replace(/^\s*\d+\.\s+/gm, "")       // ordered list markers
-      .replace(/^>\s?/gm, "");             // blockquote markers
+      .replace(/^>\s?/gm, "")              // blockquote markers
+      .replace(/^\|.*\|$/gm, "")           // table rows
+      .replace(/^[-:|]+$/gm, "")           // table separators
+      .replace(/\[\^[^\]]+\]/g, "");       // footnote references
   }
 })();
