@@ -14,6 +14,8 @@ A specification-driven development CLI tool.
 - **Security:** gosec (static), govulncheck (deps), gitleaks (secrets)
 - **Commit linting:** [conform](https://github.com/siderolabs/conform) (conventional commits)
 - **Frontend:** Custom CSS framework + HTML (planned, not yet implemented)
+- You must write idiomatic Go.
+- You must use 2 spaces as indentation for Non-Go code file
 
 ## Project Structure
 
@@ -74,7 +76,8 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`
 - **Cobra commands** go in `cmd/`. One file per command. Follow Cobra conventions.
 - **All exported functions** must have a doc comment.
 - **Unused function parameters** must be named `_`.
-- **Run `task lint` before committing** or rely on lefthook to do it.
+- **Always run `task lint` after writing or modifying Go code.** Do not declare work done until it passes with 0 issues. The pre-commit hook will block the commit otherwise.
 - **Do not start the dev server** — the user runs it themselves.
 - **Do not add features or refactor beyond what was asked.**
 - **Frontend work** (custom CSS framework, HTML, templates) comes later. Don't scaffold it yet.
+
