@@ -29,6 +29,30 @@ func TestToSlug(t *testing.T) {
 	}
 }
 
+// TestToDashSlug verifies dash-separated slug conversion for content identifiers.
+func TestToDashSlug(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"User Authentication", "user-authentication"},
+		{"Session Management", "session-management"},
+		{"OAuth2 Login Flow", "oauth2-login-flow"},
+		{"multiple   spaces", "multiple-spaces"},
+		{"already-slug", "already-slug"},
+		{"underscore_slug", "underscore-slug"},
+		{"special!@#chars", "specialchars"},
+		{"  leading trailing  ", "leading-trailing"},
+	}
+
+	for _, tt := range tests {
+		got := ToDashSlug(tt.input)
+		if got != tt.want {
+			t.Errorf("ToDashSlug(%q) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}
+
 // TestFromSlug verifies slug-to-display-text conversion.
 func TestFromSlug(t *testing.T) {
 	tests := []struct {

@@ -49,6 +49,12 @@ const (
 	// Update-check tunables.
 	CheckInterval = 24 * time.Hour  // how long a cached version check stays valid
 	HTTPTimeout   = 3 * time.Second // max time to wait for the GitHub API
+
+	// Search tunables.
+	TopSearchResults = 5 // max related specs/KB chunks returned by new-spec
+
+	// Directory conventions inside the specd project folder.
+	SpecsSubdir = "specs" // subdirectory for spec markdown files
 )
 
 // DefaultSpecTypes are the built-in spec types offered during init.

@@ -84,6 +84,7 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`
 - **All exported functions** must have a doc comment.
 - **Unused function parameters** must be named `_`.
 - **Always run `task lint` after writing or modifying Go code.** Do not declare work done until it passes with 0 issues. The pre-commit hook will block the commit otherwise.
+- **Never finish a task without writing tests for all new or changed code.** If you added a function, command, or behavior, write tests for it before declaring done. Check for coverage gaps proactively — do not wait to be asked.
 - **Do not start the dev server** — the user runs it themselves.
 - **Do not add features, fallbacks, or logic beyond what was asked.** If the user says "use X as a fallback", only add X — do not invent additional fallbacks (e.g. OS username) on your own.
 - **Frontend work** (custom CSS framework, HTML, templates) comes later. Don't scaffold it yet.
@@ -103,8 +104,20 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`
   - Codex CLI: https://developers.openai.com/codex/skills
   - Gemini CLI: https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/creating-skills.md
 
+## Slugs
+
+- **Two slug formats** — do not mix them:
+  - `ToSlug()` → underscore-separated (e.g. `pending_verification`). Used for config values: spec types, task stages. These are stored in `.specd.json` and used in SQL CHECK constraints.
+  - `ToDashSlug()` → dash-separated (e.g. `user-authentication`). Used for content identifiers: spec slugs, task slugs, KB slugs. These appear in filenames and URLs.
+- **Never use `ToSlug()` for content identifiers** — always use `ToDashSlug()`.
+
 ## Project Guard
 
 - Most commands require an initialized project (`.specd.json` marker in cwd) and a globally configured username (`~/.specd/config.json`).
 - Exempt commands that work without initialization: `init`, `version`, `skills`, `help`.
+
+## Skills Prerequisite
+
+- **Every skill** must include a prerequisite section telling the AI to check for `.specd.json` and ask the user to run `specd init` in their terminal if missing. Skills must NOT run init themselves. The message must say exactly "Please run `specd init` in your terminal first" — do NOT suggest shell prefixes, prompt shortcuts (`!`), or any alternative execution method.
+- Runtime-configurable values (e.g. `top_search_results`) must be read from `.specd.json` at runtime, not from build-time constants. Constants are only used as defaults during `specd init`.
 

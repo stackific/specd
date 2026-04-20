@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS specs (
   id           TEXT PRIMARY KEY,                -- "SPEC-42"
   slug         TEXT NOT NULL,
   title        TEXT NOT NULL,
-  type         TEXT NOT NULL CHECK (type IN ({{SPEC_TYPES_CHECK}})),
+  type         TEXT NOT NULL DEFAULT '{{DEFAULT_SPEC_TYPE}}' CHECK (type IN ({{SPEC_TYPES_CHECK}})),
   summary      TEXT NOT NULL,
   body         TEXT NOT NULL,
   path         TEXT NOT NULL,                   -- relative to workspace root

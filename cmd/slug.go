@@ -22,6 +22,25 @@ func ToSlug(s string) string {
 	return s
 }
 
+// nonAlphanumericDash matches anything that isn't a letter, digit, space, underscore, or dash.
+var nonAlphanumericDash = regexp.MustCompile(`[^a-z0-9 _\-]+`)
+
+// multiDash collapses consecutive dashes into one.
+var multiDash = regexp.MustCompile(`-+`)
+
+// ToDashSlug converts a display string like "User Authentication" into a
+// lowercase, dash-separated slug like "user-authentication".
+// Used for spec, task, and KB slugs (human-friendly URL-style identifiers).
+func ToDashSlug(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	s = nonAlphanumericDash.ReplaceAllString(s, "") // strip non-alphanumeric (keep dashes)
+	s = strings.ReplaceAll(s, " ", "-")             // spaces to dashes
+	s = strings.ReplaceAll(s, "_", "-")             // underscores to dashes
+	s = multiDash.ReplaceAllString(s, "-")          // collapse runs of dashes
+	s = strings.Trim(s, "-")                        // trim leading/trailing dashes
+	return s
+}
+
 // FromSlug converts a slug like "pending_verification" into title-cased
 // display text like "Pending Verification".
 func FromSlug(s string) string {

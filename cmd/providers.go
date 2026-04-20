@@ -8,10 +8,13 @@ import (
 	"runtime"
 )
 
-// permissionsForLevel returns directory and file permissions.
-// Provider skill directories (.claude/, .agents/, .gemini/) are always
-// world-readable — repo-level ones are committed to VCS, and user-level
+// permissionsForLevel returns directory and file permissions for provider
+// skill directories (.claude/, .agents/, .gemini/). These are always
+// world-readable: repo-level ones are committed to VCS, and user-level
 // ones must be readable by the AI tools that consume them.
+//
+// The level parameter is accepted (but unused) to keep the call sites
+// self-documenting about which install level they're operating on.
 func permissionsForLevel(_ string) (dirPerm, filePerm fs.FileMode) {
 	return 0o755, 0o644
 }

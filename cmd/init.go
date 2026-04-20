@@ -88,10 +88,11 @@ func runInit(c *cobra.Command, args []string) error {
 
 	// Write the .specd.json marker with all project settings.
 	if err := SaveProjectConfig(absProject, &ProjectConfig{
-		Folder:     folder,
-		Username:   projectUsername,
-		SpecTypes:  specTypes,
-		TaskStages: taskStages,
+		Folder:           folder,
+		Username:         projectUsername,
+		SpecTypes:        specTypes,
+		TaskStages:       taskStages,
+		TopSearchResults: TopSearchResults,
 	}); err != nil {
 		return err
 	}

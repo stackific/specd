@@ -15,10 +15,11 @@ type GlobalConfig struct {
 // ProjectConfig is the marker file (.specd.json) written to a project root
 // when `specd init` is run. It records project-level specd settings.
 type ProjectConfig struct {
-	Folder     string   `json:"folder"`             // name of the specd project folder
-	Username   string   `json:"username,omitempty"` // project-specific username override (empty = use global)
-	SpecTypes  []string `json:"spec_types"`         // slugs of enabled spec types
-	TaskStages []string `json:"task_stages"`        // slugs of enabled task stages
+	Folder           string   `json:"folder"`             // name of the specd project folder
+	Username         string   `json:"username,omitempty"` // project-specific username override (empty = use global)
+	SpecTypes        []string `json:"spec_types"`         // slugs of enabled spec types
+	TaskStages       []string `json:"task_stages"`        // slugs of enabled task stages
+	TopSearchResults int      `json:"top_search_results"` // max related items returned by search
 }
 
 // globalConfigPath returns the absolute path to ~/.specd/config.json.
