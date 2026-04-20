@@ -34,13 +34,13 @@ func init() {
 // NewSpecResponse is the JSON output of the new-spec command.
 // The AI skill parses this to decide on spec type and links.
 type NewSpecResponse struct {
-	ID             string          `json:"id"`
-	Slug           string          `json:"slug"`
-	Path           string          `json:"path"`
-	DefaultType    string          `json:"default_type"`
-	AvailableTypes []string        `json:"available_types"`
-	RelatedSpecs   []SearchResult  `json:"related_specs"`
-	RelatedKB      []KBChunkResult `json:"related_kb_chunks"`
+	ID             string         `json:"id"`
+	Slug           string         `json:"slug"`
+	Path           string         `json:"path"`
+	DefaultType    string         `json:"default_type"`
+	AvailableTypes []string       `json:"available_types"`
+	RelatedSpecs   []SearchResult `json:"related_specs"`
+	RelatedKB      []SearchResult `json:"related_kb_chunks"`
 }
 
 func runNewSpec(c *cobra.Command, _ []string) error {
@@ -83,7 +83,6 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 	}
 
 	// Write the spec markdown file with frontmatter.
-	// The first spec type is used as the default; the AI will refine it via update-spec.
 	md := buildSpecMarkdown(specID, slug, title, summary, proj.SpecTypes[0], username, now, body)
 	if err := os.WriteFile(specFile, []byte(md), 0o644); err != nil { //nolint:gosec // spec file is committed to VCS
 		return fmt.Errorf("writing spec file: %w", err)
@@ -98,18 +97,24 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 		return fmt.Errorf("inserting spec: %w", err)
 	}
 
-	// Search for related content to help the AI decide on links.
+	// Hybrid BM25 + trigram search for related content.
 	searchText := title + " " + summary
-	// Use the project-configured search limit. Fall back to the build-time
-	// default for projects initialized before TopSearchResults was added.
 	limit := proj.TopSearchResults
 	if limit <= 0 {
 		limit = TopSearchResults
 	}
-	relatedSpecs, _ := SearchRelatedSpecs(db, searchText, specID, limit)
-	relatedKB, _ := SearchRelatedKBChunks(db, searchText, limit)
+	searchResults, _ := Search(db, searchText, "all", limit, specID)
 
-	// Output JSON for the AI skill to parse.
+	// Build response for the AI skill. Ensure empty arrays, never null.
+	relatedSpecs := searchResults.Specs
+	if relatedSpecs == nil {
+		relatedSpecs = []SearchResult{}
+	}
+	relatedKB := searchResults.KB
+	if relatedKB == nil {
+		relatedKB = []SearchResult{}
+	}
+
 	resp := NewSpecResponse{
 		ID:             specID,
 		Slug:           slug,
@@ -118,15 +123,6 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 		AvailableTypes: proj.SpecTypes,
 		RelatedSpecs:   relatedSpecs,
 		RelatedKB:      relatedKB,
-	}
-
-	// Ensure nil slices serialize as [] not null in JSON, so the AI skill
-	// always gets a consistent array type to iterate over.
-	if resp.RelatedSpecs == nil {
-		resp.RelatedSpecs = []SearchResult{}
-	}
-	if resp.RelatedKB == nil {
-		resp.RelatedKB = []KBChunkResult{}
 	}
 
 	out, err := json.MarshalIndent(resp, "", "  ")

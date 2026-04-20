@@ -127,50 +127,6 @@ func TestNextID(t *testing.T) {
 	}
 }
 
-// TestSearchRelatedSpecsEmpty verifies search returns nil when no matches exist.
-func TestSearchRelatedSpecsEmpty(t *testing.T) {
-	tmp := t.TempDir()
-
-	if err := InitDB(tmp, []string{"business"}, []string{"backlog", "done"}); err != nil {
-		t.Fatal(err)
-	}
-
-	db, err := sql.Open("sqlite", filepath.Join(tmp, CacheDBFile))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = db.Close() }()
-
-	results, err := SearchRelatedSpecs(db, "nonexistent query", "SPEC-0", 5)
-	if err != nil {
-		t.Fatalf("SearchRelatedSpecs: %v", err)
-	}
-	if len(results) != 0 {
-		t.Errorf("expected no results, got %d", len(results))
-	}
-}
-
-// TestSanitizeFTSQuery verifies that special characters are stripped and
-// words are joined with OR.
-func TestSanitizeFTSQuery(t *testing.T) {
-	tests := []struct {
-		input string
-		want  string
-	}{
-		{"user authentication", "user OR authentication"},
-		{"hello*world", "hello OR world"},
-		{`test "quoted"`, "test OR quoted"},
-		{"", ""},
-		{"   ", ""},
-	}
-	for _, tt := range tests {
-		got := sanitizeFTSQuery(tt.input)
-		if got != tt.want {
-			t.Errorf("sanitizeFTSQuery(%q) = %q, want %q", tt.input, got, tt.want)
-		}
-	}
-}
-
 // TestResolveActiveUsername verifies that project-level username takes
 // precedence over global.
 func TestResolveActiveUsername(t *testing.T) {

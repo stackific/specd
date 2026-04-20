@@ -24,10 +24,17 @@ main.go              # Entrypoint (embeds skills/ via go:embed)
 cmd/                 # Cobra commands (root.go, subcommands)
 cmd/constants.go     # All magic strings and constants (single source of truth)
 cmd/config.go        # Global (~/.specd/config.json) and project (.specd.json) config
+cmd/database.go      # SQLite initialization, ID counters, project DB helpers
+cmd/search.go        # Hybrid BM25 + trigram search across specs, tasks, KB
+cmd/slug.go          # ToSlug (underscore), ToDashSlug (dash), FromSlug (display)
 cmd/providers.go     # AI provider definitions (Claude, Codex, Gemini)
+cmd/new_spec.go      # specd new-spec command
+cmd/update_spec.go   # specd update-spec command
+cmd/schema.sql       # Embedded SQLite schema (dynamic CHECK constraints)
 skills/              # Embedded skills (Agent Skills Standard format)
 scripts/             # Install/uninstall scripts
 docs/internal/       # Internal setup guides
+qa/specs/            # QA test resources (markdown specs + setup script)
 Taskfile.yml         # Task definitions
 lefthook.yml         # Git hook definitions
 .golangci.yml        # Linter config
@@ -85,8 +92,12 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`
 - **Unused function parameters** must be named `_`.
 - **Always run `task lint` after writing or modifying Go code.** Do not declare work done until it passes with 0 issues. The pre-commit hook will block the commit otherwise.
 - **Never finish a task without writing tests for all new or changed code.** If you added a function, command, or behavior, write tests for it before declaring done. Check for coverage gaps proactively — do not wait to be asked.
+- **Test resources must include negative cases.** When creating test data for search, linking, or matching, always include items from unrelated domains that should NOT match. Testing only positive cases proves nothing.
 - **Do not start the dev server** — the user runs it themselves.
 - **Do not add features, fallbacks, or logic beyond what was asked.** If the user says "use X as a fallback", only add X — do not invent additional fallbacks (e.g. OS username) on your own.
+- **Never duplicate logic across functions.** If three functions share 80%+ of their code, extract the common logic into a single parameterized function. Use maps or config structs to handle per-case differences (e.g. `bm25Queries` map for per-kind SQL).
+- **Never silently swallow errors.** SQL query errors, scan errors, and file I/O errors must be returned — not ignored with `if err == nil {` or `continue`. Silent failures hide bugs.
+- **Never pass user input raw to FTS5 MATCH.** Always sanitize through `sanitizeBM25` or `sanitizeTrigram`. Never pass through FTS5 operators (AND, OR, NOT, NEAR) from user input — this is an injection vector.
 - **Frontend work** (custom CSS framework, HTML, templates) comes later. Don't scaffold it yet.
 
 ## Skills
@@ -103,6 +114,15 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`
   - Claude Code: https://code.claude.com/docs/en/skills
   - Codex CLI: https://developers.openai.com/codex/skills
   - Gemini CLI: https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/creating-skills.md
+
+## Search
+
+- **Hybrid BM25 + trigram** strategy in `cmd/search.go`. Single `Search()` entry point, single `searchByKind()` implementation for all three kinds — no copy-pasted per-kind functions.
+- **BM25** (primary): FTS5 with porter stemming. Tokens are individually quoted via `sanitizeBM25`. Results ranked by score (higher = better).
+- **Trigram** (fallback): FTS5 trigram tokenizer for substring matching. Activated when BM25 returns < 3 hits or query has special characters. Trigram results have score=0, appended after BM25 results.
+- **Deduplication**: `seen` map prevents the same ID appearing in both BM25 and trigram results. `excludeID` filters out the document being searched for.
+- Per-kind SQL lives in the `bm25Queries` map — add new searchable kinds there, not by duplicating functions.
+- `NewSpecResponse` JSON field for KB results is `related_kb_chunks` — do not rename this, deployed skills depend on it.
 
 ## Slugs
 

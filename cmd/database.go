@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	// Pure Go SQLite driver — no CGO required.
@@ -24,10 +23,6 @@ const (
 	// SchemaVersion is stored in the meta table for future migrations.
 	SchemaVersion = "1"
 )
-
-// ftsSpecialChars matches FTS5 query operators (* " ( ) : ^ { } -) that must
-// be stripped from user input before passing to MATCH to prevent syntax errors.
-var ftsSpecialChars = regexp.MustCompile(`[*"():^{}\-]`)
 
 // InitDB creates and initializes the cache.db SQLite database inside the
 // specd project folder. CHECK constraints and defaults are built from
@@ -131,87 +126,6 @@ func NextID(db *sql.DB, key string) (int, error) {
 	return id, nil
 }
 
-// SearchRelatedSpecs finds specs similar to the given text using FTS5 BM25
-// ranking, excluding the spec with excludeID. Returns up to limit results.
-func SearchRelatedSpecs(db *sql.DB, searchText, excludeID string, limit int) ([]SearchResult, error) {
-	query := sanitizeFTSQuery(searchText)
-	if query == "" {
-		return nil, nil
-	}
-
-	// bm25() returns a negative relevance score (lower = more relevant),
-	// so default ascending ORDER BY gives best matches first.
-	rows, err := db.Query(`
-		SELECT id, title, summary
-		FROM specs_fts
-		WHERE specs_fts MATCH ?
-		AND id != ?
-		ORDER BY bm25(specs_fts)
-		LIMIT ?
-	`, query, excludeID, limit)
-	if err != nil {
-		// No results is not an error — FTS may have no matches.
-		return nil, nil //nolint:nilerr // empty result set is expected
-	}
-	defer func() { _ = rows.Close() }()
-
-	var results []SearchResult
-	for rows.Next() {
-		var r SearchResult
-		if err := rows.Scan(&r.ID, &r.Title, &r.Summary); err != nil {
-			return nil, fmt.Errorf("scanning spec result: %w", err)
-		}
-		results = append(results, r)
-	}
-	return results, rows.Err()
-}
-
-// SearchRelatedKBChunks finds KB chunks similar to the given text using
-// FTS5 BM25 ranking. Returns up to limit results.
-func SearchRelatedKBChunks(db *sql.DB, searchText string, limit int) ([]KBChunkResult, error) {
-	query := sanitizeFTSQuery(searchText)
-	if query == "" {
-		return nil, nil
-	}
-
-	rows, err := db.Query(`
-		SELECT c.id, c.doc_id, substr(c.text, 1, 200) AS preview
-		FROM kb_chunks c
-		JOIN kb_chunks_fts f ON c.id = f.rowid
-		WHERE kb_chunks_fts MATCH ?
-		ORDER BY bm25(kb_chunks_fts)
-		LIMIT ?
-	`, query, limit)
-	if err != nil {
-		return nil, nil //nolint:nilerr // empty result set is expected
-	}
-	defer func() { _ = rows.Close() }()
-
-	var results []KBChunkResult
-	for rows.Next() {
-		var r KBChunkResult
-		if err := rows.Scan(&r.ChunkID, &r.DocID, &r.Preview); err != nil {
-			return nil, fmt.Errorf("scanning kb chunk result: %w", err)
-		}
-		results = append(results, r)
-	}
-	return results, rows.Err()
-}
-
-// SearchResult holds a spec found by FTS search.
-type SearchResult struct {
-	ID      string `json:"id"`
-	Title   string `json:"title"`
-	Summary string `json:"summary"`
-}
-
-// KBChunkResult holds a KB chunk found by FTS search.
-type KBChunkResult struct {
-	ChunkID int    `json:"chunk_id"`
-	DocID   string `json:"doc_id"`
-	Preview string `json:"preview"`
-}
-
 // ResolveActiveUsername returns the effective username for the current project.
 // Project-level override takes precedence over the global config.
 func ResolveActiveUsername() string {
@@ -252,16 +166,4 @@ func quoteList(values []string) string {
 		quoted[i] = "'" + escaped + "'"
 	}
 	return strings.Join(quoted, ",")
-}
-
-// sanitizeFTSQuery strips FTS5 special characters and joins words with OR
-// for broad matching (e.g. "user authentication" → "user OR authentication").
-// Returns "" if no searchable words remain.
-func sanitizeFTSQuery(s string) string {
-	s = ftsSpecialChars.ReplaceAllString(s, " ")
-	words := strings.Fields(s)
-	if len(words) == 0 {
-		return ""
-	}
-	return strings.Join(words, " OR ")
 }
