@@ -20,8 +20,14 @@ A specification-driven development CLI tool.
 ## Project Structure
 
 ```
-main.go              # Entrypoint
+main.go              # Entrypoint (embeds skills/ via go:embed)
 cmd/                 # Cobra commands (root.go, subcommands)
+cmd/constants.go     # All magic strings and constants (single source of truth)
+cmd/config.go        # Global (~/.specd/config.json) and project (.specd.json) config
+cmd/providers.go     # AI provider definitions (Claude, Codex, Gemini)
+skills/              # Embedded skills (Agent Skills Standard format)
+scripts/             # Install/uninstall scripts
+docs/internal/       # Internal setup guides
 Taskfile.yml         # Task definitions
 lefthook.yml         # Git hook definitions
 .golangci.yml        # Linter config
@@ -71,6 +77,7 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`
 
 ## Rules
 
+- **Never trust training data for external tool conventions, APIs, or directory structures.** Always search the web and read primary sources (official docs, actual repos) first. This is especially critical when the user explicitly asks you to search. Do not guess or rely on what you "know" — verify it.
 - **No CGO.** All builds use `CGO_ENABLED=0`. Never add C dependencies.
 - **Cross-compilation** targets: linux, darwin, windows × amd64, arm64. All built from macOS.
 - **Cobra commands** go in `cmd/`. One file per command. Follow Cobra conventions.
@@ -78,6 +85,26 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`
 - **Unused function parameters** must be named `_`.
 - **Always run `task lint` after writing or modifying Go code.** Do not declare work done until it passes with 0 issues. The pre-commit hook will block the commit otherwise.
 - **Do not start the dev server** — the user runs it themselves.
-- **Do not add features or refactor beyond what was asked.**
+- **Do not add features, fallbacks, or logic beyond what was asked.** If the user says "use X as a fallback", only add X — do not invent additional fallbacks (e.g. OS username) on your own.
 - **Frontend work** (custom CSS framework, HTML, templates) comes later. Don't scaffold it yet.
+
+## Skills
+
+- specd uses the **[Agent Skills Standard](https://agentskills.io/specification)** for all AI provider integrations.
+- All three providers (Claude, OpenAI Codex, Gemini) support the same `<name>/SKILL.md` format. **Do NOT use legacy formats** (`.claude/commands/`, `.gemini/commands/*.toml`). Always use `<provider-dir>/skills/<name>/SKILL.md`.
+- Canonical skills live in `skills/` at the repo root and are embedded into the binary via `go:embed`.
+- Provider skill directories:
+  - Claude: `.claude/skills/<name>/SKILL.md`
+  - Codex: `.agents/skills/<name>/SKILL.md`
+  - Gemini: `.gemini/skills/<name>/SKILL.md`
+- **Always verify conventions against primary sources** before implementing. Do not rely on stale knowledge. Check the actual repos and official docs:
+  - Agent Skills Standard: https://agentskills.io/specification
+  - Claude Code: https://code.claude.com/docs/en/skills
+  - Codex CLI: https://developers.openai.com/codex/skills
+  - Gemini CLI: https://github.com/google-gemini/gemini-cli/blob/main/docs/cli/creating-skills.md
+
+## Project Guard
+
+- Most commands require an initialized project (`.specd.json` marker in cwd) and a globally configured username (`~/.specd/config.json`).
+- Exempt commands that work without initialization: `init`, `version`, `skills`, `help`.
 

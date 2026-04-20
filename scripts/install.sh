@@ -1,21 +1,28 @@
 #!/bin/sh
 set -eu
 
-# specd installer
+# specd installer — Stackific Inc. All rights reserved.
+# https://stackific.com/specd
 # Usage: curl -sSL https://stackific.com/specd/install.sh | sh
 
+COMPANY="Stackific Inc."
+PRODUCT="specd"
+HOMEPAGE="https://stackific.com/specd"
 REPO="stackific/specd"
 INSTALL_DIR="$HOME/.specd/bin"
 BINARY="specd"
 
 main() {
+    echo "${PRODUCT} installer — ${COMPANY}"
+    echo "${HOMEPAGE}"
+    echo ""
     detect_platform
     get_latest_version
     download_binary
     install_binary
     setup_path
     echo ""
-    echo "specd ${VERSION} installed successfully!"
+    echo "${PRODUCT} ${VERSION} installed successfully!"
     echo ""
 }
 

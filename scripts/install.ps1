@@ -1,20 +1,27 @@
-# specd installer for Windows
+# specd installer for Windows — Stackific Inc. All rights reserved.
+# https://stackific.com/specd
 # Usage: irm https://stackific.com/specd/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
+$Company = "Stackific Inc."
+$Product = "specd"
+$Homepage = "https://stackific.com/specd"
 $Repo = "stackific/specd"
 $Binary = "specd"
 $InstallDir = "$env:USERPROFILE\.specd\bin"
 
 function Main {
+    Write-Host "$Product installer - $Company"
+    Write-Host "$Homepage"
+    Write-Host ""
     $platform = Detect-Platform
     $version = Get-LatestVersion
     Download-Binary -Version $version -Platform $platform
     Install-Binary
     Setup-Path
     Write-Host ""
-    Write-Host "specd $version installed successfully!" -ForegroundColor Green
+    Write-Host "$Product $version installed successfully!" -ForegroundColor Green
     Write-Host ""
 }
 

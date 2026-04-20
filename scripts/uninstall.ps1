@@ -1,13 +1,17 @@
-# specd uninstaller for Windows
+# specd uninstaller for Windows — Stackific Inc. All rights reserved.
+# https://stackific.com/specd
 # Usage: irm https://stackific.com/specd/uninstall.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
+$Company = "Stackific Inc."
+$Product = "specd"
+$Homepage = "https://stackific.com/specd"
 $InstallDir = "$env:USERPROFILE\.specd"
 
 function Main {
     if (-not (Test-Path $InstallDir)) {
-        Write-Host "specd is not installed ($InstallDir not found)."
+        Write-Host "$Product is not installed ($InstallDir not found)."
         return
     }
 
@@ -18,7 +22,7 @@ function Main {
     Clean-Path
 
     Write-Host ""
-    Write-Host "specd has been uninstalled." -ForegroundColor Green
+    Write-Host "$Product has been uninstalled." -ForegroundColor Green
 }
 
 function Clean-Path {
