@@ -85,7 +85,7 @@ Please report security vulnerabilities privately to **info@stackific.com** rathe
 
 ## Questions
 
-Open a GitHub Discussion or an issue marked `question`. For anything else, reach out at hello@stackific.com.
+Open a GitHub Discussion or an issue marked `question`. For anything else, reach out at info@stackific.com.
 
 ## License of Contributions
 
