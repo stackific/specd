@@ -2,7 +2,7 @@
 
 Thanks for your interest in contributing to **specd by Stackific**. This document explains how to get changes accepted into the project.
 
-## Before You Start
+## Before You Start Test
 
 - By contributing, you agree your contributions will be licensed under the [Apache License 2.0](LICENSE), the same license as the project.
 - Please read our [Code of Conduct](CODE_OF_CONDUCT.md).
