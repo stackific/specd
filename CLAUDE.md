@@ -82,6 +82,20 @@ type(scope): description    # scope is optional
 
 Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
 
+## Pushing Code
+
+All commits must pass three hook stages before reaching the remote:
+
+1. **pre-commit**: formatters, golangci-lint, gitleaks
+2. **commit-msg**: conventional commit format (conform)
+3. **pre-push**: `go test ./...`, `govulncheck ./...`
+
+Additionally, all commits must be:
+- **DCO signed off** (`Signed-off-by` line) — use `git commit -s` or set `git config format.signoff true`
+- **Cryptographically signed** (SSH or GPG) — enforced by branch protection on `main`
+
+If a push is rejected, fix the issue, amend or create a new commit, and push again. Do not use `--no-verify` to bypass hooks.
+
 ## Rules
 
 - **Never trust training data for external tool conventions, APIs, or directory structures.** Always search the web and read primary sources (official docs, actual repos) first. This is especially critical when the user explicitly asks you to search. Do not guess or rely on what you "know" — verify it.
