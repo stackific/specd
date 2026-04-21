@@ -49,23 +49,8 @@ Do this **once** per repo.
 
 **Effect:** PRs containing unsigned commits cannot be merged. GitHub shows a red cross next to the offending commits in the PR's **Commits** tab.
 
-## 1.2 Communicate the policy
+## 1.2 Verification checklist
 
-Before flipping the switch, give the team a grace period:
-
-1. Announce the date signing will become mandatory (suggest 2 weeks out).
-2. Point everyone at this document.
-3. On the cutover date, flip the **Require signed commits** checkbox.
-
-Without a grace period, anyone mid-PR without signing configured will be blocked until they set it up.
-
-## 1.3 Organization-level allowlist (optional, advanced)
-
-By default GitHub accepts any key registered to the commit author's account. If you want stricter control (only keys registered by IT, only hardware-backed keys, etc.) you need a custom pre-receive hook or a third-party policy tool. Out of scope for this doc; raise with Security if required.
-
-## 1.4 Sysadmin verification checklist
-
-- [ ] Team notified with grace period
 - [ ] `Require signed commits` enabled on `main` branch protection
 - [ ] Test PR with an unsigned commit is blocked
 - [ ] Test PR with a signed commit shows **Verified** on each commit and merges successfully
@@ -219,6 +204,74 @@ git config tag.gpgsign true
 ```
 
 Six commands, one time, never think about it again.
+
+## 2.7 Multiple emails / keys (personal + work)
+
+If you use a personal email for open-source and a `@stackific.com` email for work, generate a separate key per email and configure per-repo:
+
+### Generate both keys
+
+```bash
+ssh-keygen -t ed25519 -C "you@personal.com" -f ~/.ssh/id_ed25519_personal
+ssh-keygen -t ed25519 -C "you@stackific.com" -f ~/.ssh/id_ed25519_work
+```
+
+### Register both on GitHub as signing keys
+
+```bash
+gh ssh-key add ~/.ssh/id_ed25519_personal.pub --title "personal signing" --type signing
+gh ssh-key add ~/.ssh/id_ed25519_work.pub --title "work signing" --type signing
+```
+
+### Set your personal email as the global default
+
+```bash
+git config --global user.name "Your Full Name"
+git config --global user.email "you@personal.com"
+git config --global gpg.format ssh
+git config --global user.signingkey ~/.ssh/id_ed25519_personal.pub
+git config --global commit.gpgsign true
+git config --global tag.gpgsign true
+```
+
+### Override per-repo for Stackific work
+
+Inside each Stackific repo (e.g. `specd`), set the work identity:
+
+```bash
+cd /path/to/specd
+git config user.email "you@stackific.com"
+git config user.signingkey ~/.ssh/id_ed25519_work.pub
+```
+
+That's it. `user.name`, `gpg.format`, `commit.gpgsign`, and `tag.gpgsign` inherit from global. Only `user.email` and `user.signingkey` differ per repo.
+
+### How it works
+
+Git resolves config in order: **repo > global > system**. Per-repo settings in `.git/config` override `~/.gitconfig`. So:
+
+- In `specd`: commits use `you@stackific.com` + work key
+- In your personal repos: commits use `you@personal.com` + personal key
+- Both show **Verified** on GitHub because both keys are registered as signing keys
+
+### Add both keys to allowed_signers (optional)
+
+```bash
+echo "you@personal.com $(cat ~/.ssh/id_ed25519_personal.pub)" >> ~/.ssh/allowed_signers
+echo "you@stackific.com $(cat ~/.ssh/id_ed25519_work.pub)" >> ~/.ssh/allowed_signers
+```
+
+### Verify the right key is active
+
+```bash
+# In the specd repo
+git config user.email       # should print: you@stackific.com
+git config user.signingkey  # should print: ~/.ssh/id_ed25519_work.pub
+
+# In a personal repo
+git config user.email       # should print: you@personal.com
+git config user.signingkey  # should print: ~/.ssh/id_ed25519_personal.pub
+```
 
 ---
 
