@@ -17,6 +17,7 @@ tasks:
     desc: Build the binary
     cmds:
       - go build -o bin/{{.BINARY}} .
+      - echo "Built bin/{{.BINARY}}"
 
   run:
     desc: Build and run
@@ -31,7 +32,7 @@ tasks:
   test:
     desc: Run tests
     cmds:
-      - go test ./...
+      - go test -v ./...
 
   # --- Formatting ---
 

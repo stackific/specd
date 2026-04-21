@@ -1,21 +1,29 @@
 #!/bin/sh
 set -eu
 
-# specd installer
+# specd installer — Stackific Inc. All rights reserved.
+# https://stackific.com/specd
 # Usage: curl -sSL https://stackific.com/specd/install.sh | sh
 
+COMPANY="Stackific Inc."
+PRODUCT="specd"
+HOMEPAGE="https://stackific.com/specd"
 REPO="stackific/specd"
 INSTALL_DIR="$HOME/.specd/bin"
 BINARY="specd"
 
 main() {
+    echo "${PRODUCT} installer — ${COMPANY}"
+    echo "${HOMEPAGE}"
+    echo ""
     detect_platform
     get_latest_version
     download_binary
+    verify_checksum
     install_binary
     setup_path
     echo ""
-    echo "specd ${VERSION} installed successfully!"
+    echo "${PRODUCT} ${VERSION} installed successfully!"
     echo ""
 }
 
@@ -58,23 +66,54 @@ get_latest_version() {
 
 download_binary() {
     FILENAME="${BINARY}-${OS}-${ARCH}"
-    URL="https://github.com/${REPO}/releases/download/${VERSION}/${FILENAME}"
+    BINARY_URL="https://github.com/${REPO}/releases/download/${VERSION}/${FILENAME}"
+    CHECKSUMS_URL="https://github.com/${REPO}/releases/download/${VERSION}/checksums.txt"
 
-    echo "Downloading ${URL}..."
+    echo "Downloading ${BINARY_URL}..."
 
     TMPDIR="$(mktemp -d)"
     trap 'rm -rf "$TMPDIR"' EXIT
 
     if command -v curl > /dev/null 2>&1; then
-        curl -sSL -o "${TMPDIR}/${BINARY}" "$URL"
+        curl -fsSL -o "${TMPDIR}/${FILENAME}" "$BINARY_URL"
+        curl -fsSL -o "${TMPDIR}/checksums.txt" "$CHECKSUMS_URL"
     else
-        wget -qO "${TMPDIR}/${BINARY}" "$URL"
+        wget -qO "${TMPDIR}/${FILENAME}" "$BINARY_URL"
+        wget -qO "${TMPDIR}/checksums.txt" "$CHECKSUMS_URL"
     fi
+}
+
+verify_checksum() {
+    echo "Verifying checksum..."
+
+    EXPECTED="$(grep "${FILENAME}$" "${TMPDIR}/checksums.txt" | awk '{print $1}')"
+    if [ -z "$EXPECTED" ]; then
+        echo "Error: binary not found in checksums.txt"
+        exit 1
+    fi
+
+    if command -v sha256sum > /dev/null 2>&1; then
+        ACTUAL="$(sha256sum "${TMPDIR}/${FILENAME}" | awk '{print $1}')"
+    elif command -v shasum > /dev/null 2>&1; then
+        ACTUAL="$(shasum -a 256 "${TMPDIR}/${FILENAME}" | awk '{print $1}')"
+    else
+        echo "Warning: sha256sum/shasum not found, skipping checksum verification"
+        return
+    fi
+
+    if [ "$EXPECTED" != "$ACTUAL" ]; then
+        echo "Error: checksum mismatch"
+        echo "  Expected: $EXPECTED"
+        echo "  Actual:   $ACTUAL"
+        exit 1
+    fi
+
+    echo "Checksum verified."
 }
 
 install_binary() {
     mkdir -p "$INSTALL_DIR"
-    mv "${TMPDIR}/${BINARY}" "${INSTALL_DIR}/${BINARY}"
+    mv "${TMPDIR}/${FILENAME}" "${INSTALL_DIR}/${BINARY}"
     chmod +x "${INSTALL_DIR}/${BINARY}"
     echo "Installed to ${INSTALL_DIR}/${BINARY}"
 }

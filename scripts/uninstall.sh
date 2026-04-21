@@ -1,27 +1,31 @@
 #!/bin/sh
 set -eu
 
-# specd uninstaller
+# specd uninstaller — Stackific Inc. All rights reserved.
+# https://stackific.com/specd
 # Usage: curl -sSL https://stackific.com/specd/uninstall.sh | sh
 
+PRODUCT="specd"
 INSTALL_DIR="$HOME/.specd"
 BIN_DIR="$INSTALL_DIR/bin"
-BINARY="specd"
 
 main() {
-    if [ ! -d "$INSTALL_DIR" ]; then
-        echo "specd is not installed (${INSTALL_DIR} not found)."
+    if [ ! -d "$BIN_DIR" ]; then
+        echo "${PRODUCT} is not installed (${BIN_DIR} not found)."
         exit 0
     fi
 
-    echo "Removing ${INSTALL_DIR}..."
-    rm -rf "$INSTALL_DIR"
-    echo "Removed ${INSTALL_DIR}"
+    echo "Removing ${BIN_DIR}..."
+    rm -rf "$BIN_DIR"
+    echo "Removed ${BIN_DIR}"
 
+    echo ""
+    echo "Note: ${INSTALL_DIR}/ (config, cache, skills) was kept."
+    echo "To remove everything: rm -rf ${INSTALL_DIR}"
     echo ""
     clean_path
     echo ""
-    echo "specd has been uninstalled."
+    echo "${PRODUCT} has been uninstalled."
 }
 
 clean_path() {
