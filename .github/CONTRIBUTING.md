@@ -40,6 +40,29 @@ git rebase --signoff <base-ref>
 
 Pull requests with unsigned commits will not be merged. A DCO check runs on every PR.
 
+## Commit Signing
+
+In addition to DCO sign-off, every commit merged to `main` must be **cryptographically signed** (SSH or GPG). This is enforced via branch protection.
+
+Set up signing for this repo:
+
+```bash
+git config gpg.format ssh
+git config user.signingkey ~/.ssh/id_ed25519.pub
+git config commit.gpgsign true
+```
+
+Your signing key must be [registered with your GitHub account](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-new-ssh-signing-key-to-your-github-account). Unsigned commits will be blocked from merging.
+
+If you need to fix unsigned commits on a PR branch:
+
+```bash
+git rebase --signoff --exec 'git commit --amend --no-edit -S' $(git merge-base HEAD origin/main)
+git push --force-with-lease
+```
+
+For detailed setup instructions, see [docs/internal/commit-signing.md](../docs/internal/commit-signing.md).
+
 ### What You Are Certifying
 
 By signing off, you agree to the full text of the DCO 1.1, which in summary states that:
@@ -62,14 +85,14 @@ You also understand that the contribution is public and may be maintained indefi
 
 1. Open an issue first for anything non-trivial so we can discuss direction before you invest time.
 2. Fork the repo and create a feature branch.
-3. Make focused, well-scoped commits. Each commit must be signed off (see above).
+3. Make focused, well-scoped commits. Each commit must be signed off and cryptographically signed (see above).
 4. Add or update tests. CI must pass.
 5. Update documentation if behavior or interfaces change.
 6. Open a pull request against `main`.
 
 ### Pull Request Checklist
 
-- [ ] All commits are signed off (DCO)
+- [ ] All commits are signed off (DCO) and cryptographically signed
 - [ ] Tests added or updated
 - [ ] CI is green
 - [ ] Docs updated if needed

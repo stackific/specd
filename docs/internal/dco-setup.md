@@ -54,7 +54,7 @@ This makes the DCO check mandatory. Without this step, the app reports the statu
    - [x] **Require status checks to pass before merging**
      - [x] Require branches to be up to date before merging
      - In the search box, type `DCO` and select it as a required check. (It will only appear after at least one PR has triggered the app; if you do not see it yet, open a throwaway PR first, then come back.)
-   - [x] **Require signed commits** - optional, not required by DCO, but recommended if your team uses SSH/GPG signing.
+   - [x] **Require signed commits** - required. All commits merged to `main` must be cryptographically signed. See [commit-signing.md](commit-signing.md) for setup.
    - [x] **Require linear history** - recommended, keeps history clean.
    - [x] **Do not allow bypassing the above settings**
    - [x] **Restrict who can push to matching branches** - leave empty or restrict to maintainers group.
@@ -201,13 +201,13 @@ git reset --hard HEAD~1
 
 You are done. Every future commit in `specd` will be signed off automatically.
 
-## 2.5 Optional but recommended: set up commit signing (GPG or SSH)
+## 2.5 Required: set up commit signing (GPG or SSH)
 
-DCO signoff is a text line anyone can type. It is not cryptographic. If the project later requires cryptographic signing (`Require signed commits` branch protection), see:
+DCO signoff is a text line — it is not cryptographic. This project **also requires** cryptographic commit signing. All commits merged to `main` must be signed, enforced via branch protection.
 
-- https://docs.github.com/en/authentication/managing-commit-signature-verification
+See [commit-signing.md](commit-signing.md) for full setup instructions.
 
-This is separate from DCO and does not replace the `Signed-off-by` line.
+Commit signing is separate from DCO and does not replace the `Signed-off-by` line. Both are required.
 
 ---
 
@@ -379,13 +379,14 @@ The check becomes pending and merges are blocked (by design). If this persists, 
 
 # Part 6: Related Documents
 
-- `CONTRIBUTING.md` - contributor-facing guide, contains the minimum DCO explanation for outside contributors.
+- `.github/CONTRIBUTING.md` - contributor-facing guide, contains DCO and commit signing explanation for outside contributors.
+- `.github/CODE_OF_CONDUCT.md` - community standards.
+- `.github/CODEOWNERS` - reviewer assignments.
+- `.github/pull_request_template.md` - PR checklist.
+- `docs/internal/commit-signing.md` - cryptographic commit signing setup (SSH/GPG).
 - `LICENSE` - Apache 2.0 text.
 - `NOTICE` - attribution notice.
 - `TRADEMARKS.md` - trademark policy for `specd` and `Stackific`.
-- `CODE_OF_CONDUCT.md` - community standards.
-- `.github/CODEOWNERS` - reviewer assignments.
-- `.github/pull_request_template.md` - PR checklist.
 
 ---
 
