@@ -4,20 +4,23 @@
 
 $ErrorActionPreference = "Stop"
 
-$Company = "Stackific Inc."
 $Product = "specd"
-$Homepage = "https://stackific.com/specd"
 $InstallDir = "$env:USERPROFILE\.specd"
+$BinDir = "$InstallDir\bin"
 
 function Main {
-    if (-not (Test-Path $InstallDir)) {
-        Write-Host "$Product is not installed ($InstallDir not found)."
+    if (-not (Test-Path $BinDir)) {
+        Write-Host "$Product is not installed ($BinDir not found)."
         return
     }
 
-    Write-Host "Removing $InstallDir..."
-    Remove-Item -Recurse -Force $InstallDir
-    Write-Host "Removed $InstallDir"
+    Write-Host "Removing $BinDir..."
+    Remove-Item -Recurse -Force $BinDir
+    Write-Host "Removed $BinDir"
+
+    Write-Host ""
+    Write-Host "Note: $InstallDir\ (config, cache, skills) was kept."
+    Write-Host "To remove everything: Remove-Item -Recurse -Force $InstallDir"
 
     Clean-Path
 
@@ -26,14 +29,13 @@ function Main {
 }
 
 function Clean-Path {
-    $binDir = "$InstallDir\bin"
     $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
-    $parts = $currentPath -split ";" | Where-Object { $_ -ne $binDir -and $_ -ne "" }
+    $parts = $currentPath -split ";" | Where-Object { $_ -ne $BinDir -and $_ -ne "" }
 
     if ($parts.Count -lt ($currentPath -split ";").Count) {
         $newPath = $parts -join ";"
         [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
-        Write-Host "Removed $binDir from PATH."
+        Write-Host "Removed $BinDir from PATH."
         Write-Host "Open a new terminal for changes to take effect."
     }
 }

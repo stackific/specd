@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write  # needed for Cosign keyless (OIDC) signing
 
 env:
   CGO_ENABLED: "0"
@@ -62,9 +63,24 @@ jobs:
             GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "$LDFLAGS" -o "dist/${output}" .
           done
 
+      - name: Copy license files
+        run: cp LICENSE NOTICE dist/
+
       - name: Generate checksums
         working-directory: dist
         run: sha256sum * > checksums.txt
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign binaries
+        working-directory: dist
+        run: |
+          for file in *; do
+            [ "$file" = "checksums.txt" ] && continue
+            cosign sign-blob --yes "$file" --bundle "${file}.bundle"
+          done
+          cosign sign-blob --yes checksums.txt --bundle checksums.txt.bundle
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

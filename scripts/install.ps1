@@ -18,6 +18,7 @@ function Main {
     $platform = Detect-Platform
     $version = Get-LatestVersion
     Download-Binary -Version $version -Platform $platform
+    Verify-Checksum -Platform $platform
     Install-Binary
     Setup-Path
     Write-Host ""
@@ -51,15 +52,46 @@ function Get-LatestVersion {
 function Download-Binary {
     param($Version, $Platform)
 
-    $filename = "$Binary-windows-$Platform.exe"
-    $url = "https://github.com/$Repo/releases/download/$Version/$filename"
+    $script:Filename = "$Binary-windows-$Platform.exe"
+    $binaryUrl = "https://github.com/$Repo/releases/download/$Version/$($script:Filename)"
+    $checksumsUrl = "https://github.com/$Repo/releases/download/$Version/checksums.txt"
 
-    Write-Host "Downloading $url..."
+    Write-Host "Downloading $binaryUrl..."
 
-    $tmpFile = Join-Path $env:TEMP "$Binary.exe"
-    Invoke-WebRequest -Uri $url -OutFile $tmpFile -UseBasicParsing
+    $script:TmpFile = Join-Path $env:TEMP $script:Filename
+    $script:TmpChecksums = Join-Path $env:TEMP "specd-checksums.txt"
 
-    $script:TmpFile = $tmpFile
+    try {
+        Invoke-WebRequest -Uri $binaryUrl -OutFile $script:TmpFile -UseBasicParsing
+        Invoke-WebRequest -Uri $checksumsUrl -OutFile $script:TmpChecksums -UseBasicParsing
+    } catch {
+        Write-Error "Download failed: $_"
+        exit 1
+    }
+}
+
+function Verify-Checksum {
+    param($Platform)
+
+    Write-Host "Verifying checksum..."
+
+    $checksumLines = Get-Content $script:TmpChecksums
+    $expectedLine = $checksumLines | Where-Object { $_ -match "$($script:Filename)$" }
+    if (-not $expectedLine) {
+        Write-Error "Binary not found in checksums.txt"
+        exit 1
+    }
+    $expected = ($expectedLine -split "\s+")[0]
+
+    $actual = (Get-FileHash -Path $script:TmpFile -Algorithm SHA256).Hash.ToLower()
+
+    if ($expected -ne $actual) {
+        Write-Error "Checksum mismatch`n  Expected: $expected`n  Actual:   $actual"
+        exit 1
+    }
+
+    Write-Host "Checksum verified."
+    Remove-Item $script:TmpChecksums -Force
 }
 
 function Install-Binary {
