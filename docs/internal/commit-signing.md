@@ -520,4 +520,4 @@ Never delete the old key locally; you will need it to verify your own historical
 
 ---
 
-*Document owner: Stackific Engineering. Last reviewed: 2026-04-21. For questions, contact engineering@stackific.com. For compromised keys, contact security@stackific.com.*
+*Document owner: Stackific Engineering. Last reviewed: 2026-04-21. For questions, contact info@stackific.com. For compromised keys, contact security@stackific.com.*

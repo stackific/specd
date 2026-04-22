@@ -2,10 +2,13 @@ package cmd
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -48,6 +51,8 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 	summary, _ := c.Flags().GetString("summary")
 	body, _ := c.Flags().GetString("body")
 
+	slog.Info("new-spec", "title", title)
+
 	// Open the project database.
 	db, specdFolder, err := OpenProjectDB()
 	if err != nil {
@@ -62,17 +67,15 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 	}
 
 	// Get the next spec number atomically.
-	num, err := NextID(db, "next_spec_id")
+	num, err := NextID(db, MetaNextSpecID)
 	if err != nil {
 		return err
 	}
 
-	specID := fmt.Sprintf("SPEC-%d", num)
+	specID := fmt.Sprintf("%s%d", IDPrefixSpec, num)
 	slug := ToDashSlug(title)
 	now := time.Now().UTC().Format(time.RFC3339)
 	username := ResolveActiveUsername()
-	contentHash := fmt.Sprintf("%x", sha256.Sum256([]byte(body)))
-
 	// Build the relative path: <specd-folder>/specs/spec-<N>/spec.md
 	specDir := filepath.Join(specdFolder, SpecsSubdir, fmt.Sprintf("spec-%d", num))
 	specFile := filepath.Join(specDir, "spec.md")
@@ -83,7 +86,10 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 	}
 
 	// Write the spec markdown file with frontmatter.
-	md := buildSpecMarkdown(specID, slug, title, summary, proj.SpecTypes[0], username, now, body)
+	// No linked_specs yet — those are added in step 2 via update-spec.
+	md := buildSpecMarkdown(specID, slug, title, summary, proj.SpecTypes[0], username, now, nil, body)
+	// Hash the full file content so the sync detects any change.
+	contentHash := fmt.Sprintf("%x", sha256.Sum256([]byte(md)))
 	if err := os.WriteFile(specFile, []byte(md), 0o644); err != nil { //nolint:gosec // spec file is committed to VCS
 		return fmt.Errorf("writing spec file: %w", err)
 	}
@@ -97,22 +103,9 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 		return fmt.Errorf("inserting spec: %w", err)
 	}
 
-	// Hybrid BM25 + trigram search for related content.
-	searchText := title + " " + summary
-	limit := proj.TopSearchResults
-	if limit <= 0 {
-		limit = TopSearchResults
-	}
-	searchResults, _ := Search(db, searchText, "all", limit, specID)
-
-	// Build response for the AI skill. Ensure empty arrays, never null.
-	relatedSpecs := searchResults.Specs
-	if relatedSpecs == nil {
-		relatedSpecs = []SearchResult{}
-	}
-	relatedKB := searchResults.KB
-	if relatedKB == nil {
-		relatedKB = []SearchResult{}
+	relatedSpecs, relatedKB, err := findRelatedContent(db, proj, title+" "+summary, specID)
+	if err != nil {
+		return err
 	}
 
 	resp := NewSpecResponse{
@@ -134,19 +127,55 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 	return nil
 }
 
-// buildSpecMarkdown generates the spec.md content with YAML frontmatter.
-func buildSpecMarkdown(id, slug, title, summary, specType, createdBy, timestamp, body string) string {
-	return fmt.Sprintf(`---
-id: %s
-slug: %s
-title: %s
-type: %s
-summary: %s
-created_by: %s
-created_at: %s
-updated_at: %s
----
+// findRelatedContent searches for specs and KB chunks related to the given
+// text, using project-configured limits and weights with defaults as fallback.
+func findRelatedContent(db *sql.DB, proj *ProjectConfig, searchText, excludeID string) (specs, kb []SearchResult, err error) {
+	limit := proj.TopSearchResults
+	if limit <= 0 {
+		limit = TopSearchResults
+	}
+	weights := proj.SearchWeights
+	if weights.Title == 0 && weights.Summary == 0 && weights.Body == 0 {
+		weights = defaultSearchWeights()
+	}
 
-%s
-`, id, slug, title, specType, summary, createdBy, timestamp, timestamp, body)
+	results, err := Search(db, searchText, KindAll, limit, excludeID, weights)
+	if err != nil {
+		return nil, nil, fmt.Errorf("searching related content: %w", err)
+	}
+
+	specs = results.Specs
+	if specs == nil {
+		specs = []SearchResult{}
+	}
+	kb = results.KB
+	if kb == nil {
+		kb = []SearchResult{}
+	}
+
+	return specs, kb, nil
+}
+
+// buildSpecMarkdown generates spec.md with YAML frontmatter and H1 title.
+// The title is NOT in frontmatter — the H1 heading IS the title.
+// linkedSpecs may be nil for new specs that don't have links yet.
+func buildSpecMarkdown(id, slug, title, summary, specType, createdBy, timestamp string, linkedSpecs []string, body string) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "---\n")
+	fmt.Fprintf(&b, "id: %s\n", id)
+	fmt.Fprintf(&b, "slug: %s\n", slug)
+	fmt.Fprintf(&b, "type: %s\n", specType)
+	fmt.Fprintf(&b, "summary: %s\n", summary)
+	fmt.Fprintf(&b, "position: 0\n")
+	if len(linkedSpecs) > 0 {
+		fmt.Fprintf(&b, "linked_specs:\n")
+		for _, ls := range linkedSpecs {
+			fmt.Fprintf(&b, "  - %s\n", ls)
+		}
+	}
+	fmt.Fprintf(&b, "created_by: %s\n", createdBy)
+	fmt.Fprintf(&b, "created_at: %s\n", timestamp)
+	fmt.Fprintf(&b, "updated_at: %s\n", timestamp)
+	fmt.Fprintf(&b, "---\n\n# %s\n\n%s\n", title, body)
+	return b.String()
 }

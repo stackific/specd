@@ -13,16 +13,44 @@ Before running this skill, check if a `.specd.json` file exists in the current d
 
 Do NOT suggest alternative ways to run the command. Do NOT mention shell prefixes, prompt shortcuts, or inline execution. Just tell them to run the command in their terminal.
 
+## Spec Markdown Convention
+
+The `--body` you provide becomes the spec markdown body. It MUST follow this structure:
+
+- Do NOT include a title in the body — the `--title` flag becomes the `# Title` heading automatically.
+- Do NOT use `# Heading` (H1) in the body — only the title is H1.
+- Use `##` for top-level sections. `###` through `######` are fine within sections.
+- Include an `## Acceptance Criteria` section (must be H2) with bullet items written as claims using must, should, may, or might language.
+
+### Example body structure
+
+```markdown
+## Overview
+
+Users need to authenticate via OAuth2 providers.
+
+## Requirements
+
+- Support Google and GitHub OAuth2 providers
+- Issue JWT tokens after successful authentication
+
+## Acceptance Criteria
+
+- The system must redirect users to the OAuth2 provider's consent screen
+- The system should create new user records on first login
+- Users may choose to stay logged in via a remember-me option
+```
+
 ## Steps
 
-This is a two-step process. You MUST complete both steps.
+This is a three-step process. You MUST complete all three steps.
 
 ## Step 1: Create the spec
 
 From the user's description, determine:
-- **title**: a concise title for the spec
+- **title**: a concise title for the spec (becomes the H1 heading)
 - **summary**: a one-line summary
-- **body**: the full spec content in markdown
+- **body**: the full spec content following the convention above
 
 Then run:
 
@@ -30,20 +58,14 @@ Then run:
 specd new-spec --title "<title>" --summary "<one-line summary>" --body "<markdown body>"
 ```
 
-The command outputs JSON with:
-- `id`: the assigned spec ID (e.g. "SPEC-1")
-- `path`: where the spec.md file was written
-- `default_type`: the default spec type assigned
-- `available_types`: all spec types the user configured
-- `related_specs`: top matching existing specs (with id and summary)
-- `related_kb_chunks`: top matching KB chunks (with chunk_id, doc_id, preview)
+The command outputs JSON with the spec ID, path, available types, and related content.
 
 ## Step 2: Set the type and links
 
-From the JSON response, decide:
+From the step 1 JSON response, decide:
 1. **Spec type**: which of `available_types` best fits this spec
-2. **Linked specs**: which `related_specs` (if any) are genuinely related — use the IDs
-3. **Linked KB chunks**: which `related_kb_chunks` (if any) are relevant — use the chunk_ids
+2. **Linked specs**: which `related_specs` (if any) are genuinely related
+3. **Linked KB chunks**: which `related_kb_chunks` (if any) are relevant
 
 Then run:
 
@@ -53,12 +75,22 @@ specd update-spec --id "<spec-id>" --type "<chosen-type>" --link-specs "<SPEC-X,
 
 Omit `--link-specs` or `--link-kb-chunks` if none are relevant. Always set `--type`.
 
-## Example
+## Step 3: Check for contradictions
+
+For each acceptance criteria claim in the spec you just created, search for potentially conflicting claims in other specs:
 
 ```sh
-# Step 1
-specd new-spec --title "User Authentication" --summary "OAuth2 login flow for web app" --body "## Overview\n\nImplement OAuth2..."
-
-# Step 2 (using the returned SPEC-1 id and choosing from the response)
-specd update-spec --id "SPEC-1" --type "functional" --link-specs "SPEC-3,SPEC-5"
+specd search-claims --query "<claim text>" --exclude "<spec-id>"
 ```
+
+Run this once for each claim in the `## Acceptance Criteria` section. The command returns matching claims from other specs with their spec IDs and titles.
+
+Review the returned claims. For each match, evaluate whether it genuinely contradicts the new claim. If you find contradictions, report them to the user:
+
+- The spec ID and title of the conflicting spec
+- The conflicting claim from the other spec
+- The claim from the new spec that it conflicts with
+
+Do NOT take any action to resolve the conflicts. Just report them and exit.
+
+If no contradictions are found, tell the user the spec was created cleanly with no conflicts detected.

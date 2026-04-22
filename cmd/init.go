@@ -93,12 +93,17 @@ func runInit(c *cobra.Command, args []string) error {
 		SpecTypes:        specTypes,
 		TaskStages:       taskStages,
 		TopSearchResults: TopSearchResults,
+		SearchWeights: SearchWeights{
+			Title:   BM25WeightTitle,
+			Summary: BM25WeightSummary,
+			Body:    BM25WeightBody,
+		},
 	}); err != nil {
 		return err
 	}
 
-	// Initialize the cache database with schema matching the user's selections.
-	if err := InitDB(specdPath, specTypes, taskStages); err != nil {
+	// Initialize the cache database at the project root (.specd.cache).
+	if err := InitDB(absProject, specTypes, taskStages); err != nil {
 		return err
 	}
 
@@ -190,13 +195,22 @@ func promptAndInstallSkills() error {
 	return installSkills(selectedProviders, level)
 }
 
-// printPostInitMessage prints the warning and next-steps after initialization.
+// printPostInitMessage prints git instructions, warnings, and next-steps.
 func printPostInitMessage() {
 	fmt.Println()
 	warn := lipgloss.NewStyle().Bold(true).Foreground(
 		lipgloss.AdaptiveColor{Light: "1", Dark: "9"},
 	)
+
+	// Git instructions.
+	fmt.Printf("Add %s to your .gitignore — it is a local cache and must not be committed.\n", highlight.Render(CacheDBFile))
+	fmt.Printf("Commit and push %s and the %s/ folder — they are your project config and specs.\n", highlight.Render(ProjectMarker), highlight.Render(DefaultFolder))
+
+	// Warning.
+	fmt.Println()
 	fmt.Printf("%s Do not manually edit spec types or task stages in %s — it may break your project.\n", warn.Render("Warning:"), ProjectMarker)
+
+	// Next step.
 	fmt.Printf("\nRun %s to start the Web UI.\n", highlight.Render("specd serve"))
 }
 

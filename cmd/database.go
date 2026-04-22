@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	_ "embed"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"strings"
 
@@ -18,17 +19,19 @@ import (
 var schemaSQL string
 
 const (
-	// CacheDBFile is the SQLite database filename inside the specd project folder.
-	CacheDBFile = "cache.db"
+	// CacheDBFile is the SQLite database filename at the project root.
+	// This file is gitignored — it is a cache rebuilt from spec/task markdown files.
+	CacheDBFile = ".specd.cache"
 	// SchemaVersion is stored in the meta table for future migrations.
 	SchemaVersion = "1"
 )
 
-// InitDB creates and initializes the cache.db SQLite database inside the
-// specd project folder. CHECK constraints and defaults are built from
-// the user's selected spec types and task stages.
-func InitDB(specdPath string, specTypes, taskStages []string) error {
-	dbPath := filepath.Join(specdPath, CacheDBFile)
+// InitDB creates and initializes the .specd.cache SQLite database at the
+// project root. CHECK constraints and defaults are built from the user's
+// selected spec types and task stages.
+func InitDB(projectRoot string, specTypes, taskStages []string) error {
+	dbPath := filepath.Join(projectRoot, CacheDBFile)
+	slog.Info("initializing database", "path", dbPath)
 
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
@@ -56,9 +59,9 @@ func InitDB(specdPath string, specTypes, taskStages []string) error {
 	// Seed the meta table with schema version and ID counters.
 	for _, kv := range []struct{ k, v string }{
 		{"schema_version", SchemaVersion},
-		{"next_spec_id", "1"},
-		{"next_task_id", "1"},
-		{"next_kb_id", "1"},
+		{MetaNextSpecID, "1"},
+		{MetaNextTaskID, "1"},
+		{MetaNextKBID, "1"},
 	} {
 		if _, err := db.Exec(
 			`INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)`,
@@ -71,8 +74,8 @@ func InitDB(specdPath string, specTypes, taskStages []string) error {
 	return nil
 }
 
-// OpenProjectDB opens the cache.db for the current project.
-// Returns the database handle and the specd folder path.
+// OpenProjectDB opens the .specd.cache database at the project root.
+// Returns the database handle and the specd folder name from the config.
 func OpenProjectDB() (*sql.DB, string, error) {
 	proj, err := LoadProjectConfig(".")
 	if err != nil {
@@ -82,7 +85,8 @@ func OpenProjectDB() (*sql.DB, string, error) {
 		return nil, "", fmt.Errorf("specd is not initialized in this directory.\nRun: specd init")
 	}
 
-	dbPath := filepath.Join(proj.Folder, CacheDBFile)
+	// DB lives at project root, not inside the specd folder.
+	dbPath := CacheDBFile
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, "", fmt.Errorf("opening database: %w", err)

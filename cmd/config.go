@@ -15,11 +15,20 @@ type GlobalConfig struct {
 // ProjectConfig is the marker file (.specd.json) written to a project root
 // when `specd init` is run. It records project-level specd settings.
 type ProjectConfig struct {
-	Folder           string   `json:"folder"`             // name of the specd project folder
-	Username         string   `json:"username,omitempty"` // project-specific username override (empty = use global)
-	SpecTypes        []string `json:"spec_types"`         // slugs of enabled spec types
-	TaskStages       []string `json:"task_stages"`        // slugs of enabled task stages
-	TopSearchResults int      `json:"top_search_results"` // max related items returned by search
+	Folder           string        `json:"folder"`             // name of the specd project folder
+	Username         string        `json:"username,omitempty"` // project-specific username override (empty = use global)
+	SpecTypes        []string      `json:"spec_types"`         // slugs of enabled spec types
+	TaskStages       []string      `json:"task_stages"`        // slugs of enabled task stages
+	TopSearchResults int           `json:"top_search_results"` // max related items returned by search
+	SearchWeights    SearchWeights `json:"search_weights"`     // BM25 column weights for ranking
+}
+
+// SearchWeights holds BM25 column weights for full-text search ranking.
+// Higher values mean matches in that column are more important.
+type SearchWeights struct {
+	Title   float64 `json:"title"`   // weight for title column matches
+	Summary float64 `json:"summary"` // weight for summary column matches
+	Body    float64 `json:"body"`    // weight for body/text column matches
 }
 
 // globalConfigPath returns the absolute path to ~/.specd/config.json.

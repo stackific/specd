@@ -214,6 +214,54 @@ Users need to upload CSV files to bulk-import records into the system.
 - Progress bar updates during import"
 
 echo ""
+echo "=== Creating SPEC-9: GraphQL Gateway (term in title) ==="
+$SPECD new-spec \
+  --title "GraphQL Gateway" \
+  --summary "Unified API gateway for all microservices" \
+  --body "## Overview
+
+Build a GraphQL gateway that aggregates data from multiple backend microservices into a single query endpoint.
+
+## Requirements
+
+- Schema stitching across order, inventory, and user services
+- Dataloader batching to avoid N+1 queries
+- Rate limiting per client API key
+- Authentication via JWT forwarded from the edge proxy"
+
+echo ""
+echo "=== Creating SPEC-10: Service Communication Layer (term in body only) ==="
+$SPECD new-spec \
+  --title "Service Communication Layer" \
+  --summary "Internal RPC framework for backend services" \
+  --body "## Overview
+
+Design the inter-service communication layer using gRPC with protobuf schemas.
+
+## Requirements
+
+- All services register with the service mesh
+- Health checks and circuit breakers on every connection
+- The order service must expose a GraphQL gateway compatible schema for the frontend team
+- Retry with exponential backoff on transient failures"
+
+echo ""
+echo "=== Creating SPEC-11: API Schema Registry (term in summary only) ==="
+$SPECD new-spec \
+  --title "API Schema Registry" \
+  --summary "Central registry for GraphQL gateway schemas and versioning" \
+  --body "## Overview
+
+Maintain a central registry where all service schemas are published and versioned. The frontend team consumes the merged schema from this registry.
+
+## Requirements
+
+- Schema upload via CLI or CI pipeline
+- Breaking change detection on PR
+- Version history with rollback support
+- Webhook notifications on schema changes"
+
+echo ""
 echo "=== Linking specs ==="
 
 echo "-- Linking SPEC-1 (Auth) with SPEC-2 (Sessions) and SPEC-3 (RBAC)"
@@ -235,44 +283,61 @@ echo ""
 echo "-- Setting SPEC-5 (Audit) as non-functional"
 $SPECD update-spec --id "SPEC-5" --type "nonfunctional"
 
+DB=".specd.cache"
+
 echo ""
 echo "=== Verification ==="
 echo ""
 echo "--- Specs in DB ---"
-sqlite3 specd/cache.db "SELECT id, type, title FROM specs ORDER BY id;"
+sqlite3 $DB "SELECT id, type, title FROM specs ORDER BY id;"
 
 echo ""
 echo "--- Links ---"
-sqlite3 specd/cache.db "SELECT from_spec, to_spec FROM spec_links ORDER BY from_spec, to_spec;"
+sqlite3 $DB "SELECT from_spec, to_spec FROM spec_links ORDER BY from_spec, to_spec;"
 
 echo ""
 echo "--- Spec files ---"
 find specd/specs -name 'spec.md' | sort
 
 echo ""
-echo "--- FTS search test: 'authentication session' ---"
-sqlite3 specd/cache.db "SELECT id, title FROM specs_fts WHERE specs_fts MATCH 'authentication OR session' ORDER BY bm25(specs_fts);"
+echo "--- FTS search: 'authentication session' ---"
+sqlite3 $DB "SELECT id, title FROM specs_fts JOIN specs ON specs.rowid = specs_fts.rowid WHERE specs_fts MATCH '\"authentication\" \"session\"' ORDER BY bm25(specs_fts, 10.0, 5.0, 1.0);"
 
 echo ""
-echo "--- FTS search test: 'rate limit abuse' ---"
-sqlite3 specd/cache.db "SELECT id, title FROM specs_fts WHERE specs_fts MATCH 'rate OR limit OR abuse' ORDER BY bm25(specs_fts);"
+echo "--- FTS search: 'rate limit abuse' ---"
+sqlite3 $DB "SELECT id, title FROM specs_fts JOIN specs ON specs.rowid = specs_fts.rowid WHERE specs_fts MATCH '\"rate\" \"limit\"' ORDER BY bm25(specs_fts, 10.0, 5.0, 1.0);"
 
 echo ""
-echo "--- Trigram search test: 'auth' (substring) ---"
-sqlite3 specd/cache.db "SELECT kind, ref_id FROM search_trigram WHERE search_trigram MATCH 'auth' AND kind = 'spec';"
+echo "--- Trigram search: 'auth' (substring) ---"
+sqlite3 $DB "SELECT kind, ref_id FROM search_trigram WHERE search_trigram MATCH '\"auth\"' AND kind = 'spec';"
 
 echo ""
 echo "--- NEGATIVE: 'invoice PDF tax' should NOT match auth/session specs ---"
-sqlite3 specd/cache.db "SELECT id, title FROM specs_fts WHERE specs_fts MATCH 'invoice OR PDF OR tax' ORDER BY bm25(specs_fts);"
+sqlite3 $DB "SELECT id, title FROM specs_fts JOIN specs ON specs.rowid = specs_fts.rowid WHERE specs_fts MATCH '\"invoice\" \"PDF\" \"tax\"' ORDER BY bm25(specs_fts, 10.0, 5.0, 1.0);"
 
 echo ""
 echo "--- NEGATIVE: 'dark mode theme toggle' should NOT match auth/billing specs ---"
-sqlite3 specd/cache.db "SELECT id, title FROM specs_fts WHERE specs_fts MATCH 'dark OR mode OR theme OR toggle' ORDER BY bm25(specs_fts);"
+sqlite3 $DB "SELECT id, title FROM specs_fts JOIN specs ON specs.rowid = specs_fts.rowid WHERE specs_fts MATCH '\"dark\" \"mode\" \"theme\"' ORDER BY bm25(specs_fts, 10.0, 5.0, 1.0);"
 
 echo ""
 echo "--- NEGATIVE: 'CSV import encoding' should NOT match auth/UI specs ---"
-sqlite3 specd/cache.db "SELECT id, title FROM specs_fts WHERE specs_fts MATCH 'CSV OR import OR encoding' ORDER BY bm25(specs_fts);"
+sqlite3 $DB "SELECT id, title FROM specs_fts JOIN specs ON specs.rowid = specs_fts.rowid WHERE specs_fts MATCH '\"CSV\" \"import\" \"encoding\"' ORDER BY bm25(specs_fts, 10.0, 5.0, 1.0);"
+
+echo ""
+echo "--- WEIGHT TEST: 'GraphQL' with title=100, summary=1, body=1 ---"
+echo "    (SPEC-9 'GraphQL Gateway' should rank first — term is in title)"
+sqlite3 $DB "SELECT s.id, s.title, bm25(specs_fts, 100.0, 1.0, 1.0) AS score FROM specs_fts JOIN specs s ON s.rowid = specs_fts.rowid WHERE specs_fts MATCH '\"GraphQL\"' ORDER BY score LIMIT 5;"
+
+echo ""
+echo "--- WEIGHT TEST: 'GraphQL' with title=1, summary=1, body=100 ---"
+echo "    (SPEC-10 'Service Communication Layer' should rank first — term is in body)"
+sqlite3 $DB "SELECT s.id, s.title, bm25(specs_fts, 1.0, 1.0, 100.0) AS score FROM specs_fts JOIN specs s ON s.rowid = specs_fts.rowid WHERE specs_fts MATCH '\"GraphQL\"' ORDER BY score LIMIT 5;"
+
+echo ""
+echo "--- WEIGHT TEST: 'GraphQL' with title=1, summary=100, body=1 ---"
+echo "    (SPEC-11 'API Schema Registry' should rank first — term is in summary)"
+sqlite3 $DB "SELECT s.id, s.title, bm25(specs_fts, 1.0, 100.0, 1.0) AS score FROM specs_fts JOIN specs s ON s.rowid = specs_fts.rowid WHERE specs_fts MATCH '\"GraphQL\"' ORDER BY score LIMIT 5;"
 
 echo ""
 echo "=== QA project created at $QA_DIR ==="
-echo "Inspect with: cd $QA_DIR && sqlite3 specd/cache.db"
+echo "Inspect with: cd $QA_DIR && sqlite3 $DB"

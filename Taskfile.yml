@@ -30,7 +30,17 @@ tasks:
       - air
 
   test:
-    desc: Run tests
+    desc: Run tests with pass/fail counts
+    cmds:
+      - |
+        output=$(go test -v ./... 2>&1)
+        passed=$(echo "$output" | grep -c "^--- PASS" || true)
+        failed=$(echo "$output" | grep -c "^--- FAIL" || true)
+        echo "Passed: $passed  Failed: $failed"
+        if [ "$failed" -gt 0 ]; then echo "$output" | grep "^--- FAIL"; exit 1; fi
+
+  test:verbose:
+    desc: Run tests with full output
     cmds:
       - go test -v ./...
 

@@ -51,10 +51,37 @@ const (
 	HTTPTimeout   = 3 * time.Second // max time to wait for the GitHub API
 
 	// Search tunables.
-	TopSearchResults = 5 // max related specs/KB chunks returned by new-spec
+	TopSearchResults   = 5   // max related specs/KB chunks returned by new-spec
+	ChunkPreviewLength = 200 // max characters shown in KB chunk previews
+
+	// BM25 column weights: title matches are most important, body least.
+	// FTS columns are ordered (title, summary, body) in specs_fts and tasks_fts.
+	BM25WeightTitle   = 10.0
+	BM25WeightSummary = 5.0
+	BM25WeightBody    = 1.0
+
+	// Search kind identifiers — used in search queries and trigram table.
+	KindSpec = "spec"
+	KindTask = "task"
+	KindKB   = "kb"
+	KindAll  = "all"
+
+	// Meta table keys for ID counters.
+	MetaNextSpecID = "next_spec_id"
+	MetaNextTaskID = "next_task_id"
+	MetaNextKBID   = "next_kb_id"
+
+	// ID prefixes for each content type.
+	IDPrefixSpec = "SPEC-"
+	IDPrefixTask = "TASK-"
+	IDPrefixKB   = "KB-"
 
 	// Directory conventions inside the specd project folder.
 	SpecsSubdir = "specs" // subdirectory for spec markdown files
+
+	// Logging.
+	LogFile    = "specd.log"      // log filename inside InstallDir (~/.specd/)
+	MaxLogSize = 10 * 1024 * 1024 // 10 MB — truncate log file when exceeded
 )
 
 // DefaultSpecTypes are the built-in spec types offered during init.

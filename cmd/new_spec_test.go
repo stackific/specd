@@ -57,7 +57,7 @@ func TestNewSpecCreatesFileAndDBRecord(t *testing.T) {
 	}
 
 	// Verify DB record.
-	db, err := sql.Open("sqlite", filepath.Join("specd", CacheDBFile))
+	db, err := sql.Open("sqlite", CacheDBFile)
 	if err != nil {
 		t.Fatal(err)
 	}

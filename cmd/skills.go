@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -89,6 +90,8 @@ func installSkills(selectedProviders []string, level string) error {
 		fmt.Println("No providers selected.")
 		return nil
 	}
+
+	slog.Info("installing skills", "providers", selectedProviders, "level", level)
 
 	// Write all embedded skills to ~/.specd/skills/ (the canonical location).
 	canonicalDir, err := extractCanonicalSkills()

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -14,6 +15,7 @@ var exemptCommands = map[string]bool{
 	"version": true,
 	"skills":  true,
 	"help":    true,
+	"logs":    true,
 }
 
 // rootCmd is the top-level Cobra command that every subcommand hangs off.
@@ -23,6 +25,7 @@ var rootCmd = &cobra.Command{
 	// Guard: runs before every command (including subcommands) to
 	// ensure the project is initialized and a username is configured.
 	PersistentPreRunE: func(c *cobra.Command, _ []string) error {
+		InitLogger()
 		return requireProjectInit(c)
 	},
 	// After every command, check if a newer specd version is available.
@@ -38,7 +41,9 @@ func init() {
 
 // Execute runs the root command and exits on failure.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	err := rootCmd.Execute()
+	CloseLogger()
+	if err != nil {
 		os.Exit(1)
 	}
 }
@@ -69,6 +74,12 @@ func requireProjectInit(c *cobra.Command) error {
 	}
 	if cfg.Username == "" {
 		return fmt.Errorf("no username configured.\nRun: specd init --username <name>")
+	}
+
+	// Sync the cache database from the spec markdown files on disk.
+	slog.Debug("syncing cache", "command", commandName(c))
+	if err := SyncCache(); err != nil {
+		return fmt.Errorf("syncing cache: %w", err)
 	}
 
 	return nil
