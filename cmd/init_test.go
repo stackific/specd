@@ -110,6 +110,38 @@ func TestRunInitWithProjectPath(t *testing.T) {
 	}
 }
 
+// TestRunInitBlocksReinitialization verifies that specd init refuses to
+// run in an already-initialized directory.
+func TestRunInitBlocksReinitialization(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	resetInitFlags()
+
+	projectDir := filepath.Join(tmp, "project")
+	if err := os.MkdirAll(projectDir, 0o755); err != nil { //nolint:gosec // test
+		t.Fatal(err)
+	}
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	// First init should succeed.
+	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("first init: %v", err)
+	}
+
+	// Second init should fail.
+	resetInitFlags()
+	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error on re-initialization, got nil")
+	}
+}
+
 // TestRunInitUsernameDefaultFromGlobalConfig verifies that an explicit
 // --username flag takes precedence when a username already exists in
 // the global config. (Interactive prompt cannot be tested here.)

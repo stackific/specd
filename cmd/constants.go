@@ -54,6 +54,13 @@ const (
 	TopSearchResults   = 5   // max related specs/KB chunks returned by new-spec
 	ChunkPreviewLength = 200 // max characters shown in KB chunk previews
 
+	// Pagination defaults.
+	DefaultPageSize = 20 // default results per page for list commands
+
+	// Serve tunables.
+	DefaultServePort = 8000 // starting port for specd serve
+	MaxPortAttempts  = 100  // max ports to try before giving up
+
 	// BM25 column weights: title matches are most important, body least.
 	// FTS columns are ordered (title, summary, body) in specs_fts and tasks_fts.
 	BM25WeightTitle   = 10.0
@@ -78,6 +85,7 @@ const (
 
 	// Directory conventions inside the specd project folder.
 	SpecsSubdir = "specs" // subdirectory for spec markdown files
+	KBSubdir    = "kb"    // subdirectory for KB document files
 
 	// Logging.
 	LogFile    = "specd.log"      // log filename inside InstallDir (~/.specd/)

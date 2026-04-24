@@ -30,7 +30,7 @@ var multiDash = regexp.MustCompile(`-+`)
 
 // ToDashSlug converts a display string like "User Authentication" into a
 // lowercase, dash-separated slug like "user-authentication".
-// Used for spec, task, and KB slugs (human-friendly URL-style identifiers).
+// Currently unused — retained for future content identifier needs.
 func ToDashSlug(s string) string {
 	s = strings.ToLower(strings.TrimSpace(s))
 	s = nonAlphanumericDash.ReplaceAllString(s, "") // strip non-alphanumeric (keep dashes)

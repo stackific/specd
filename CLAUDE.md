@@ -26,11 +26,16 @@ cmd/constants.go     # All magic strings and constants (single source of truth)
 cmd/config.go        # Global (~/.specd/config.json) and project (.specd.json) config
 cmd/database.go      # SQLite initialization, ID counters, project DB helpers
 cmd/search.go        # Hybrid BM25 + trigram search across specs, tasks, KB
-cmd/sync.go          # Cache refresher — reconciles spec markdown files with the DB
-cmd/slug.go          # ToSlug (underscore), ToDashSlug (dash), FromSlug (display)
+cmd/sync.go          # Cache refresher — reconciles spec and task markdown files with the DB
+cmd/slug.go          # ToSlug (underscore — config values only), FromSlug (display)
 cmd/providers.go     # AI provider definitions (Claude, Codex, Gemini)
 cmd/new_spec.go      # specd new-spec command
+cmd/new_task.go      # specd new-task command
 cmd/update_spec.go   # specd update-spec command
+cmd/update_task.go   # specd update-task command (status change, criteria toggle)
+cmd/list_specs.go    # specd list-specs command (paginated)
+cmd/list_tasks.go    # specd list-tasks command (paginated, filterable)
+cmd/serve.go         # specd serve command (HTTP server with HTMX Web UI)
 cmd/schema.sql       # Embedded SQLite schema (dynamic CHECK constraints)
 skills/              # Embedded skills (Agent Skills Standard format)
 scripts/             # Install/uninstall scripts
@@ -104,6 +109,7 @@ When committing via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`), `format.
 - **Never trust training data for external tool conventions, APIs, or directory structures.** Always search the web and read primary sources (official docs, actual repos) first. This is especially critical when the user explicitly asks you to search. Do not guess or rely on what you "know" — verify it.
 - **No CGO.** All builds use `CGO_ENABLED=0`. Never add C dependencies.
 - **Cross-compilation** targets: linux, darwin, windows × amd64, arm64. All built from macOS.
+- **Cross-platform text parsing.** Always normalize `\r\n` → `\n` (via `normalizeLineEndings()`) before splitting or parsing file content. Windows writes CRLF; hardcoded `\n` splits will silently break. When hashing file content (e.g. `content_hash`), hash the **raw** bytes before normalizing so the hash matches what's on disk.
 - **Cobra commands** go in `cmd/`. One file per command. Follow Cobra conventions.
 - **All exported functions** must have a doc comment.
 - **Unused function parameters** must be named `_`.
@@ -155,14 +161,17 @@ When committing via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`), `format.
 ## Cache Sync
 
 - **Markdown files are the ground truth.** The `.specd.cache` database is a derived cache, rebuilt by `SyncCache()` which runs in `PersistentPreRunE` before every non-exempt command.
-- Sync walks `<specd-folder>/specs/*/spec.md`, parses frontmatter, computes SHA-256 of the **full file** (frontmatter + body), and reconciles: insert new, update changed (by hash), delete removed, reconcile `spec_links` from `linked_specs` frontmatter.
-- FTS and trigram indexes are maintained automatically via database triggers — sync only touches the `specs`, `spec_links`, and `spec_claims` tables.
+- Sync walks `<specd-folder>/specs/*/spec.md` and `<specd-folder>/specs/*/TASK-*.md`, parses frontmatter, computes SHA-256 of the **full file** (frontmatter + body), and reconciles: insert new, update changed (by hash), delete removed, reconcile links and criteria.
+- FTS and trigram indexes are maintained automatically via database triggers — sync only touches the base tables (`specs`, `spec_links`, `spec_claims`, `tasks`, `task_links`, `task_dependencies`, `task_criteria`).
 - `update-spec` rewrites the entire spec.md from DB state via `rewriteSpecFile()` after any change, keeping the file as ground truth.
+- **Task sync** walks `<specd-folder>/specs/*/TASK-*.md`, parses frontmatter (including `linked_tasks` and `depends_on` YAML lists), extracts H1 title, extracts checkbox criteria from `## Acceptance Criteria`, and reconciles `tasks`, `task_links`, `task_dependencies`, and `task_criteria` tables. Checked state is preserved when criteria text hasn't changed.
+- `update-task` supports `--status`, `--check`, and `--uncheck` flags. It rewrites the task file via `rewriteTaskFile()` after changes, keeping checkboxes in sync with the DB.
 - **Spec title** is the first `# Heading` in the body, NOT a frontmatter field. `extractH1Title()` parses it. `buildSpecMarkdown()` writes it as `# Title` after the `---` delimiter.
-- **Acceptance criteria** (claims) are parsed from `## Acceptance Criteria` section bullets using must/should/may/might language. Stored in `spec_claims` table with a dedicated `spec_claims_fts` FTS5 index for searching claims independently.
-- Spec frontmatter includes `id`, `slug`, `type`, `summary`, `position`, `linked_specs`, `created_by`, `created_at`, `updated_at`. **No `title` field** — it's in the body.
+- **Acceptance criteria** (claims) are parsed from `## Acceptance Criteria` section bullets using must/should/is/will language. Stored in `spec_claims` table with a dedicated `spec_claims_fts` FTS5 index for searching claims independently.
+- Spec frontmatter includes `id`, `type`, `summary`, `position`, `linked_specs`, `created_by`, `created_at`, `updated_at`. **No `title` field** — it's in the body.
 - Spec body must have exactly one `# Title` (H1). No other H1 headings allowed. Use `##` for top-level sections, `###`–`######` freely within sections. `## Acceptance Criteria` must be H2.
-- **Validation**: `parseSpecMarkdown` validates required fields (`id`, `slug`, `title` from H1, `type`, `summary`). Invalid specs are silently skipped.
+- **Task files** live at `<specd-folder>/specs/spec-<N>/TASK-<N>.md` alongside their parent spec. Frontmatter includes `id`, `spec_id`, `status`, `summary`, `position`, `linked_tasks`, `depends_on`, `created_by`, `created_at`, `updated_at`. Title is in the body H1.
+- **Validation**: `parseSpecMarkdown` validates required fields (`id`, `title` from H1, `type`, `summary`). Invalid specs are silently skipped.
 - `update-spec` supports `--unlink-specs` and `--unlink-kb-chunks` to remove references. Response includes full summaries for linked specs and KB chunks, not just IDs.
 - **Contradiction detection**: `specd search-claims --query "..." --exclude SPEC-X` searches `spec_claims_fts` for matching claims from other specs. Both `/specd-new-spec` and `/specd-update-spec` skills use this in step 3 to find and report conflicting acceptance criteria across specs. The AI evaluates matches — no automated resolution.
 - Exempt commands (`init`, `version`, `skills`, `help`, `logs`) skip the sync.
@@ -171,7 +180,9 @@ When committing via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`), `format.
 ## File Conventions
 
 - **`.specd.json`** — project config marker at the repo root. Committed to git. Contains folder name, spec types, task stages, search settings.
-- **`<specd-folder>/`** (default: `specd/`) — contains spec markdown files. Committed to git.
+- **`<specd-folder>/`** (default: `specd/`) — contains `specs/` and `kb/` subdirectories. Committed to git.
+- **`<specd-folder>/specs/spec-<N>/`** — each spec directory holds `spec.md` and its task files (`TASK-<N>.md`).
+- **`<specd-folder>/kb/KB-<N>.md`** — KB document files.
 - **`.specd.cache`** — SQLite cache database at the repo root. **Gitignored.** Rebuilt from spec/task markdown files. Never committed.
 - **`~/.specd/`** — user-level config and skills. Never committed. Contains `config.json`, `skills/`, `update-check.json`, `specd.log`.
 
@@ -186,14 +197,29 @@ When committing via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`), `format.
 
 ## Slugs
 
-- **Two slug formats** — do not mix them:
-  - `ToSlug()` → underscore-separated (e.g. `pending_verification`). Used for config values: spec types, task stages. These are stored in `.specd.json` and used in SQL CHECK constraints.
-  - `ToDashSlug()` → dash-separated (e.g. `user-authentication`). Used for content identifiers: spec slugs, task slugs, KB slugs. These appear in filenames and URLs.
-- **Never use `ToSlug()` for content identifiers** — always use `ToDashSlug()`.
+- `ToSlug()` → underscore-separated (e.g. `pending_verification`). Used **only** for config values: spec types, task stages. These are stored in `.specd.json` and used in SQL CHECK constraints.
+- `ToDashSlug()` → dash-separated. Currently unused — retained for future needs.
+- No content type (specs, tasks, KB docs) uses slugs. They are identified by their ID only (e.g. `SPEC-1`, `TASK-1`, `KB-1`).
+
+## Pagination
+
+- `list-specs` and `list-tasks` support `--page` (1-based) and `--page-size` (default 20 from `DefaultPageSize`).
+- `list-tasks` also supports `--spec-id` and `--status` filters.
+- Responses include `page`, `page_size`, `total_count`, `total_pages` metadata.
+- Results are ordered by `position`, then `id`.
+
+## Web UI (Serve)
+
+- `specd serve` starts an HTTP server with a barebones HTMX page.
+- Port scanning starts at `DefaultServePort` (8000) and tries up to `MaxPortAttempts` (100) ports.
+- Prints port scanning progress and the final URL to the terminal.
+- Opens the user's default browser via `open`/`xdg-open`/`rundll32` depending on OS.
+- The HTML template is an inline constant (`indexHTML`) — not a separate file.
 
 ## Project Guard
 
 - Most commands require an initialized project (`.specd.json` marker in cwd) and a globally configured username (`~/.specd/config.json`).
+- `specd init` refuses to run in an already-initialized directory (checks for `.specd.json`).
 - Exempt commands that work without initialization: `init`, `version`, `skills`, `help`.
 
 ## Skills Prerequisite

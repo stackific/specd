@@ -63,13 +63,10 @@ func TestNewSpecCreatesFileAndDBRecord(t *testing.T) {
 	}
 	defer func() { _ = db.Close() }()
 
-	var id, slug, specType string
-	err = db.QueryRow("SELECT id, slug, type FROM specs WHERE id = 'SPEC-1'").Scan(&id, &slug, &specType)
+	var id, specType string
+	err = db.QueryRow("SELECT id, type FROM specs WHERE id = 'SPEC-1'").Scan(&id, &specType)
 	if err != nil {
 		t.Fatalf("reading spec from DB: %v", err)
-	}
-	if slug != "auth-flow" {
-		t.Errorf("expected dash-separated slug %q, got %q", "auth-flow", slug)
 	}
 	// Default type should be the first spec type.
 	if specType != "business" {
@@ -134,9 +131,6 @@ func TestNewSpecOutputJSON(t *testing.T) {
 	}
 	if resp.ID != "SPEC-1" {
 		t.Errorf("expected ID SPEC-1, got %s", resp.ID)
-	}
-	if resp.Slug != "test-spec" {
-		t.Errorf("expected slug test-spec, got %s", resp.Slug)
 	}
 	if len(resp.AvailableTypes) == 0 {
 		t.Error("expected available_types to be populated")

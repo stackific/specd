@@ -1,3 +1,7 @@
+// new_spec.go implements `specd new-spec`. Creates a spec markdown file in
+// <specd-folder>/specs/spec-<N>/spec.md, inserts the database record and
+// acceptance criteria claims, then returns JSON with related specs and KB
+// chunks for the AI skill to use when selecting type and links.
 package cmd
 
 import (
@@ -38,7 +42,6 @@ func init() {
 // The AI skill parses this to decide on spec type and links.
 type NewSpecResponse struct {
 	ID             string         `json:"id"`
-	Slug           string         `json:"slug"`
 	Path           string         `json:"path"`
 	DefaultType    string         `json:"default_type"`
 	AvailableTypes []string       `json:"available_types"`
@@ -73,7 +76,6 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 	}
 
 	specID := fmt.Sprintf("%s%d", IDPrefixSpec, num)
-	slug := ToDashSlug(title)
 	now := time.Now().UTC().Format(time.RFC3339)
 	username := ResolveActiveUsername()
 	// Build the relative path: <specd-folder>/specs/spec-<N>/spec.md
@@ -87,7 +89,7 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 
 	// Write the spec markdown file with frontmatter.
 	// No linked_specs yet — those are added in step 2 via update-spec.
-	md := buildSpecMarkdown(specID, slug, title, summary, proj.SpecTypes[0], username, now, nil, body)
+	md := buildSpecMarkdown(specID, title, summary, proj.SpecTypes[0], username, now, nil, body)
 	// Hash the full file content so the sync detects any change.
 	contentHash := fmt.Sprintf("%x", sha256.Sum256([]byte(md)))
 	if err := os.WriteFile(specFile, []byte(md), 0o644); err != nil { //nolint:gosec // spec file is committed to VCS
@@ -96,11 +98,22 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 
 	// Insert into the database. Uses the default spec type (first in the list).
 	_, err = db.Exec(`
-		INSERT INTO specs (id, slug, title, type, summary, body, path, created_by, content_hash, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, specID, slug, title, proj.SpecTypes[0], summary, body, specFile, username, contentHash, now, now)
+		INSERT INTO specs (id, title, type, summary, body, path, created_by, content_hash, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, specID, title, proj.SpecTypes[0], summary, body, specFile, username, contentHash, now, now)
 	if err != nil {
 		return fmt.Errorf("inserting spec: %w", err)
+	}
+
+	// Parse and insert acceptance criteria (claims) from the body.
+	claims := extractClaims(body)
+	for i, text := range claims {
+		if _, err := db.Exec(
+			"INSERT INTO spec_claims (spec_id, position, text) VALUES (?, ?, ?)",
+			specID, i+1, text,
+		); err != nil {
+			return fmt.Errorf("inserting spec claim %d: %w", i+1, err)
+		}
 	}
 
 	relatedSpecs, relatedKB, err := findRelatedContent(db, proj, title+" "+summary, specID)
@@ -110,7 +123,6 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 
 	resp := NewSpecResponse{
 		ID:             specID,
-		Slug:           slug,
 		Path:           specFile,
 		DefaultType:    proj.SpecTypes[0],
 		AvailableTypes: proj.SpecTypes,
@@ -159,11 +171,10 @@ func findRelatedContent(db *sql.DB, proj *ProjectConfig, searchText, excludeID s
 // buildSpecMarkdown generates spec.md with YAML frontmatter and H1 title.
 // The title is NOT in frontmatter — the H1 heading IS the title.
 // linkedSpecs may be nil for new specs that don't have links yet.
-func buildSpecMarkdown(id, slug, title, summary, specType, createdBy, timestamp string, linkedSpecs []string, body string) string {
+func buildSpecMarkdown(id, title, summary, specType, createdBy, timestamp string, linkedSpecs []string, body string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "---\n")
 	fmt.Fprintf(&b, "id: %s\n", id)
-	fmt.Fprintf(&b, "slug: %s\n", slug)
 	fmt.Fprintf(&b, "type: %s\n", specType)
 	fmt.Fprintf(&b, "summary: %s\n", summary)
 	fmt.Fprintf(&b, "position: 0\n")

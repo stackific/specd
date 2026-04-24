@@ -28,10 +28,10 @@ func TestSearchClaimsFTS(t *testing.T) {
 	}
 
 	// Insert two specs.
-	mustExec(t, db, `INSERT INTO specs (id, slug, title, type, summary, body, path, content_hash, created_at, updated_at)
-		VALUES ('SPEC-1', 'auth', 'Authentication', 'business', 'Login flow', 'Body', 'p1', 'h1', '2025-01-01', '2025-01-01')`)
-	mustExec(t, db, `INSERT INTO specs (id, slug, title, type, summary, body, path, content_hash, created_at, updated_at)
-		VALUES ('SPEC-2', 'sessions', 'Sessions', 'business', 'Token mgmt', 'Body', 'p2', 'h2', '2025-01-01', '2025-01-01')`)
+	mustExec(t, db, `INSERT INTO specs (id, title, type, summary, body, path, content_hash, created_at, updated_at)
+		VALUES ('SPEC-1', 'Authentication', 'business', 'Login flow', 'Body', 'p1', 'h1', '2025-01-01', '2025-01-01')`)
+	mustExec(t, db, `INSERT INTO specs (id, title, type, summary, body, path, content_hash, created_at, updated_at)
+		VALUES ('SPEC-2', 'Sessions', 'business', 'Token mgmt', 'Body', 'p2', 'h2', '2025-01-01', '2025-01-01')`)
 
 	// Insert claims for SPEC-1.
 	mustExec(t, db, `INSERT INTO spec_claims (spec_id, position, text) VALUES ('SPEC-1', 1, 'The system must authenticate users via OAuth2')`)
@@ -99,8 +99,8 @@ func TestSearchClaimsNegativeCase(t *testing.T) {
 	}
 
 	// Auth spec with auth claims.
-	mustExec(t, db, `INSERT INTO specs (id, slug, title, type, summary, body, path, content_hash, created_at, updated_at)
-		VALUES ('SPEC-1', 'auth', 'Auth', 'business', 'Login', 'Body', 'p1', 'h1', '2025-01-01', '2025-01-01')`)
+	mustExec(t, db, `INSERT INTO specs (id, title, type, summary, body, path, content_hash, created_at, updated_at)
+		VALUES ('SPEC-1', 'Auth', 'business', 'Login', 'Body', 'p1', 'h1', '2025-01-01', '2025-01-01')`)
 	mustExec(t, db, `INSERT INTO spec_claims (spec_id, position, text) VALUES ('SPEC-1', 1, 'The system must authenticate users via OAuth2')`)
 
 	// Search for invoice-related terms — should NOT match auth claims.

@@ -172,6 +172,126 @@ func TestGetSpecNoLinksReturnsEmptyArray(t *testing.T) {
 	}
 }
 
+// TestGetSpecEmptyArraysNotNull verifies that claims and tasks are
+// empty arrays when a spec has no tasks or claims.
+func TestGetSpecEmptyArraysNotNull(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	resetInitFlags()
+	resetNewSpecFlags()
+	resetGetSpecFlags()
+
+	projectDir := filepath.Join(tmp, "project")
+	if err := os.MkdirAll(projectDir, 0o755); err != nil { //nolint:gosec // test
+		t.Fatal(err)
+	}
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	resetNewSpecFlags()
+	rootCmd.SetArgs([]string{"new-spec", "--title", "No Tasks", "--summary", "Empty", "--body", "Just a body"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	resp := captureGetSpec(t, "SPEC-1")
+	if resp.Claims == nil {
+		t.Error("claims should be empty array, not null")
+	}
+	if len(resp.Claims) != 0 {
+		t.Errorf("expected 0 claims, got %d", len(resp.Claims))
+	}
+	if resp.Tasks == nil {
+		t.Error("tasks should be empty array, not null")
+	}
+	if len(resp.Tasks) != 0 {
+		t.Errorf("expected 0 tasks, got %d", len(resp.Tasks))
+	}
+}
+
+// TestGetSpecWithTasksAndClaims verifies that get-spec returns tasks
+// with criteria and spec claims.
+func TestGetSpecWithTasksAndClaims(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	resetInitFlags()
+	resetNewSpecFlags()
+	resetNewTaskFlags()
+	resetGetSpecFlags()
+
+	projectDir := filepath.Join(tmp, "project")
+	if err := os.MkdirAll(projectDir, 0o755); err != nil { //nolint:gosec // test
+		t.Fatal(err)
+	}
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	specBody := "## Overview\n\nSpec with claims.\n\n## Acceptance Criteria\n\n- The system must authenticate users\n- The system should log failed attempts"
+	resetNewSpecFlags()
+	rootCmd.SetArgs([]string{"new-spec", "--title", "Auth", "--summary", "Auth spec", "--body", specBody})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	taskBody := "## Overview\n\nImplement login.\n\n## Acceptance Criteria\n\n- [ ] The handler must validate credentials\n- [ ] The handler should return a JWT token"
+	resetNewTaskFlags()
+	rootCmd.SetArgs([]string{"new-task", "--spec-id", "SPEC-1", "--title", "Login", "--summary", "Login handler", "--body", taskBody})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	resp := captureGetSpec(t, "SPEC-1")
+
+	// Verify claims from spec.
+	if len(resp.Claims) != 2 {
+		t.Fatalf("expected 2 claims, got %d", len(resp.Claims))
+	}
+	if resp.Claims[0].Text != "The system must authenticate users" {
+		t.Errorf("unexpected claim 1: %q", resp.Claims[0].Text)
+	}
+	if resp.Claims[1].Text != "The system should log failed attempts" {
+		t.Errorf("unexpected claim 2: %q", resp.Claims[1].Text)
+	}
+
+	// Verify tasks.
+	if len(resp.Tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(resp.Tasks))
+	}
+	task := resp.Tasks[0]
+	if task.ID != "TASK-1" {
+		t.Errorf("expected task ID TASK-1, got %s", task.ID)
+	}
+	if task.Title != "Login" {
+		t.Errorf("expected task title 'Login', got %q", task.Title)
+	}
+
+	// Verify task criteria.
+	if len(task.Criteria) != 2 {
+		t.Fatalf("expected 2 task criteria, got %d", len(task.Criteria))
+	}
+	if task.Criteria[0].Text != "The handler must validate credentials" {
+		t.Errorf("unexpected criterion 1: %q", task.Criteria[0].Text)
+	}
+	if task.Criteria[1].Text != "The handler should return a JWT token" {
+		t.Errorf("unexpected criterion 2: %q", task.Criteria[1].Text)
+	}
+}
+
 // TestGetSpecNotFound verifies that get-spec returns an error for
 // a non-existent spec ID.
 func TestGetSpecNotFound(t *testing.T) {

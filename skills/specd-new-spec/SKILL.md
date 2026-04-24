@@ -20,7 +20,7 @@ The `--body` you provide becomes the spec markdown body. It MUST follow this str
 - Do NOT include a title in the body — the `--title` flag becomes the `# Title` heading automatically.
 - Do NOT use `# Heading` (H1) in the body — only the title is H1.
 - Use `##` for top-level sections. `###` through `######` are fine within sections.
-- Include an `## Acceptance Criteria` section (must be H2) with bullet items written as claims using must, should, may, or might language.
+- Include an `## Acceptance Criteria` section (must be H2) with bullet items written as claims using must, should, is, or will language.
 
 ### Example body structure
 
@@ -38,7 +38,7 @@ Users need to authenticate via OAuth2 providers.
 
 - The system must redirect users to the OAuth2 provider's consent screen
 - The system should create new user records on first login
-- Users may choose to stay logged in via a remember-me option
+- The remember-me option will persist sessions across browser restarts
 ```
 
 ## Steps

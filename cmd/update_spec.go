@@ -318,12 +318,12 @@ func printUpdateResponse(specID, specType string, linkedSpecs []LinkedSpecSummar
 // This ensures the file stays the ground truth after DB-side changes
 // (type updates, link additions/removals, etc.).
 func rewriteSpecFile(db *sql.DB, specID string) error {
-	var id, slug, title, specType, summary, body, path, createdBy, createdAt, updatedAt string
+	var id, title, specType, summary, body, path, createdBy, createdAt, updatedAt string
 	var updatedBy sql.NullString
 	err := db.QueryRow(`
-		SELECT id, slug, title, type, summary, body, path, created_by, updated_by, created_at, updated_at
+		SELECT id, title, type, summary, body, path, created_by, updated_by, created_at, updated_at
 		FROM specs WHERE id = ?`, specID).Scan(
-		&id, &slug, &title, &specType, &summary, &body, &path,
+		&id, &title, &specType, &summary, &body, &path,
 		&createdBy, &updatedBy, &createdAt, &updatedAt,
 	)
 	if err != nil {
@@ -346,7 +346,7 @@ func rewriteSpecFile(db *sql.DB, specID string) error {
 	}
 	_ = rows.Close()
 
-	md := buildSpecMarkdown(id, slug, title, summary, specType, createdBy, updatedAt, linkedSpecs, body)
+	md := buildSpecMarkdown(id, title, summary, specType, createdBy, updatedAt, linkedSpecs, body)
 
 	if err := os.WriteFile(path, []byte(md), 0o644); err != nil { //nolint:gosec // spec file is committed to VCS
 		return fmt.Errorf("writing spec file: %w", err)

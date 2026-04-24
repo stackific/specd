@@ -59,6 +59,18 @@ func runInit(c *cobra.Command, args []string) error {
 		return fmt.Errorf("creating project directory: %w", err)
 	}
 
+	// Guard: refuse to re-initialize an already-initialized project.
+	existing, err := LoadProjectConfig(absProject)
+	if err != nil {
+		return fmt.Errorf("checking existing config: %w", err)
+	}
+	if existing != nil {
+		return fmt.Errorf("specd is already initialized in %s\nRemove %s and %s/ to re-initialize",
+			absProject,
+			filepath.Join(absProject, ProjectMarker),
+			filepath.Join(absProject, existing.Folder))
+	}
+
 	folder, username, err := resolveInputs(c)
 	if err != nil {
 		return err

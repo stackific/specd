@@ -30,26 +30,26 @@ func setupSearchDB(t *testing.T) *sql.DB {
 	}
 
 	// Auth-related specs.
-	mustExec(t, db, `INSERT INTO specs (id, slug, title, type, summary, body, path, content_hash, created_at, updated_at)
-		VALUES ('SPEC-1', 'auth', 'User Authentication', 'business', 'OAuth2 login flow', 'Implement OAuth2 authentication with session tokens', 'p1', 'h1', '2025-01-01', '2025-01-01')`)
-	mustExec(t, db, `INSERT INTO specs (id, slug, title, type, summary, body, path, content_hash, created_at, updated_at)
-		VALUES ('SPEC-2', 'sessions', 'Session Management', 'business', 'Authentication session tokens', 'Handle authentication sessions and token refresh', 'p2', 'h2', '2025-01-01', '2025-01-01')`)
+	mustExec(t, db, `INSERT INTO specs (id, title, type, summary, body, path, content_hash, created_at, updated_at)
+		VALUES ('SPEC-1', 'User Authentication', 'business', 'OAuth2 login flow', 'Implement OAuth2 authentication with session tokens', 'p1', 'h1', '2025-01-01', '2025-01-01')`)
+	mustExec(t, db, `INSERT INTO specs (id, title, type, summary, body, path, content_hash, created_at, updated_at)
+		VALUES ('SPEC-2', 'Session Management', 'business', 'Authentication session tokens', 'Handle authentication sessions and token refresh', 'p2', 'h2', '2025-01-01', '2025-01-01')`)
 
 	// Unrelated spec.
-	mustExec(t, db, `INSERT INTO specs (id, slug, title, type, summary, body, path, content_hash, created_at, updated_at)
-		VALUES ('SPEC-3', 'invoice', 'Invoice Generation', 'business', 'PDF invoices from billing', 'Generate PDF invoices with tax calculations', 'p3', 'h3', '2025-01-01', '2025-01-01')`)
+	mustExec(t, db, `INSERT INTO specs (id, title, type, summary, body, path, content_hash, created_at, updated_at)
+		VALUES ('SPEC-3', 'Invoice Generation', 'business', 'PDF invoices from billing', 'Generate PDF invoices with tax calculations', 'p3', 'h3', '2025-01-01', '2025-01-01')`)
 
 	// Task linked to SPEC-1.
-	mustExec(t, db, `INSERT INTO tasks (id, slug, spec_id, title, status, summary, body, path, content_hash, created_at, updated_at)
-		VALUES ('TASK-1', 'implement-oauth', 'SPEC-1', 'Implement OAuth2 Provider', 'backlog', 'Add OAuth2 authentication provider', 'Implement the OAuth2 login flow', 'tp1', 'th1', '2025-01-01', '2025-01-01')`)
+	mustExec(t, db, `INSERT INTO tasks (id, spec_id, title, status, summary, body, path, content_hash, created_at, updated_at)
+		VALUES ('TASK-1', 'SPEC-1', 'Implement OAuth2 Provider', 'backlog', 'Add OAuth2 authentication provider', 'Implement the OAuth2 login flow', 'tp1', 'th1', '2025-01-01', '2025-01-01')`)
 
 	// Unrelated task.
-	mustExec(t, db, `INSERT INTO tasks (id, slug, spec_id, title, status, summary, body, path, content_hash, created_at, updated_at)
-		VALUES ('TASK-2', 'fix-css', 'SPEC-3', 'Fix CSS Layout', 'todo', 'Fix broken grid layout', 'The grid layout breaks on mobile', 'tp2', 'th2', '2025-01-01', '2025-01-01')`)
+	mustExec(t, db, `INSERT INTO tasks (id, spec_id, title, status, summary, body, path, content_hash, created_at, updated_at)
+		VALUES ('TASK-2', 'SPEC-3', 'Fix CSS Layout', 'todo', 'Fix broken grid layout', 'The grid layout breaks on mobile', 'tp2', 'th2', '2025-01-01', '2025-01-01')`)
 
 	// KB doc + chunk about authentication.
-	mustExec(t, db, `INSERT INTO kb_docs (id, slug, title, source_type, path, content_hash, added_at)
-		VALUES ('KB-1', 'oauth-guide', 'OAuth2 Implementation Guide', 'md', 'docs/oauth.md', 'kh1', '2025-01-01')`)
+	mustExec(t, db, `INSERT INTO kb_docs (id, title, source_type, path, content_hash, added_at)
+		VALUES ('KB-1', 'OAuth2 Implementation Guide', 'md', 'docs/oauth.md', 'kh1', '2025-01-01')`)
 	mustExec(t, db, `INSERT INTO kb_chunks (id, doc_id, position, text, char_start, char_end)
 		VALUES (1, 'KB-1', 0, 'OAuth2 authentication requires redirect URIs and token exchange', 0, 100)`)
 
@@ -379,8 +379,8 @@ func TestSearchTrigramOnly(t *testing.T) {
 	defer func() { _ = db.Close() }()
 
 	// Insert a spec with a distinctive substring containing only special chars + digits.
-	mustExec(t, db, `INSERT INTO specs (id, slug, title, type, summary, body, path, content_hash, created_at, updated_at)
-		VALUES ('SPEC-4', 'error-code', 'Error Code Handling', 'functional', 'Handle error code E-4072', 'Handle the specific error code E-4072 from the upstream API', 'p4', 'h4', '2025-01-01', '2025-01-01')`)
+	mustExec(t, db, `INSERT INTO specs (id, title, type, summary, body, path, content_hash, created_at, updated_at)
+		VALUES ('SPEC-4', 'Error Code Handling', 'functional', 'Handle error code E-4072', 'Handle the specific error code E-4072 from the upstream API', 'p4', 'h4', '2025-01-01', '2025-01-01')`)
 
 	// Search for "E-4072" — BM25 tokenizes this into "E" and "4072" which
 	// would match many things. Trigram matches the exact substring "E-4072".
@@ -428,10 +428,10 @@ func TestSearchCustomWeightsAffectRanking(t *testing.T) {
 
 	// Insert two specs with a unique term "zephyrion" that doesn't appear
 	// anywhere else in the test data. One has it in the title, the other in the body.
-	mustExec(t, db, `INSERT INTO specs (id, slug, title, type, summary, body, path, content_hash, created_at, updated_at)
-		VALUES ('SPEC-10', 'title-match', 'Zephyrion Module', 'business', 'A new module', 'Implementation details for the system', 'p10', 'h10', '2025-01-01', '2025-01-01')`)
-	mustExec(t, db, `INSERT INTO specs (id, slug, title, type, summary, body, path, content_hash, created_at, updated_at)
-		VALUES ('SPEC-11', 'body-match', 'Backend Refactor', 'business', 'Refactoring plan', 'This refactor introduces the zephyrion module in the codebase', 'p11', 'h11', '2025-01-01', '2025-01-01')`)
+	mustExec(t, db, `INSERT INTO specs (id, title, type, summary, body, path, content_hash, created_at, updated_at)
+		VALUES ('SPEC-10', 'Zephyrion Module', 'business', 'A new module', 'Implementation details for the system', 'p10', 'h10', '2025-01-01', '2025-01-01')`)
+	mustExec(t, db, `INSERT INTO specs (id, title, type, summary, body, path, content_hash, created_at, updated_at)
+		VALUES ('SPEC-11', 'Backend Refactor', 'business', 'Refactoring plan', 'This refactor introduces the zephyrion module in the codebase', 'p11', 'h11', '2025-01-01', '2025-01-01')`)
 
 	// With high title weight, SPEC-10 (title match) should rank first.
 	highTitle := SearchWeights{Title: 100.0, Summary: 1.0, Body: 1.0}

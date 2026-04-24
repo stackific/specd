@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS meta (
 -- Specs
 CREATE TABLE IF NOT EXISTS specs (
   id                   TEXT PRIMARY KEY,                -- "SPEC-42"
-  slug                 TEXT NOT NULL,
   title                TEXT NOT NULL,
   type                 TEXT NOT NULL DEFAULT '{{DEFAULT_SPEC_TYPE}}' CHECK (type IN ({{SPEC_TYPES_CHECK}})),
   summary              TEXT NOT NULL,
@@ -26,7 +25,6 @@ CREATE TABLE IF NOT EXISTS specs (
 -- Tasks
 CREATE TABLE IF NOT EXISTS tasks (
   id           TEXT PRIMARY KEY,                -- "TASK-134"
-  slug         TEXT NOT NULL,
   spec_id      TEXT NOT NULL REFERENCES specs(id) ON DELETE CASCADE,
   title        TEXT NOT NULL,
   status       TEXT NOT NULL CHECK (status IN ({{TASK_STAGES_CHECK}})),
@@ -83,7 +81,6 @@ CREATE TABLE IF NOT EXISTS task_dependencies (
 -- KB documents
 CREATE TABLE IF NOT EXISTS kb_docs (
   id           TEXT PRIMARY KEY,                -- "KB-17"
-  slug         TEXT NOT NULL,
   title        TEXT NOT NULL,
   summary      TEXT NOT NULL DEFAULT '',        -- one-line summary of the document
   source_type  TEXT NOT NULL CHECK (source_type IN ('md','html','pdf','txt')),

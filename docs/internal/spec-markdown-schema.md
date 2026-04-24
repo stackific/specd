@@ -8,7 +8,7 @@ This document defines the structure of spec markdown files stored in the specd p
 <specd-folder>/specs/spec-<N>/spec.md
 ```
 
-Each spec lives in its own numbered directory. The number matches the spec ID (e.g. `spec-1/spec.md` for `SPEC-1`).
+Each spec lives in its own numbered directory. The number matches the spec ID (e.g. `spec-1/spec.md` for `SPEC-1`). Task files (`TASK-*.md`) also live in this directory alongside their parent spec.
 
 ## File Format
 
@@ -17,7 +17,6 @@ Each `spec.md` file consists of YAML frontmatter followed by a markdown body wit
 ```markdown
 ---
 id: SPEC-1
-slug: user-authentication
 type: functional
 summary: Implement OAuth2 login with Google and GitHub providers
 position: 0
@@ -46,7 +45,7 @@ Users must be able to sign in using their Google or GitHub accounts via OAuth2.
 
 - The system must redirect users to Google's OAuth2 consent screen
 - The system should support GitHub as an alternative provider
-- Users may choose to stay logged in via remember-me
+- The remember-me option will persist sessions across browser restarts
 - The system must create new user records on first login
 ```
 
@@ -57,7 +56,6 @@ The title is **NOT** in the frontmatter. It is the `# Heading` (H1) in the body.
 | Field | Required | Description |
 |---|---|---|
 | `id` | Yes | Unique identifier, e.g. `SPEC-1`. Format: `SPEC-<number>`. |
-| `slug` | Yes | Dash-separated identifier derived from the title, e.g. `user-authentication`. |
 | `type` | Yes | Spec type slug from `.specd.json` `spec_types` (e.g. `business`, `functional`). |
 | `summary` | Yes | One-line description. Used in search results and linking suggestions. |
 | `position` | No | Integer for ordering in the specs list. Default `0`. |
@@ -81,8 +79,8 @@ The `## Acceptance Criteria` section contains a bulleted list of claims. Each cl
 
 - **must** — mandatory requirement, non-negotiable
 - **should** — strongly recommended, expected unless justified
-- **may** — optional, permitted but not required
-- **might** — possible future consideration
+- **is** — states a fact or invariant about the system
+- **will** — declares a future behavior or guarantee
 
 Example:
 
@@ -91,8 +89,8 @@ Example:
 
 - The system must generate a unique reset token with a 15-minute expiry
 - The system should reject expired tokens with a clear error message
-- Users may request a new token if the previous one expired
-- The system might rate-limit reset requests to 3 per hour
+- The reset token is a 256-bit cryptographically random value
+- The system will rate-limit reset requests to 3 per hour
 ```
 
 These claims are extracted by the sync and stored in the `spec_claims` table with a dedicated FTS5 index (`spec_claims_fts`) for BM25 search. This allows searching across all acceptance criteria independently of the spec body.
@@ -101,7 +99,7 @@ These claims are extracted by the sync and stored in the `spec_claims` table wit
 
 ## Content Hash
 
-The cache sync computes a SHA-256 hash of the **entire file** (frontmatter + body). This hash is stored in the database's `content_hash` column. Any edit triggers a sync update.
+The cache sync computes a SHA-256 hash of the **entire file** (frontmatter + body). This hash is stored in the database's `content_hash` column. Any edit triggers a sync update. The hash is computed from the **raw** file bytes (before CRLF normalization) so it matches what's actually on disk.
 
 ## How the Cache Sync Works
 
@@ -116,11 +114,30 @@ Before every non-exempt command, specd runs the cache sync:
    - **In DB but missing on disk** → delete (ON DELETE CASCADE handles links and claims)
 5. FTS indexes are updated automatically via triggers
 
+## Directory Layout
+
+```
+<specd-folder>/
+├── specs/
+│   ├── spec-1/
+│   │   ├── spec.md          # Spec markdown (ground truth)
+│   │   ├── TASK-1.md         # Task for this spec
+│   │   └── TASK-2.md         # Another task for this spec
+│   └── spec-2/
+│       ├── spec.md
+│       └── TASK-3.md
+└── kb/
+    ├── KB-1.md               # KB document
+    └── KB-2.md
+```
+
 ## What Gets Committed to Git
 
 | File | Git | Description |
 |---|---|---|
 | `.specd.json` | Committed | Project config |
 | `<specd-folder>/specs/*/spec.md` | Committed | Spec markdown files (ground truth) |
+| `<specd-folder>/specs/*/TASK-*.md` | Committed | Task markdown files |
+| `<specd-folder>/kb/KB-*.md` | Committed | KB documents |
 | `.specd.cache` | **Gitignored** | SQLite cache database (derived) |
 | `~/.specd/` | N/A | User-level config |
