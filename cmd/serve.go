@@ -1,10 +1,14 @@
-// serve.go implements `specd serve`. Starts an HTTP server with a barebones
-// HTMX Web UI. Scans for available ports starting from DefaultServePort (8000),
-// prints progress, and opens the browser on success.
+// serve.go implements `specd serve`. Starts an HTTP server serving the
+// embedded Svelte SPA and REST API routes. Scans for available ports
+// starting from DefaultServePort (8000), prints progress, and opens the
+// browser on success.
 package cmd
 
 import (
+	"database/sql"
+	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
@@ -25,6 +29,7 @@ var serveCmd = &cobra.Command{
 
 func init() {
 	serveCmd.Flags().Int("port", DefaultServePort, "starting port number")
+	serveCmd.Flags().Bool("no-open", false, "do not open the browser on start")
 	rootCmd.AddCommand(serveCmd)
 }
 
@@ -42,14 +47,17 @@ func runServe(c *cobra.Command, _ []string) error {
 
 	// Set up routes.
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", handleIndex)
+	mux.HandleFunc("GET /api/meta/default-route", handleGetDefaultRoute)
+	mux.Handle("/", spaHandler(frontendFS))
 
 	slog.Info("serve", "port", port)
-	fmt.Printf("specd Web UI running at %s\n", url)
 
-	// Try to open the browser.
-	if err := openBrowser(url); err != nil {
-		slog.Debug("could not open browser", "error", err)
+	noOpen, _ := c.Flags().GetBool("no-open")
+	if !noOpen {
+		fmt.Printf("specd Web UI running at %s\n", url)
+		if err := openBrowser(url); err != nil {
+			slog.Debug("could not open browser", "error", err)
+		}
 	}
 
 	// Start the server (blocks until interrupted).
@@ -58,6 +66,80 @@ func runServe(c *cobra.Command, _ []string) error {
 	}
 
 	return nil
+}
+
+// spaHandler returns an http.Handler that serves the SPA from the given
+// filesystem. The root path "/" redirects to the default route stored in the
+// database. Requests for existing files are served directly. All other
+// paths fall back to index.html for client-side routing.
+func spaHandler(assets fs.FS) http.Handler {
+	fileServer := http.FileServer(http.FS(assets))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Root path: redirect to the configured default route.
+		if r.URL.Path == "/" {
+			route := readDefaultRoute()
+			http.Redirect(w, r, route, http.StatusTemporaryRedirect)
+			return
+		}
+
+		// Try to serve the requested file from the embedded FS.
+		if f, err := assets.Open(r.URL.Path[1:]); err == nil {
+			_ = f.Close()
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+
+		// SPA fallback: serve index.html directly for client-side routing.
+		serveIndexHTML(w, assets)
+	})
+}
+
+// serveIndexHTML reads index.html from the embedded FS and writes it directly.
+// This avoids http.FileServer's redirect from /index.html → /.
+func serveIndexHTML(w http.ResponseWriter, assets fs.FS) {
+	data, err := fs.ReadFile(assets, "index.html")
+	if err != nil {
+		http.Error(w, "index.html not found", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = w.Write(data)
+}
+
+// readDefaultRoute queries the database for the configured default route.
+// Returns DefaultRoute on any error (DB not initialized, missing key, etc.).
+func readDefaultRoute() string {
+	db, _, err := OpenProjectDB()
+	if err != nil {
+		return DefaultRoute
+	}
+	defer func() { _ = db.Close() }()
+
+	var route string
+	err = db.QueryRow("SELECT value FROM meta WHERE key = ?", MetaDefaultRoute).Scan(&route)
+	if err != nil {
+		return DefaultRoute
+	}
+	return route
+}
+
+// handleGetDefaultRoute returns the configured default route as JSON.
+func handleGetDefaultRoute(w http.ResponseWriter, _ *http.Request) {
+	route := readDefaultRoute()
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{"default_route": route})
+}
+
+// ReadMeta reads a single value from the meta table by key.
+// Returns sql.ErrNoRows if the key does not exist.
+func ReadMeta(db *sql.DB, key string) (string, error) {
+	var value string
+	err := db.QueryRow("SELECT value FROM meta WHERE key = ?", key).Scan(&value)
+	if err != nil {
+		return "", fmt.Errorf("reading meta %s: %w", key, err)
+	}
+	return value, nil
 }
 
 // findAvailablePort tries ports starting from startPort, returning the first
@@ -89,31 +171,3 @@ func openBrowser(rawURL string) error {
 		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
 	}
 }
-
-// handleIndex serves the main Web UI page.
-func handleIndex(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = fmt.Fprint(w, indexHTML)
-}
-
-// indexHTML is the barebones HTMX page served at /.
-const indexHTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>specd</title>
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; max-width: 960px; margin: 0 auto; padding: 2rem; color: #1a1a1a; background: #fafafa; }
-    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
-    p { color: #666; }
-  </style>
-</head>
-<body>
-  <h1>specd</h1>
-  <p>Web UI — coming soon.</p>
-</body>
-</html>
-`

@@ -62,6 +62,7 @@ func InitDB(projectRoot string, specTypes, taskStages []string) error {
 		{MetaNextSpecID, "1"},
 		{MetaNextTaskID, "1"},
 		{MetaNextKBID, "1"},
+		{MetaDefaultRoute, DefaultRoute},
 	} {
 		if _, err := db.Exec(
 			`INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)`,

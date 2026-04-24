@@ -1,0 +1,31 @@
+{
+  "hash": "5cd50cc4",
+  "configHash": "561e82e2",
+  "lockfileHash": "277a7eab",
+  "browserHash": "e862108f",
+  "optimized": {
+    "beercss": {
+      "src": "../../node_modules/.pnpm/beercss@4.0.20/node_modules/beercss/index.js",
+      "file": "beercss.js",
+      "fileHash": "57da39f7",
+      "needsInterop": false
+    },
+    "material-dynamic-colors": {
+      "src": "../../node_modules/.pnpm/material-dynamic-colors@1.1.4/node_modules/material-dynamic-colors/index.js",
+      "file": "material-dynamic-colors.js",
+      "fileHash": "ac1f523b",
+      "needsInterop": false
+    },
+    "svelte": {
+      "src": "../../node_modules/.pnpm/svelte@5.55.5/node_modules/svelte/src/index-client.js",
+      "file": "svelte.js",
+      "fileHash": "9960579e",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-RGIOIEUU": {
+      "file": "chunk-RGIOIEUU.js"
+    }
+  }
+}

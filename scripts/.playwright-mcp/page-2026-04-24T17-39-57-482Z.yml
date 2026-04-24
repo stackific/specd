@@ -1,0 +1,58 @@
+- generic [ref=e2]:
+  - navigation "Main navigation" [ref=e3]:
+    - button "Toggle sidebar" [ref=e5] [cursor=pointer]:
+      - generic: menu
+    - link "Tutorial" [ref=e6] [cursor=pointer]:
+      - /url: /tutorial
+      - generic [ref=e7]: school
+      - generic [ref=e8]: Tutorial
+    - button "Toggle dark mode" [ref=e9] [cursor=pointer]:
+      - generic: dark_mode
+  - main [ref=e10]:
+    - generic [ref=e11]:
+      - heading "Welcome to specd" [level=3] [ref=e12]
+      - paragraph [ref=e14]: Select a page from the navigation.
+  - contentinfo "Site footer" [ref=e15]:
+    - heading "Site footer" [level=2] [ref=e16]
+    - separator [ref=e17]
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - link "specd home" [ref=e20] [cursor=pointer]:
+          - /url: /
+        - paragraph [ref=e21]:
+          - text: Stackific Inc. is a software engineering practice focused on making AI genuinely useful. Stackific builds own products, works with startups and enterprises for shaping the AI architectures and implementation and AI engineering efficiency. Stackific also teaches real insight from work through
+          - link "Stackdemy" [ref=e22] [cursor=pointer]:
+            - /url: https://stackdemy.com
+          - text: ", their technical education platform."
+      - navigation "Footer" [ref=e23]:
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - heading "Social" [level=3] [ref=e26]
+            - list [ref=e27]:
+              - listitem [ref=e28]:
+                - link "GitHub" [ref=e29] [cursor=pointer]:
+                  - /url: https://github.com/stackific/specd
+              - listitem [ref=e30]:
+                - link "Facebook" [ref=e31] [cursor=pointer]:
+                  - /url: https://facebook.com/stackific
+              - listitem [ref=e32]:
+                - link "Instagram" [ref=e33] [cursor=pointer]:
+                  - /url: https://instagram.com/stackific
+              - listitem [ref=e34]:
+                - link "TikTok" [ref=e35] [cursor=pointer]:
+                  - /url: https://tiktok.com/@stackific
+          - generic [ref=e36]:
+            - heading "Products" [level=3] [ref=e37]
+            - list [ref=e38]:
+              - listitem [ref=e39]:
+                - link "Stackdemy" [ref=e40] [cursor=pointer]:
+                  - /url: https://stackdemy.com
+          - generic [ref=e41]:
+            - heading "Legal" [level=3] [ref=e42]
+            - list [ref=e43]:
+              - listitem [ref=e44]:
+                - link "Privacy Policy" [ref=e45] [cursor=pointer]:
+                  - /url: https://stackific.com/privacy
+              - listitem [ref=e46]:
+                - link "Terms of Service" [ref=e47] [cursor=pointer]:
+                  - /url: https://stackific.com/terms

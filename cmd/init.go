@@ -217,6 +217,7 @@ func printPostInitMessage() {
 	// Git instructions.
 	fmt.Printf("Add %s to your .gitignore — it is a local cache and must not be committed.\n", highlight.Render(CacheDBFile))
 	fmt.Printf("Commit and push %s and the %s/ folder — they are your project config and specs.\n", highlight.Render(ProjectMarker), highlight.Render(DefaultFolder))
+	fmt.Printf("\nIf you are the sole contributor, consider committing %s instead of gitignoring it\nto avoid rebuilding the cache on every fresh checkout.\n", highlight.Render(CacheDBFile))
 
 	// Warning.
 	fmt.Println()

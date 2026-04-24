@@ -1,4 +1,9 @@
 bin/
 tmp/
+.task/
 *.exe
 .DS_Store
+node_modules/
+ui/dist/
+!ui/dist/.gitkeep
+ui-poc

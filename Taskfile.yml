@@ -14,20 +14,93 @@ tasks:
       - task --list-all
 
   build:
-    desc: Build the binary
+    desc: Build the binary (frontend + Go)
+    deps: [ui:build]
     cmds:
       - go build -o bin/{{.BINARY}} .
       - echo "Built bin/{{.BINARY}}"
 
   run:
     desc: Build and run
+    deps: [ui:build]
     cmds:
       - go run .
 
   dev:
-    desc: Live reload during development
+    desc: Live reload during development (Go only)
     cmds:
       - air
+
+  # --- Frontend ---
+
+  ui:install:
+    desc: Install frontend dependencies
+    dir: ui
+    cmds:
+      - pnpm install
+    sources:
+      - package.json
+      - pnpm-lock.yaml
+    generates:
+      - node_modules/.pnpm/lock.yaml
+
+  ui:build:
+    desc: Build frontend assets to ui/dist/
+    dir: ui
+    deps: [ui:install]
+    cmds:
+      - pnpm run build
+    sources:
+      - src/**/*
+      - index.html
+      - vite.config.js
+      - svelte.config.js
+      - package.json
+    generates:
+      - dist/index.html
+
+  ui:dev:
+    desc: Start Vite dev server with HMR
+    dir: ui
+    deps: [ui:install]
+    cmds:
+      - pnpm run dev
+
+  qa:
+    desc: Init tmp project, Vite HMR + Go live reload — open localhost:5173
+    deps: [ui:install]
+    cmds:
+      - |
+        # Build Go once so specd init can run.
+        CGO_ENABLED=0 go build -o tmp/specd .
+
+        # Always re-create QA project so it picks up current constants/schema.
+        rm -rf tmp/qa
+        mkdir -p tmp/qa
+        (cd tmp/qa && ../../tmp/specd init --folder specd --username qa --skip-skills)
+
+        echo ""
+        echo "  Open http://localhost:5173 (Vite HMR)"
+        echo "  API  http://localhost:8000 (Go)"
+        echo ""
+
+        # Vite serves UI with HMR, Air watches Go and restarts serve.
+        trap 'kill 0' EXIT
+        (cd ui && pnpm dev) &
+        air -c .air-qa.toml &
+        wait
+
+  ui:lint:
+    desc: Run Biome linter on frontend
+    dir: ui
+    cmds:
+      - pnpm run lint
+
+  ui:lint:fix:
+    desc: Run Biome linter with auto-fix
+    dir: ui
+    cmds:
+      - pnpm run lint:fix
 
   test:
     desc: Run tests with pass/fail counts
@@ -106,10 +179,11 @@ tasks:
   # --- Quality gate (runs everything) ---
 
   check:
-    desc: Run all checks (fmt, lint, test, security)
+    desc: Run all checks (fmt, lint, test, security, frontend)
     cmds:
       - task: fmt:check
       - task: lint
+      - task: ui:lint
       - task: test
       - task: sec
 
@@ -130,7 +204,7 @@ tasks:
   clean:
     desc: Remove build artifacts
     cmds:
-      - rm -rf bin/ tmp/
+      - rm -rf bin/ tmp/ ui/dist/
 
   # --- Cross-compilation ---
 

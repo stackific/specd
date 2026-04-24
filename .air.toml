@@ -5,10 +5,10 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-  bin = "./tmp/specd"
   cmd = "CGO_ENABLED=0 go build -o ./tmp/specd ."
+  full_bin = "./tmp/specd serve"
   delay = 1000
-  exclude_dir = ["bin", "tmp", "node_modules", "frontend"]
+  exclude_dir = ["bin", "tmp", "node_modules", "ui"]
   exclude_regex = ["_test\\.go$"]
   include_ext = ["go"]
   kill_delay = "0s"

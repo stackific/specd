@@ -11,6 +11,9 @@ pre-commit:
       run: golangci-lint run --fix ./...
     gitleaks:
       run: gitleaks protect --staged --no-banner
+    biome:
+      glob: "ui/src/**/*.{js,svelte,css,json}"
+      run: cd ui && npx @biomejs/biome check .
 
 commit-msg:
   commands:

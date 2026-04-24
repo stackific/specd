@@ -73,10 +73,17 @@ const (
 	KindKB   = "kb"
 	KindAll  = "all"
 
-	// Meta table keys for ID counters.
-	MetaNextSpecID = "next_spec_id"
-	MetaNextTaskID = "next_task_id"
-	MetaNextKBID   = "next_kb_id"
+	// Meta table keys for ID counters and UI settings.
+	MetaNextSpecID   = "next_spec_id"
+	MetaNextTaskID   = "next_task_id"
+	MetaNextKBID     = "next_kb_id"
+	MetaDefaultRoute = "default_route"
+
+	// Default route for the Web UI root redirect.
+	DefaultRoute = "/docs/tutorial"
+
+	// API prefix for REST endpoints.
+	APIPrefix = "/api/"
 
 	// ID prefixes for each content type.
 	IDPrefixSpec = "SPEC-"

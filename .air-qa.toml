@@ -1,0 +1,15 @@
+# Air config for QA mode (task qa)
+# Watches Go files only — Vite handles UI via HMR on port 5173
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "CGO_ENABLED=0 go build -o tmp/specd ."
+  full_bin = "cd tmp/qa && ../../tmp/specd serve --no-open"
+  include_ext = ["go", "sql"]
+  exclude_dir = ["bin", "tmp", "node_modules", "ui", "ui-poc"]
+  delay = 500
+
+[misc]
+  clean_on_exit = true
