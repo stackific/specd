@@ -21,6 +21,7 @@ package cmd
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 	"unicode"
@@ -57,31 +58,54 @@ const trigramMinLen = 3
 // kind, trigram results are appended as a supplement.
 const bm25FallbackThreshold = 3
 
-// bm25Queries maps each searchable kind to its BM25 SQL. The query must
-// return (id, title, summary, score) and accept (match_query, exclude_id, limit).
-var bm25Queries = map[string]string{
-	"spec": `SELECT s.id, s.title, s.summary, bm25(specs_fts) AS score
-		FROM specs_fts
-		JOIN specs s ON s.rowid = specs_fts.rowid
-		WHERE specs_fts MATCH ?
-		AND s.id != ?
-		ORDER BY score
-		LIMIT ?`,
-	"task": `SELECT t.id, t.title, t.summary, bm25(tasks_fts) AS score
-		FROM tasks_fts
-		JOIN tasks t ON t.rowid = tasks_fts.rowid
-		WHERE tasks_fts MATCH ?
-		AND t.id != ?
-		ORDER BY score
-		LIMIT ?`,
-	"kb": `SELECT d.id, d.title, substr(k.text, 1, 200), bm25(kb_chunks_fts) AS score
-		FROM kb_chunks_fts
-		JOIN kb_chunks k ON k.id = kb_chunks_fts.rowid
-		JOIN kb_docs d ON d.id = k.doc_id
-		WHERE kb_chunks_fts MATCH ?
-		AND d.id != ?
-		ORDER BY score
-		LIMIT ?`,
+// buildBM25Queries returns per-kind BM25 SQL with the given weights baked in.
+// Each query returns (id, title, summary, score) and accepts (match_query, exclude_id, limit).
+//
+// FTS column order:
+//   - specs_fts / tasks_fts: title, summary, body
+//   - kb_chunks_fts: summary, text
+func buildBM25Queries(w SearchWeights) map[string]string {
+	// Specs and tasks have 3 columns: title, summary, body.
+	tsb := fmt.Sprintf("%.1f, %.1f, %.1f", w.Title, w.Summary, w.Body)
+	// KB chunks have 2 columns: summary, text (no title in FTS — title comes from docs JOIN).
+	st := fmt.Sprintf("%.1f, %.1f", w.Summary, w.Body)
+
+	return map[string]string{
+		KindSpec: fmt.Sprintf(`SELECT s.id, s.title, s.summary, bm25(specs_fts, %s) AS score
+			FROM specs_fts
+			JOIN specs s ON s.rowid = specs_fts.rowid
+			WHERE specs_fts MATCH ?
+			AND s.id != ?
+			ORDER BY score
+			LIMIT ?`, tsb),
+		KindTask: fmt.Sprintf(`SELECT t.id, t.title, t.summary, bm25(tasks_fts, %s) AS score
+			FROM tasks_fts
+			JOIN tasks t ON t.rowid = tasks_fts.rowid
+			WHERE tasks_fts MATCH ?
+			AND t.id != ?
+			ORDER BY score
+			LIMIT ?`, tsb),
+		KindKB: fmt.Sprintf(`SELECT d.id, d.title,
+			CASE WHEN k.summary != '' THEN k.summary ELSE substr(k.text, 1, %d) END,
+			bm25(kb_chunks_fts, %s) AS score
+			FROM kb_chunks_fts
+			JOIN kb_chunks k ON k.id = kb_chunks_fts.rowid
+			JOIN kb_docs d ON d.id = k.doc_id
+			WHERE kb_chunks_fts MATCH ?
+			AND d.id != ?
+			ORDER BY score
+			LIMIT ?`, ChunkPreviewLength, st),
+	}
+}
+
+// defaultSearchWeights returns the fallback weights from constants,
+// used when no project config is available (e.g. in tests).
+func defaultSearchWeights() SearchWeights {
+	return SearchWeights{
+		Title:   BM25WeightTitle,
+		Summary: BM25WeightSummary,
+		Body:    BM25WeightBody,
+	}
 }
 
 // Search performs hybrid BM25 + trigram search across the selected kinds.
@@ -92,13 +116,16 @@ var bm25Queries = map[string]string{
 //   - kind: "spec", "task", "kb", or "all" to search all three
 //   - limit: max results per kind (falls back to TopSearchResults if <= 0)
 //   - excludeID: ID to exclude from results (e.g. the spec just created)
-func Search(db *sql.DB, query, kind string, limit int, excludeID string) (*SearchResults, error) {
+func Search(db *sql.DB, query, kind string, limit int, excludeID string, weights SearchWeights) (*SearchResults, error) {
 	if limit <= 0 {
 		limit = TopSearchResults
 	}
 	if kind == "" {
-		kind = "all"
+		kind = KindAll
 	}
+
+	// Build BM25 SQL with the project-configured weights.
+	queries := buildBM25Queries(weights)
 
 	// Prepare both query forms from the raw input.
 	bm25Query := sanitizeBM25(query)
@@ -120,25 +147,27 @@ func Search(db *sql.DB, query, kind string, limit int, excludeID string) (*Searc
 		KB:    []SearchResult{},
 	}
 
+	slog.Debug("search", "kind", kind, "limit", limit, "bm25_query", bm25Query, "trigram_query", trigramQuery)
+
 	// Search each requested kind using the shared searchByKind function.
-	if kind == "all" || kind == "spec" {
-		specs, err := searchByKind(db, "spec", bm25Query, trigramQuery, hasSpecial, limit, excludeID)
+	if kind == KindAll || kind == KindSpec {
+		specs, err := searchByKind(db, KindSpec, bm25Query, trigramQuery, hasSpecial, limit, excludeID, queries)
 		if err != nil {
 			return nil, fmt.Errorf("search specs: %w", err)
 		}
 		results.Specs = specs
 	}
 
-	if kind == "all" || kind == "task" {
-		tasks, err := searchByKind(db, "task", bm25Query, trigramQuery, hasSpecial, limit, excludeID)
+	if kind == KindAll || kind == KindTask {
+		tasks, err := searchByKind(db, KindTask, bm25Query, trigramQuery, hasSpecial, limit, excludeID, queries)
 		if err != nil {
 			return nil, fmt.Errorf("search tasks: %w", err)
 		}
 		results.Tasks = tasks
 	}
 
-	if kind == "all" || kind == "kb" {
-		kb, err := searchByKind(db, "kb", bm25Query, trigramQuery, hasSpecial, limit, excludeID)
+	if kind == KindAll || kind == KindKB {
+		kb, err := searchByKind(db, KindKB, bm25Query, trigramQuery, hasSpecial, limit, excludeID, queries)
 		if err != nil {
 			return nil, fmt.Errorf("search kb: %w", err)
 		}
@@ -152,13 +181,13 @@ func Search(db *sql.DB, query, kind string, limit int, excludeID string) (*Searc
 // trigram if fewer than bm25FallbackThreshold results were found or the
 // query has special characters. This is the single implementation for all
 // three kinds — the per-kind SQL is looked up from bm25Queries.
-func searchByKind(db *sql.DB, kind, bm25Query, trigramQuery string, forceTrigramToo bool, limit int, excludeID string) ([]SearchResult, error) {
+func searchByKind(db *sql.DB, kind, bm25Query, trigramQuery string, forceTrigramToo bool, limit int, excludeID string, queries map[string]string) ([]SearchResult, error) {
 	var results []SearchResult
 	seen := map[string]bool{}
 
 	// BM25 primary search.
 	if bm25Query != "" {
-		bm25Results, err := bm25Search(db, kind, bm25Query, limit, excludeID)
+		bm25Results, err := bm25Search(db, kind, bm25Query, limit, excludeID, queries)
 		if err != nil {
 			return nil, fmt.Errorf("bm25 %s: %w", kind, err)
 		}
@@ -188,8 +217,8 @@ func searchByKind(db *sql.DB, kind, bm25Query, trigramQuery string, forceTrigram
 // bm25Search runs the BM25 FTS5 query for a given kind. The SQL is looked
 // up from bm25Queries. All three kinds return (id, title, summary, score).
 // Errors are returned, not swallowed.
-func bm25Search(db *sql.DB, kind, query string, limit int, excludeID string) ([]SearchResult, error) {
-	querySQL, ok := bm25Queries[kind]
+func bm25Search(db *sql.DB, kind, query string, limit int, excludeID string, queries map[string]string) ([]SearchResult, error) {
+	querySQL, ok := queries[kind]
 	if !ok {
 		return nil, fmt.Errorf("unknown search kind: %s", kind)
 	}
@@ -344,16 +373,16 @@ func queryHasSpecialChars(query string) bool {
 // SearchResult by querying the appropriate base table.
 func fetchTrigramMeta(db *sql.DB, kind, id, text string, r *SearchResult) error {
 	switch kind {
-	case "spec":
+	case KindSpec:
 		return db.QueryRow("SELECT title, summary FROM specs WHERE id = ?", id).Scan(&r.Title, &r.Summary)
-	case "task":
+	case KindTask:
 		return db.QueryRow("SELECT title, summary FROM tasks WHERE id = ?", id).Scan(&r.Title, &r.Summary)
-	case "kb":
+	case KindKB:
 		if err := db.QueryRow("SELECT title FROM kb_docs WHERE id = ?", id).Scan(&r.Title); err != nil {
 			return err
 		}
-		if len(text) > 200 {
-			r.Summary = text[:200] + "..."
+		if len(text) > ChunkPreviewLength {
+			r.Summary = text[:ChunkPreviewLength] + "..."
 		} else {
 			r.Summary = text
 		}

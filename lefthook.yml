@@ -11,6 +11,9 @@ pre-commit:
       run: golangci-lint run --fix ./...
     gitleaks:
       run: gitleaks protect --staged --no-banner
+    stylelint:
+      glob: "static/css/src/**/*.css"
+      run: cd static && npx stylelint 'css/src/**/*.css'
 
 commit-msg:
   commands:

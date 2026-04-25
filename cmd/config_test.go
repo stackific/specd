@@ -60,7 +60,7 @@ func TestProjectConfigRoundTrip(t *testing.T) {
 	}
 
 	// Write a project marker.
-	if err := SaveProjectConfig(tmp, &ProjectConfig{Folder: "myspecd"}); err != nil {
+	if err := SaveProjectConfig(tmp, &ProjectConfig{Dir: "myspecd"}); err != nil {
 		t.Fatalf("SaveProjectConfig: %v", err)
 	}
 
@@ -78,7 +78,7 @@ func TestProjectConfigRoundTrip(t *testing.T) {
 	if proj == nil {
 		t.Fatal("expected non-nil project config after save")
 	}
-	if proj.Folder != "myspecd" {
-		t.Fatalf("expected folder %q, got %q", "myspecd", proj.Folder)
+	if proj.Dir != "myspecd" {
+		t.Fatalf("expected dir %q, got %q", "myspecd", proj.Dir)
 	}
 }

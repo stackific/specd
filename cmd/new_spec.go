@@ -1,11 +1,18 @@
+// new_spec.go implements `specd new-spec`. Creates a spec markdown file in
+// <specd-folder>/specs/spec-<N>/spec.md, inserts the database record and
+// acceptance criteria claims, then returns JSON with related specs and KB
+// chunks for the AI skill to use when selecting type and links.
 package cmd
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -35,7 +42,6 @@ func init() {
 // The AI skill parses this to decide on spec type and links.
 type NewSpecResponse struct {
 	ID             string         `json:"id"`
-	Slug           string         `json:"slug"`
 	Path           string         `json:"path"`
 	DefaultType    string         `json:"default_type"`
 	AvailableTypes []string       `json:"available_types"`
@@ -47,6 +53,8 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 	title, _ := c.Flags().GetString("title")
 	summary, _ := c.Flags().GetString("summary")
 	body, _ := c.Flags().GetString("body")
+
+	slog.Info("new-spec", "title", title)
 
 	// Open the project database.
 	db, specdFolder, err := OpenProjectDB()
@@ -62,17 +70,14 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 	}
 
 	// Get the next spec number atomically.
-	num, err := NextID(db, "next_spec_id")
+	num, err := NextID(db, MetaNextSpecID)
 	if err != nil {
 		return err
 	}
 
-	specID := fmt.Sprintf("SPEC-%d", num)
-	slug := ToDashSlug(title)
+	specID := fmt.Sprintf("%s%d", IDPrefixSpec, num)
 	now := time.Now().UTC().Format(time.RFC3339)
 	username := ResolveActiveUsername()
-	contentHash := fmt.Sprintf("%x", sha256.Sum256([]byte(body)))
-
 	// Build the relative path: <specd-folder>/specs/spec-<N>/spec.md
 	specDir := filepath.Join(specdFolder, SpecsSubdir, fmt.Sprintf("spec-%d", num))
 	specFile := filepath.Join(specDir, "spec.md")
@@ -83,41 +88,41 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 	}
 
 	// Write the spec markdown file with frontmatter.
-	md := buildSpecMarkdown(specID, slug, title, summary, proj.SpecTypes[0], username, now, body)
+	// No linked_specs yet — those are added in step 2 via update-spec.
+	md := buildSpecMarkdown(specID, title, summary, proj.SpecTypes[0], username, now, nil, body)
+	// Hash the full file content so the sync detects any change.
+	contentHash := fmt.Sprintf("%x", sha256.Sum256([]byte(md)))
 	if err := os.WriteFile(specFile, []byte(md), 0o644); err != nil { //nolint:gosec // spec file is committed to VCS
 		return fmt.Errorf("writing spec file: %w", err)
 	}
 
 	// Insert into the database. Uses the default spec type (first in the list).
 	_, err = db.Exec(`
-		INSERT INTO specs (id, slug, title, type, summary, body, path, created_by, content_hash, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, specID, slug, title, proj.SpecTypes[0], summary, body, specFile, username, contentHash, now, now)
+		INSERT INTO specs (id, title, type, summary, body, path, created_by, content_hash, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, specID, title, proj.SpecTypes[0], summary, body, specFile, username, contentHash, now, now)
 	if err != nil {
 		return fmt.Errorf("inserting spec: %w", err)
 	}
 
-	// Hybrid BM25 + trigram search for related content.
-	searchText := title + " " + summary
-	limit := proj.TopSearchResults
-	if limit <= 0 {
-		limit = TopSearchResults
+	// Parse and insert acceptance criteria (claims) from the body.
+	claims := extractClaims(body)
+	for i, text := range claims {
+		if _, err := db.Exec(
+			"INSERT INTO spec_claims (spec_id, position, text) VALUES (?, ?, ?)",
+			specID, i+1, text,
+		); err != nil {
+			return fmt.Errorf("inserting spec claim %d: %w", i+1, err)
+		}
 	}
-	searchResults, _ := Search(db, searchText, "all", limit, specID)
 
-	// Build response for the AI skill. Ensure empty arrays, never null.
-	relatedSpecs := searchResults.Specs
-	if relatedSpecs == nil {
-		relatedSpecs = []SearchResult{}
-	}
-	relatedKB := searchResults.KB
-	if relatedKB == nil {
-		relatedKB = []SearchResult{}
+	relatedSpecs, relatedKB, err := findRelatedContent(db, proj, title+" "+summary, specID)
+	if err != nil {
+		return err
 	}
 
 	resp := NewSpecResponse{
 		ID:             specID,
-		Slug:           slug,
 		Path:           specFile,
 		DefaultType:    proj.SpecTypes[0],
 		AvailableTypes: proj.SpecTypes,
@@ -134,19 +139,54 @@ func runNewSpec(c *cobra.Command, _ []string) error {
 	return nil
 }
 
-// buildSpecMarkdown generates the spec.md content with YAML frontmatter.
-func buildSpecMarkdown(id, slug, title, summary, specType, createdBy, timestamp, body string) string {
-	return fmt.Sprintf(`---
-id: %s
-slug: %s
-title: %s
-type: %s
-summary: %s
-created_by: %s
-created_at: %s
-updated_at: %s
----
+// findRelatedContent searches for specs and KB chunks related to the given
+// text, using project-configured limits and weights with defaults as fallback.
+func findRelatedContent(db *sql.DB, proj *ProjectConfig, searchText, excludeID string) (specs, kb []SearchResult, err error) {
+	limit := proj.TopSearchResults
+	if limit <= 0 {
+		limit = TopSearchResults
+	}
+	weights := proj.SearchWeights
+	if weights.Title == 0 && weights.Summary == 0 && weights.Body == 0 {
+		weights = defaultSearchWeights()
+	}
 
-%s
-`, id, slug, title, specType, summary, createdBy, timestamp, timestamp, body)
+	results, err := Search(db, searchText, KindAll, limit, excludeID, weights)
+	if err != nil {
+		return nil, nil, fmt.Errorf("searching related content: %w", err)
+	}
+
+	specs = results.Specs
+	if specs == nil {
+		specs = []SearchResult{}
+	}
+	kb = results.KB
+	if kb == nil {
+		kb = []SearchResult{}
+	}
+
+	return specs, kb, nil
+}
+
+// buildSpecMarkdown generates spec.md with YAML frontmatter and H1 title.
+// The title is NOT in frontmatter — the H1 heading IS the title.
+// linkedSpecs may be nil for new specs that don't have links yet.
+func buildSpecMarkdown(id, title, summary, specType, createdBy, timestamp string, linkedSpecs []string, body string) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "---\n")
+	fmt.Fprintf(&b, "id: %s\n", id)
+	fmt.Fprintf(&b, "type: %s\n", specType)
+	fmt.Fprintf(&b, "summary: %s\n", summary)
+	fmt.Fprintf(&b, "position: 0\n")
+	if len(linkedSpecs) > 0 {
+		fmt.Fprintf(&b, "linked_specs:\n")
+		for _, ls := range linkedSpecs {
+			fmt.Fprintf(&b, "  - %s\n", ls)
+		}
+	}
+	fmt.Fprintf(&b, "created_by: %s\n", createdBy)
+	fmt.Fprintf(&b, "created_at: %s\n", timestamp)
+	fmt.Fprintf(&b, "updated_at: %s\n", timestamp)
+	fmt.Fprintf(&b, "---\n\n# %s\n\n%s\n", title, body)
+	return b.String()
 }

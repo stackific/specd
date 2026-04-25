@@ -1,0 +1,19 @@
+{
+  "private": true,
+  "scripts": {
+    "build:css": "node scripts/build-css.js",
+    "lint": "stylelint 'css/src/**/*.css'",
+    "lint:fix": "stylelint 'css/src/**/*.css' --fix"
+  },
+  "devDependencies": {
+    "lightningcss-cli": "^1.29.0",
+    "purgecss": "^7.0.2",
+    "stylelint": "^17.9.0",
+    "stylelint-config-standard": "^40.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "lightningcss-cli"
+    ]
+  }
+}

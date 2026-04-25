@@ -39,7 +39,7 @@ func TestRunInitNonInteractive(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(origDir) }()
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specs", "--username", "testuser", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specs", "--username", "testuser", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("init failed: %v", err)
 	}
@@ -59,8 +59,8 @@ func TestRunInitNonInteractive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadProjectConfig: %v", err)
 	}
-	if proj == nil || proj.Folder != "specs" {
-		t.Fatalf("expected project config with folder %q, got %v", "specs", proj)
+	if proj == nil || proj.Dir != "specs" {
+		t.Fatalf("expected project config with dir %q, got %v", "specs", proj)
 	}
 	if len(proj.SpecTypes) == 0 {
 		t.Fatal("expected default spec types to be saved")
@@ -89,7 +89,7 @@ func TestRunInitWithProjectPath(t *testing.T) {
 	targetDir := filepath.Join(tmp, "remote-project")
 
 	// Pass the project path as a positional argument.
-	rootCmd.SetArgs([]string{"init", targetDir, "--folder", "specd", "--username", "alice", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", targetDir, "--dir", "specd", "--username", "alice", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("init failed: %v", err)
 	}
@@ -105,8 +105,40 @@ func TestRunInitWithProjectPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadProjectConfig: %v", err)
 	}
-	if proj == nil || proj.Folder != "specd" {
-		t.Fatalf("expected project config with folder %q, got %v", "specd", proj)
+	if proj == nil || proj.Dir != "specd" {
+		t.Fatalf("expected project config with dir %q, got %v", "specd", proj)
+	}
+}
+
+// TestRunInitBlocksReinitialization verifies that specd init refuses to
+// run in an already-initialized directory.
+func TestRunInitBlocksReinitialization(t *testing.T) {
+	tmp := t.TempDir()
+	t.Setenv("HOME", tmp)
+	resetInitFlags()
+
+	projectDir := filepath.Join(tmp, "project")
+	if err := os.MkdirAll(projectDir, 0o755); err != nil { //nolint:gosec // test
+		t.Fatal(err)
+	}
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(projectDir); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(origDir) }()
+
+	// First init should succeed.
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("first init: %v", err)
+	}
+
+	// Second init should fail.
+	resetInitFlags()
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Error("expected error on re-initialization, got nil")
 	}
 }
 
@@ -135,7 +167,7 @@ func TestRunInitUsernameDefaultFromGlobalConfig(t *testing.T) {
 	defer func() { _ = os.Chdir(origDir) }()
 
 	// Explicitly pass --username to verify it's used.
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "existing", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "existing", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("init failed: %v", err)
 	}

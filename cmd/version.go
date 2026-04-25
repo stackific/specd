@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -48,9 +49,11 @@ func CheckForUpdate() {
 	latest, ok := getCachedLatest()
 	if !ok {
 		// Cache miss or expired — fetch from GitHub.
+		slog.Debug("update check: cache miss, fetching from GitHub")
 		latest = fetchLatestVersion()
 		if latest == "" {
-			return // network error or API issue — silently skip
+			slog.Debug("update check: fetch failed, skipping")
+			return
 		}
 		writeCache(latest)
 	}

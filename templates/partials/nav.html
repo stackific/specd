@@ -1,0 +1,138 @@
+{{define "nav"}}
+{{- /* Desktop sidebar: visible on large screens */ -}}
+<nav class="left l surface-container" aria-label="Main navigation">
+  <header>
+    <button class="circle extra transparent" onclick="toggleSidebar()" aria-label="Toggle sidebar" aria-expanded="false">
+      <i aria-hidden="true">menu</i>
+    </button>
+  </header>
+  {{template "nav-links" .}}
+</nav>
+
+{{- /* Mobile/tablet top bar */ -}}
+<nav class="top s m left-align" aria-label="Mobile navigation">
+  <button class="circle transparent" data-ui="#mobile-menu" aria-label="Open menu">
+    <i aria-hidden="true">menu</i>
+  </button>
+  <div class="max"></div>
+  <button class="circle border" data-theme-toggle onclick="toggleTheme()" aria-label="Toggle dark mode">
+    <i aria-hidden="true">dark_mode</i>
+  </button>
+</nav>
+
+{{- /* Mobile navigation drawer: slides in from the left */ -}}
+<dialog id="mobile-menu" class="left no-padding" aria-label="Navigation drawer">
+  <nav class="left max surface-container" aria-label="Navigation menu">
+    <header>
+      <button class="circle extra transparent" data-ui="#mobile-menu" aria-label="Close menu">
+        <i aria-hidden="true">menu_open</i>
+      </button>
+    </header>
+    {{template "nav-links-mobile" .}}
+  </nav>
+</dialog>
+{{end}}
+
+{{define "nav-links"}}
+  <a href="/tasks"
+     data-nav-link
+     {{if isActive .Active "tasks"}}class="active"{{end}}
+     hx-get="/tasks" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+    <i aria-hidden="true">task_alt</i>
+    <span class="fw-5">Tasks</span>
+  </a>
+  <a href="/specs"
+     data-nav-link
+     {{if isActive .Active "specs"}}class="active"{{end}}
+     hx-get="/specs" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+    <i aria-hidden="true">description</i>
+    <span class="fw-5">Specs</span>
+  </a>
+  <a href="/kb"
+     data-nav-link
+     {{if isActive .Active "kb"}}class="active"{{end}}
+     hx-get="/kb" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+    <i aria-hidden="true">menu_book</i>
+    <span class="fw-5">KB</span>
+  </a>
+  <a href="/search"
+     data-nav-link
+     {{if isActive .Active "search"}}class="active"{{end}}
+     hx-get="/search" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+    <i aria-hidden="true">search</i>
+    <span class="fw-5">Search</span>
+  </a>
+  <div class="max"></div>
+  <a href="/settings"
+     data-nav-link
+     {{if isActive .Active "settings"}}class="active"{{end}}
+     hx-get="/settings" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+    <i aria-hidden="true">settings</i>
+    <span class="fw-5">Settings</span>
+  </a>
+  <a href="/docs"
+     data-nav-link
+     {{if isActive .Active "docs"}}class="active"{{end}}
+     hx-get="/docs" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true">
+    <i aria-hidden="true">article</i>
+    <span class="fw-5">Docs</span>
+  </a>
+  <button class="my-s border circle" data-theme-toggle onclick="toggleTheme()" aria-label="Toggle dark mode">
+    <i aria-hidden="true">dark_mode</i>
+  </button>
+{{end}}
+
+{{define "nav-links-mobile"}}
+  <a href="/tasks"
+     data-nav-link
+     {{if isActive .Active "tasks"}}class="active"{{end}}
+     hx-get="/tasks" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true"
+     onclick="ui('#mobile-menu')">
+    <i aria-hidden="true">task_alt</i>
+    <span class="fw-5">Tasks</span>
+  </a>
+  <a href="/specs"
+     data-nav-link
+     {{if isActive .Active "specs"}}class="active"{{end}}
+     hx-get="/specs" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true"
+     onclick="ui('#mobile-menu')">
+    <i aria-hidden="true">description</i>
+    <span class="fw-5">Specs</span>
+  </a>
+  <a href="/kb"
+     data-nav-link
+     {{if isActive .Active "kb"}}class="active"{{end}}
+     hx-get="/kb" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true"
+     onclick="ui('#mobile-menu')">
+    <i aria-hidden="true">menu_book</i>
+    <span class="fw-5">KB</span>
+  </a>
+  <a href="/search"
+     data-nav-link
+     {{if isActive .Active "search"}}class="active"{{end}}
+     hx-get="/search" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true"
+     onclick="ui('#mobile-menu')">
+    <i aria-hidden="true">search</i>
+    <span class="fw-5">Search</span>
+  </a>
+  <div class="max"></div>
+  <a href="/settings"
+     data-nav-link
+     {{if isActive .Active "settings"}}class="active"{{end}}
+     hx-get="/settings" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true"
+     onclick="ui('#mobile-menu')">
+    <i aria-hidden="true">settings</i>
+    <span class="fw-5">Settings</span>
+  </a>
+  <a href="/docs"
+     data-nav-link
+     {{if isActive .Active "docs"}}class="active"{{end}}
+     hx-get="/docs" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true"
+     onclick="ui('#mobile-menu')">
+    <i aria-hidden="true">article</i>
+    <span class="fw-5">Docs</span>
+  </a>
+  <button class="my-s border circle" data-theme-toggle onclick="toggleTheme()" aria-label="Toggle dark mode">
+    <i aria-hidden="true">dark_mode</i>
+  </button>
+{{end}}

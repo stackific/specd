@@ -72,8 +72,6 @@ Create `.github/CODEOWNERS` in the `specd` repo:
 /LICENSE            @stackific/maintainers
 /NOTICE             @stackific/maintainers
 /TRADEMARKS.md      @stackific/maintainers
-/CONTRIBUTING.md    @stackific/maintainers
-/CODE_OF_CONDUCT.md @stackific/maintainers
 /.github/           @stackific/maintainers
 ```
 
@@ -90,7 +88,7 @@ Create `.github/pull_request_template.md`:
 
 ## Checklist
 
-- [ ] All commits are signed off (DCO). If not, run `git rebase --signoff $(git merge-base HEAD origin/main) && git push --force-with-lease`
+- [ ] All commits are signed off (DCO) and cryptographically signed. If not, run `git rebase --signoff --exec 'git commit --amend --no-edit -S' $(git merge-base HEAD origin/main) && git push --force-with-lease`
 - [ ] Tests added or updated
 - [ ] Docs updated if behavior or interfaces change
 - [ ] I have read CONTRIBUTING.md

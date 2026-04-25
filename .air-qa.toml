@@ -1,0 +1,15 @@
+# Air config for QA mode (task qa)
+# Watches Go + template + static files, restarts with --dev for live reload
+
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "cd static && pnpm run build:css && cd .. && CGO_ENABLED=0 go build -o tmp/specd ."
+  full_bin = "cd tmp/qa && ../../tmp/specd serve --dev --no-open"
+  include_ext = ["go", "sql", "html", "css", "js"]
+  exclude_dir = ["bin", "tmp", "static/node_modules", "static/css/dist"]
+  delay = 500
+
+[misc]
+  clean_on_exit = true

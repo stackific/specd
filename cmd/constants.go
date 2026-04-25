@@ -27,7 +27,7 @@ const (
 
 	// Skills directories.
 	SkillsDir      = "skills" // subdirectory under InstallDir for canonical skills
-	DefaultFolder  = "specd"  // default name for the specd project folder
+	DefaultDir     = "specd"  // default name for the specd project directory
 	EmbedSkillsDir = "skills" // directory name inside the embedded filesystem
 
 	// Provider display names shown in interactive prompts.
@@ -51,10 +51,55 @@ const (
 	HTTPTimeout   = 3 * time.Second // max time to wait for the GitHub API
 
 	// Search tunables.
-	TopSearchResults = 5 // max related specs/KB chunks returned by new-spec
+	TopSearchResults   = 5   // max related specs/KB chunks returned by new-spec
+	ChunkPreviewLength = 200 // max characters shown in KB chunk previews
+
+	// Pagination defaults.
+	DefaultPageSize = 20 // default results per page for list commands
+
+	// Serve tunables.
+	DefaultServePort = 8000 // starting port for specd serve
+	MaxPortAttempts  = 100  // max ports to try before giving up
+
+	// BM25 column weights: title matches are most important, body least.
+	// FTS columns are ordered (title, summary, body) in specs_fts and tasks_fts.
+	BM25WeightTitle   = 10.0
+	BM25WeightSummary = 5.0
+	BM25WeightBody    = 1.0
+
+	// Search kind identifiers — used in search queries and trigram table.
+	KindSpec = "spec"
+	KindTask = "task"
+	KindKB   = "kb"
+	KindAll  = "all"
+
+	// Meta table keys for ID counters and UI settings.
+	MetaNextSpecID   = "next_spec_id"
+	MetaNextTaskID   = "next_task_id"
+	MetaNextKBID     = "next_kb_id"
+	MetaDefaultRoute = "default_route"
+
+	// Default route for the Web UI root redirect.
+	DefaultRoute = "/docs/tutorial"
+
+	// Theme seed color for Material Design 3 dynamic color generation.
+	ThemeSeedColor = "#1c4bea"
+
+	// API prefix for REST endpoints.
+	APIPrefix = "/api/"
+
+	// ID prefixes for each content type.
+	IDPrefixSpec = "SPEC-"
+	IDPrefixTask = "TASK-"
+	IDPrefixKB   = "KB-"
 
 	// Directory conventions inside the specd project folder.
 	SpecsSubdir = "specs" // subdirectory for spec markdown files
+	KBSubdir    = "kb"    // subdirectory for KB document files
+
+	// Logging.
+	LogFile    = "specd.log"      // log filename inside InstallDir (~/.specd/)
+	MaxLogSize = 10 * 1024 * 1024 // 10 MB — truncate log file when exceeded
 )
 
 // DefaultSpecTypes are the built-in spec types offered during init.

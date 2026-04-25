@@ -23,19 +23,19 @@ var highlight = lipgloss.NewStyle().Bold(true).Foreground(
 )
 
 // initCmd implements `specd init [project-path]`.
-// It creates the specd project folder, writes the .specd.json marker,
+// It creates the specd project directory, writes the .specd.json marker,
 // saves the username globally, and installs skills for selected AI providers.
 var initCmd = &cobra.Command{
 	Use:   "init [project-path]",
 	Short: "Initialize specd in a project",
-	Long:  "Creates a folder where specd stores its project-level files. Optionally specify a project path (defaults to current directory).",
+	Long:  "Creates a directory where specd stores its project-level files. Optionally specify a project path (defaults to current directory).",
 	Args:  cobra.MaximumNArgs(1),
 	RunE:  runInit,
 }
 
 func init() {
 	// Register flags. All are optional — missing values trigger interactive prompts.
-	initCmd.Flags().String("folder", "", "folder name for specd project files (default: \"specd\")")
+	initCmd.Flags().String("dir", "", "directory name for specd project files (default: \"specd\")")
 	initCmd.Flags().String("username", "", "your username")
 	initCmd.Flags().Bool("skip-skills", false, "skip skills installation")
 	rootCmd.AddCommand(initCmd)
@@ -59,7 +59,19 @@ func runInit(c *cobra.Command, args []string) error {
 		return fmt.Errorf("creating project directory: %w", err)
 	}
 
-	folder, username, err := resolveInputs(c)
+	// Guard: refuse to re-initialize an already-initialized project.
+	existing, err := LoadProjectConfig(absProject)
+	if err != nil {
+		return fmt.Errorf("checking existing config: %w", err)
+	}
+	if existing != nil {
+		return fmt.Errorf("specd is already initialized in %s\nRemove %s and %s/ to re-initialize",
+			absProject,
+			filepath.Join(absProject, ProjectMarker),
+			filepath.Join(absProject, existing.Dir))
+	}
+
+	dir, username, err := resolveInputs(c)
 	if err != nil {
 		return err
 	}
@@ -74,10 +86,10 @@ func runInit(c *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Create the specd project folder inside the project directory.
-	specdPath := filepath.Join(absProject, folder)
-	if err := os.MkdirAll(specdPath, 0o755); err != nil { //nolint:gosec // specd folder is part of a VCS repo, must be world-readable
-		return fmt.Errorf("creating folder: %w", err)
+	// Create the specd project directory inside the project root.
+	specdPath := filepath.Join(absProject, dir)
+	if err := os.MkdirAll(specdPath, 0o755); err != nil { //nolint:gosec // specd dir is part of a VCS repo, must be world-readable
+		return fmt.Errorf("creating directory: %w", err)
 	}
 
 	// Determine where to store the username.
@@ -88,17 +100,22 @@ func runInit(c *cobra.Command, args []string) error {
 
 	// Write the .specd.json marker with all project settings.
 	if err := SaveProjectConfig(absProject, &ProjectConfig{
-		Folder:           folder,
+		Dir:              dir,
 		Username:         projectUsername,
 		SpecTypes:        specTypes,
 		TaskStages:       taskStages,
 		TopSearchResults: TopSearchResults,
+		SearchWeights: SearchWeights{
+			Title:   BM25WeightTitle,
+			Summary: BM25WeightSummary,
+			Body:    BM25WeightBody,
+		},
 	}); err != nil {
 		return err
 	}
 
-	// Initialize the cache database with schema matching the user's selections.
-	if err := InitDB(specdPath, specTypes, taskStages); err != nil {
+	// Initialize the cache database at the project root (.specd.cache).
+	if err := InitDB(absProject, specTypes, taskStages); err != nil {
 		return err
 	}
 
@@ -117,13 +134,13 @@ func runInit(c *cobra.Command, args []string) error {
 	return nil
 }
 
-// resolveInputs gathers the folder name and username from flags, defaults,
+// resolveInputs gathers the directory name and username from flags, defaults,
 // and interactive prompts. Returns validated, non-empty values.
-func resolveInputs(c *cobra.Command) (folder, username string, err error) {
-	folder, _ = c.Flags().GetString("folder")
-	folderProvided := c.Flags().Changed("folder")
-	if !folderProvided {
-		folder = DefaultFolder
+func resolveInputs(c *cobra.Command) (dir, username string, err error) {
+	dir, _ = c.Flags().GetString("dir")
+	dirProvided := c.Flags().Changed("dir")
+	if !dirProvided {
+		dir = DefaultDir
 	}
 
 	username, _ = c.Flags().GetString("username")
@@ -134,18 +151,18 @@ func resolveInputs(c *cobra.Command) (folder, username string, err error) {
 		username, defaultSource = resolveDefaultUsername()
 	}
 
-	if err := promptMissingInputs(folderProvided, usernameProvided, &folder, &username, defaultSource); err != nil {
+	if err := promptMissingInputs(dirProvided, usernameProvided, &dir, &username, defaultSource); err != nil {
 		return "", "", err
 	}
 
-	if folder == "" {
-		return "", "", fmt.Errorf("folder name cannot be empty")
+	if dir == "" {
+		return "", "", fmt.Errorf("directory name cannot be empty")
 	}
 	if username == "" {
 		return "", "", fmt.Errorf("username cannot be empty")
 	}
 
-	return folder, username, nil
+	return dir, username, nil
 }
 
 // saveUsername decides where to store the username:
@@ -190,13 +207,23 @@ func promptAndInstallSkills() error {
 	return installSkills(selectedProviders, level)
 }
 
-// printPostInitMessage prints the warning and next-steps after initialization.
+// printPostInitMessage prints git instructions, warnings, and next-steps.
 func printPostInitMessage() {
 	fmt.Println()
 	warn := lipgloss.NewStyle().Bold(true).Foreground(
 		lipgloss.AdaptiveColor{Light: "1", Dark: "9"},
 	)
+
+	// Git instructions.
+	fmt.Printf("Add %s to your .gitignore — it is a local cache and must not be committed.\n", highlight.Render(CacheDBFile))
+	fmt.Printf("Commit and push %s and the %s/ folder — they are your project config and specs.\n", highlight.Render(ProjectMarker), highlight.Render(DefaultDir))
+	fmt.Printf("\nIf you are the sole contributor, consider committing %s instead of gitignoring it\nto avoid rebuilding the cache on every fresh checkout.\n", highlight.Render(CacheDBFile))
+
+	// Warning.
+	fmt.Println()
 	fmt.Printf("%s Do not manually edit spec types or task stages in %s — it may break your project.\n", warn.Render("Warning:"), ProjectMarker)
+
+	// Next step.
 	fmt.Printf("\nRun %s to start the Web UI.\n", highlight.Render("specd serve"))
 }
 
@@ -219,20 +246,20 @@ func resolveDefaultUsername() (username, source string) {
 	return "", ""
 }
 
-// promptMissingInputs shows an interactive form for folder and/or username
+// promptMissingInputs shows an interactive form for directory and/or username
 // when they weren't provided via flags.
-func promptMissingInputs(folderProvided, usernameProvided bool, folder, username *string, defaultSource string) error {
-	if folderProvided && usernameProvided {
+func promptMissingInputs(dirProvided, usernameProvided bool, dir, username *string, defaultSource string) error {
+	if dirProvided && usernameProvided {
 		return nil
 	}
 
 	var fields []huh.Field
 
-	if !folderProvided {
+	if !dirProvided {
 		fields = append(fields, huh.NewInput().
-			Title("Folder name for specd project files").
+			Title("Directory name for specd project files").
 			Description("specd will store its project-level files here").
-			Value(folder))
+			Value(dir))
 	}
 
 	if !usernameProvided {
@@ -257,7 +284,7 @@ func promptMissingInputs(folderProvided, usernameProvided bool, folder, username
 func promptSpecTypes(c *cobra.Command) ([]string, error) {
 	// Non-interactive: if folder, username, and skip-skills are all provided,
 	// use the defaults without prompting.
-	if c.Flags().Changed("folder") && c.Flags().Changed("username") {
+	if c.Flags().Changed("dir") && c.Flags().Changed("username") {
 		return slugAll(DefaultSpecTypes), nil
 	}
 
@@ -315,7 +342,7 @@ func promptSpecTypes(c *cobra.Command) ([]string, error) {
 // defaults when all flags are provided (non-interactive mode).
 func promptTaskStages(c *cobra.Command) ([]string, error) {
 	// Non-interactive: use all stages.
-	if c.Flags().Changed("folder") && c.Flags().Changed("username") {
+	if c.Flags().Changed("dir") && c.Flags().Changed("username") {
 		all := make([]string, 0, len(RequiredTaskStages)+len(OptionalTaskStages))
 		all = append(all, RequiredTaskStages...)
 		all = append(all, OptionalTaskStages...)

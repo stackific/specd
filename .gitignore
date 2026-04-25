@@ -1,4 +1,11 @@
 bin/
 tmp/
+.task/
 *.exe
 .DS_Store
+.pnpm-store
+static/node_modules/
+static/css/dist/
+!static/css/dist/.gitkeep
+ui-poc
+.playwright-mcp
