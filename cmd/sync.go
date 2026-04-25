@@ -46,7 +46,7 @@ func SyncCache() error {
 	username := ResolveActiveUsername()
 
 	// Sync specs.
-	specsDir := filepath.Join(proj.Folder, SpecsSubdir)
+	specsDir := filepath.Join(proj.Dir, SpecsSubdir)
 	diskSpecs, err := readSpecsFromDisk(specsDir)
 	if err != nil {
 		return fmt.Errorf("reading specs from disk: %w", err)

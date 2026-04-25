@@ -2,11 +2,20 @@ package cmd
 
 import "io/fs"
 
-// frontendFS holds the embedded frontend assets (ui/dist).
+// templateFS holds the embedded HTML templates (layouts, partials, pages).
 // Set by main.go before command execution.
-var frontendFS fs.FS
+var templateFS fs.FS
 
-// SetFrontendFS injects the embedded frontend filesystem into the cmd package.
-func SetFrontendFS(fsys fs.FS) {
-	frontendFS = fsys
+// staticFS holds the embedded static assets (vendor JS, CSS, fonts, images).
+// Set by main.go before command execution.
+var staticFS fs.FS
+
+// SetTemplateFS injects the embedded template filesystem into the cmd package.
+func SetTemplateFS(fsys fs.FS) {
+	templateFS = fsys
+}
+
+// SetStaticFS injects the embedded static asset filesystem into the cmd package.
+func SetStaticFS(fsys fs.FS) {
+	staticFS = fsys
 }

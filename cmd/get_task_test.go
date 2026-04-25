@@ -36,7 +36,7 @@ func setupProjectWithTask(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chdir(origDir) })
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +141,7 @@ func TestGetTaskEmptyArraysNotNull(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(origDir) }()
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +187,7 @@ func TestGetTaskNotFound(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(origDir) }()
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatal(err)
 	}

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -53,75 +54,6 @@ func TestFindAvailablePortSkipsOccupied(t *testing.T) {
 	}
 	if port < occupiedPort {
 		t.Errorf("expected port >= %d, got %d", occupiedPort, port)
-	}
-}
-
-// TestSPAHandlerServesFiles verifies the SPA handler serves existing files.
-func TestSPAHandlerServesFiles(t *testing.T) {
-	fs := fstest.MapFS{
-		"index.html":           {Data: []byte("<html><title>specd</title></html>")},
-		"assets/index-abc.css": {Data: []byte("body{}")},
-	}
-
-	handler := spaHandler(fs)
-
-	// Request an existing asset file.
-	req := httptest.NewRequest(http.MethodGet, "/assets/index-abc.css", http.NoBody)
-	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected 200, got %d", w.Code)
-	}
-	if !strings.Contains(w.Body.String(), "body{}") {
-		t.Error("expected CSS content")
-	}
-}
-
-// TestSPAHandlerFallsBackToIndex verifies unknown paths serve index.html.
-func TestSPAHandlerFallsBackToIndex(t *testing.T) {
-	fs := fstest.MapFS{
-		"index.html": {Data: []byte("<html><title>specd</title></html>")},
-	}
-
-	handler := spaHandler(fs)
-
-	// Request a non-existent path (client-side route).
-	req := httptest.NewRequest(http.MethodGet, "/tutorial", http.NoBody)
-	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected 200, got %d", w.Code)
-	}
-	if !strings.Contains(w.Body.String(), "<title>specd</title>") {
-		t.Error("expected index.html content as SPA fallback")
-	}
-}
-
-// TestSPAHandlerRootRedirects verifies "/" redirects to the default route.
-func TestSPAHandlerRootRedirects(t *testing.T) {
-	fs := fstest.MapFS{
-		"index.html": {Data: []byte("<html></html>")},
-	}
-
-	handler := spaHandler(fs)
-
-	req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
-	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, req)
-
-	if w.Code != http.StatusTemporaryRedirect {
-		t.Errorf("expected 307 redirect, got %d", w.Code)
-	}
-
-	loc := w.Header().Get("Location")
-	if loc == "" {
-		t.Fatal("expected Location header on redirect")
-	}
-	// Without an initialized DB, should fall back to DefaultRoute.
-	if loc != DefaultRoute {
-		t.Errorf("expected redirect to %q, got %q", DefaultRoute, loc)
 	}
 }
 
@@ -214,5 +146,192 @@ func TestInitDBSeedsDefaultRoute(t *testing.T) {
 	}
 	if value != DefaultRoute {
 		t.Errorf("expected %q, got %q", DefaultRoute, value)
+	}
+}
+
+// testTemplateFS returns a minimal in-memory FS for template parsing tests.
+func testTemplateFS() fstest.MapFS {
+	return fstest.MapFS{
+		"layouts/base.html": {Data: []byte(
+			`{{define "base.html"}}<!DOCTYPE html><html><body>` +
+				`{{template "nav" .}}` +
+				`<main>{{block "content" .}}{{end}}</main>` +
+				`{{template "footer" .}}` +
+				`</body></html>{{end}}`,
+		)},
+		"partials/nav.html":    {Data: []byte(`{{define "nav"}}<nav>{{if isActive .Active "docs"}}docs-active{{end}}</nav>{{end}}`)},
+		"partials/footer.html": {Data: []byte(`{{define "footer"}}<footer>footer</footer>{{end}}`)},
+		"pages/tutorial.html":  {Data: []byte(`{{define "content"}}<h1>Tutorial</h1>{{end}}`)},
+		"pages/docs.html":      {Data: []byte(`{{define "content"}}<h1>Docs</h1>{{end}}`)},
+	}
+}
+
+// TestParseTemplates verifies that templates are parsed correctly.
+func TestParseTemplates(t *testing.T) {
+	pages, err := parseTemplates(testTemplateFS())
+	if err != nil {
+		t.Fatalf("parseTemplates: %v", err)
+	}
+
+	if _, ok := pages["tutorial"]; !ok {
+		t.Error("expected 'tutorial' page")
+	}
+	if _, ok := pages["docs"]; !ok {
+		t.Error("expected 'docs' page")
+	}
+}
+
+// TestRenderPageFullPage verifies that a non-htmx request renders the full page.
+func TestRenderPageFullPage(t *testing.T) {
+	pages, err := parseTemplates(testTemplateFS())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/docs/tutorial", http.NoBody)
+	w := httptest.NewRecorder()
+
+	renderPage(w, req, pages, "tutorial", &PageData{Title: "Tutorial", Active: "docs"})
+
+	body := w.Body.String()
+	if !strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("expected full HTML document")
+	}
+	if !strings.Contains(body, "<h1>Tutorial</h1>") {
+		t.Error("expected tutorial content")
+	}
+	if !strings.Contains(body, "docs-active") {
+		t.Error("expected active nav for docs")
+	}
+	if !strings.Contains(body, "<footer>footer</footer>") {
+		t.Error("expected footer")
+	}
+}
+
+// TestRenderPageHtmxPartial verifies that an htmx request renders only the content block.
+func TestRenderPageHtmxPartial(t *testing.T) {
+	pages, err := parseTemplates(testTemplateFS())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/docs/tutorial", http.NoBody)
+	req.Header.Set("HX-Request", "true")
+	w := httptest.NewRecorder()
+
+	renderPage(w, req, pages, "tutorial", &PageData{Title: "Tutorial", Active: "docs"})
+
+	body := w.Body.String()
+	if strings.Contains(body, "<!DOCTYPE html>") {
+		t.Error("htmx partial should not include full HTML document")
+	}
+	if !strings.Contains(body, "<h1>Tutorial</h1>") {
+		t.Error("expected tutorial content in partial")
+	}
+	if strings.Contains(body, "<footer>") {
+		t.Error("htmx partial should not include footer")
+	}
+}
+
+// TestRenderPageNotFound verifies that a missing page returns 404.
+func TestRenderPageNotFound(t *testing.T) {
+	pages, err := parseTemplates(testTemplateFS())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/nonexistent", http.NoBody)
+	w := httptest.NewRecorder()
+
+	renderPage(w, req, pages, "nonexistent", &PageData{Title: "Not Found"})
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", w.Code)
+	}
+}
+
+// TestStaticFileServing verifies that static assets are served correctly.
+func TestStaticFileServing(t *testing.T) {
+	assets := fstest.MapFS{
+		"vendor/htmx.min.js": {Data: []byte("htmx-content")},
+		"css/dist/app.css":   {Data: []byte("body{}")},
+		"js/app.js":          {Data: []byte("console.log('app')")},
+		"fonts/test.woff2":   {Data: []byte("font-data")},
+		"images/favicon.ico": {Data: []byte("icon-data")},
+		"images/logo.svg":    {Data: []byte("<svg></svg>")},
+		"images/robots.txt":  {Data: []byte("User-agent: *")},
+	}
+
+	mux := http.NewServeMux()
+	registerStaticRoutes(mux, assets)
+
+	tests := []struct {
+		path     string
+		contains string
+	}{
+		{"/vendor/htmx.min.js", "htmx-content"},
+		{"/css/app.css", "body{}"},
+		{"/js/app.js", "console.log"},
+		{"/fonts/test.woff2", "font-data"},
+		{"/favicon.ico", "icon-data"},
+		{"/logo.svg", "<svg>"},
+		{"/robots.txt", "User-agent"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tt.path, http.NoBody)
+			w := httptest.NewRecorder()
+			mux.ServeHTTP(w, req)
+
+			if w.Code != http.StatusOK {
+				t.Errorf("expected 200, got %d", w.Code)
+			}
+			if !strings.Contains(w.Body.String(), tt.contains) {
+				t.Errorf("expected body to contain %q", tt.contains)
+			}
+		})
+	}
+}
+
+// TestComputeFileHash verifies content hash generation.
+func TestComputeFileHash(t *testing.T) {
+	fs := fstest.MapFS{
+		"css/dist/app.css": {Data: []byte("body{}")},
+	}
+
+	hash := computeFileHash(fs, "css/dist/app.css")
+	if len(hash) != 8 {
+		t.Errorf("expected 8-char hash, got %q (len %d)", hash, len(hash))
+	}
+
+	// Same content produces same hash.
+	hash2 := computeFileHash(fs, "css/dist/app.css")
+	if hash != hash2 {
+		t.Errorf("expected deterministic hash, got %q and %q", hash, hash2)
+	}
+
+	// Missing file returns empty string.
+	empty := computeFileHash(fs, "nonexistent.css")
+	if empty != "" {
+		t.Errorf("expected empty string for missing file, got %q", empty)
+	}
+}
+
+// TestLiveReloadEndpoint verifies the SSE endpoint responds correctly.
+func TestLiveReloadEndpoint(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/dev/livereload", http.NoBody)
+	w := httptest.NewRecorder()
+
+	// handleLiveReload blocks on context, so cancel it immediately.
+	ctx, cancel := context.WithCancel(req.Context())
+	req = req.WithContext(ctx)
+	cancel() // unblock immediately
+
+	handleLiveReload(w, req)
+
+	ct := w.Header().Get("Content-Type")
+	if ct != "text/event-stream" {
+		t.Errorf("expected text/event-stream, got %q", ct)
 	}
 }

@@ -484,7 +484,7 @@ func TestSearchWeightsRoundTrip(t *testing.T) {
 	tmp := t.TempDir()
 
 	cfg := &ProjectConfig{
-		Folder:           "specd",
+		Dir:              "specd",
 		SpecTypes:        []string{"business"},
 		TaskStages:       []string{"backlog"},
 		TopSearchResults: 5,

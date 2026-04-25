@@ -14,22 +14,34 @@ import (
 //go:embed skills
 var skillsFS embed.FS
 
-// frontendDistFS embeds the built frontend assets (ui/dist) at compile time
-// so the Web UI ships inside the binary with no external files needed.
+// templatesFS embeds the HTML templates (layouts, partials, pages) at
+// compile time for server-side rendering.
 //
-//go:embed ui/dist
-var frontendDistFS embed.FS
+//go:embed templates
+var templatesFS embed.FS
+
+// staticFS embeds static assets (vendor JS, CSS, fonts, images) at
+// compile time so the Web UI ships with no external files needed.
+//
+//go:embed static
+var staticFS embed.FS
 
 func main() {
 	// Hand the embedded filesystems to the cmd package before running.
 	cmd.SetSkillsFS(skillsFS)
 
-	// Strip the "ui/dist" prefix so the SPA handler sees paths like /index.html.
-	distFS, err := fs.Sub(frontendDistFS, "ui/dist")
+	// Strip embed prefixes so template/static handlers see root-relative paths.
+	tFS, err := fs.Sub(templatesFS, "templates")
 	if err != nil {
-		log.Fatalf("failed to create frontend sub-filesystem: %v", err)
+		log.Fatalf("failed to create templates sub-filesystem: %v", err)
 	}
-	cmd.SetFrontendFS(distFS)
+	cmd.SetTemplateFS(tFS)
+
+	sFS, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		log.Fatalf("failed to create static sub-filesystem: %v", err)
+	}
+	cmd.SetStaticFS(sFS)
 
 	cmd.Execute()
 }

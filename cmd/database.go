@@ -99,7 +99,7 @@ func OpenProjectDB() (*sql.DB, string, error) {
 		return nil, "", fmt.Errorf("enabling foreign keys: %w", err)
 	}
 
-	return db, proj.Folder, nil
+	return db, proj.Dir, nil
 }
 
 // NextID atomically reads and increments a counter in the meta table.

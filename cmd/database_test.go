@@ -158,7 +158,7 @@ func TestResolveActiveUsername(t *testing.T) {
 	defer func() { _ = os.Chdir(origDir) }()
 
 	if err := SaveProjectConfig(projDir, &ProjectConfig{
-		Folder:   "specd",
+		Dir:      "specd",
 		Username: "project-user",
 	}); err != nil {
 		t.Fatal(err)

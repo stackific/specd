@@ -38,7 +38,7 @@ func setupTaskProject(t *testing.T) (projectDir string) {
 	}
 	t.Cleanup(func() { _ = os.Chdir(origDir) })
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("init: %v", err)
 	}

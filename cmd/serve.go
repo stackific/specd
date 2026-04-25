@@ -1,23 +1,36 @@
-// serve.go implements `specd serve`. Starts an HTTP server serving the
-// embedded Svelte SPA and REST API routes. Scans for available ports
-// starting from DefaultServePort (8000), prints progress, and opens the
-// browser on success.
+// serve.go implements `specd serve`. Starts an HTTP server that renders
+// Go templates with htmx support and serves static assets. Scans for
+// available ports starting from DefaultServePort (8000), prints progress,
+// and opens the browser on success.
 package cmd
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/fs"
 	"log/slog"
+	"mime"
 	"net"
 	"net/http"
+	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
 
 	"github.com/spf13/cobra"
 )
+
+func init() {
+	// Ensure correct MIME types for embedded static assets.
+	// Some OS MIME databases lack entries for .css, .js, .woff2.
+	_ = mime.AddExtensionType(".css", "text/css")
+	_ = mime.AddExtensionType(".js", "text/javascript")
+	_ = mime.AddExtensionType(".woff2", "font/woff2")
+	_ = mime.AddExtensionType(".webmanifest", "application/manifest+json")
+}
 
 // serveCmd implements `specd serve`.
 // It starts an HTTP server with the Web UI, scanning for an available port.
@@ -30,11 +43,31 @@ var serveCmd = &cobra.Command{
 func init() {
 	serveCmd.Flags().Int("port", DefaultServePort, "starting port number")
 	serveCmd.Flags().Bool("no-open", false, "do not open the browser on start")
+	serveCmd.Flags().Bool("dev", false, "enable dev mode (live reload, no template caching)")
+	serveCmd.Flags().String("dir", "", "directory to serve from (defaults to current directory)")
 	rootCmd.AddCommand(serveCmd)
 }
 
 func runServe(c *cobra.Command, _ []string) error {
+	dir, _ := c.Flags().GetString("dir")
+	if dir != "" {
+		if err := os.Chdir(dir); err != nil {
+			return fmt.Errorf("changing to directory %q: %w", dir, err)
+		}
+	}
+
 	startPort, _ := c.Flags().GetInt("port")
+	devMode, _ := c.Flags().GetBool("dev")
+
+	// Parse templates from the embedded filesystem.
+	pages, err := parseTemplates(templateFS)
+	if err != nil {
+		return fmt.Errorf("parsing templates: %w", err)
+	}
+
+	// Compute content hashes for cache busting.
+	cssHash := computeFileHash(staticFS, "css/dist/app.css")
+	jsHash := computeFileHash(staticFS, "js/app.js")
 
 	// Find an available port starting from startPort.
 	port, err := findAvailablePort(startPort)
@@ -47,10 +80,56 @@ func runServe(c *cobra.Command, _ []string) error {
 
 	// Set up routes.
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/meta/default-route", handleGetDefaultRoute)
-	mux.Handle("/", spaHandler(frontendFS))
 
-	slog.Info("serve", "port", port)
+	// API endpoints.
+	mux.HandleFunc("GET /api/meta/default-route", handleGetDefaultRoute)
+
+	// Dev-mode live reload SSE endpoint.
+	if devMode {
+		mux.HandleFunc("GET /api/dev/livereload", handleLiveReload)
+	}
+
+	// Page routes — each renders a Go template with htmx partial support.
+	pageHandler := func(name, title, active string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			p := pages
+			if devMode {
+				// Re-parse templates on every request for live reload.
+				fresh, err := parseTemplates(templateFS)
+				if err != nil {
+					http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
+				p = fresh
+			}
+			renderPage(w, r, p, name, &PageData{
+				Title:   title,
+				Active:  active,
+				DevMode: devMode,
+				CSSHash: cssHash,
+				JSHash:  jsHash,
+			})
+		}
+	}
+
+	mux.HandleFunc("GET /docs/tutorial", pageHandler("tutorial", "Tutorial", "docs"))
+	mux.HandleFunc("GET /docs", pageHandler("docs", "Documentation", "docs"))
+	mux.HandleFunc("GET /tasks", pageHandler("tasks", "Tasks", "tasks"))
+	mux.HandleFunc("GET /specs", pageHandler("specs", "Specs", "specs"))
+	mux.HandleFunc("GET /kb", pageHandler("kb", "Knowledge Base", "kb"))
+	mux.HandleFunc("GET /search", pageHandler("search", "Search", "search"))
+	mux.HandleFunc("GET /settings", pageHandler("settings", "Settings", "settings"))
+
+	// Root redirect to default route.
+	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
+		route := readDefaultRoute()
+		http.Redirect(w, r, route, http.StatusTemporaryRedirect)
+	})
+
+	// Static assets — served from the embedded static filesystem.
+	registerStaticRoutes(mux, staticFS)
+
+	slog.Info("serve", "port", port, "dev", devMode)
 
 	noOpen, _ := c.Flags().GetBool("no-open")
 	if !noOpen {
@@ -68,43 +147,74 @@ func runServe(c *cobra.Command, _ []string) error {
 	return nil
 }
 
-// spaHandler returns an http.Handler that serves the SPA from the given
-// filesystem. The root path "/" redirects to the default route stored in the
-// database. Requests for existing files are served directly. All other
-// paths fall back to index.html for client-side routing.
-func spaHandler(assets fs.FS) http.Handler {
-	fileServer := http.FileServer(http.FS(assets))
+// registerStaticRoutes sets up file serving routes for embedded static assets.
+func registerStaticRoutes(mux *http.ServeMux, assets fs.FS) {
+	// Subdirectories served as-is.
+	serveSubDir(mux, assets, "/vendor/", "vendor")
+	serveSubDir(mux, assets, "/css/", "css/dist")
+	serveSubDir(mux, assets, "/js/", "js")
+	serveSubDir(mux, assets, "/fonts/", "fonts")
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Root path: redirect to the configured default route.
-		if r.URL.Path == "/" {
-			route := readDefaultRoute()
-			http.Redirect(w, r, route, http.StatusTemporaryRedirect)
-			return
-		}
-
-		// Try to serve the requested file from the embedded FS.
-		if f, err := assets.Open(r.URL.Path[1:]); err == nil {
-			_ = f.Close()
-			fileServer.ServeHTTP(w, r)
-			return
-		}
-
-		// SPA fallback: serve index.html directly for client-side routing.
-		serveIndexHTML(w, assets)
-	})
+	// Root-level static files (favicons, logos, manifest, robots.txt).
+	rootFiles := []string{
+		"favicon.ico", "favicon-16x16.png", "favicon-32x32.png",
+		"apple-touch-icon.png", "android-chrome-192x192.png", "android-chrome-512x512.png",
+		"logo.svg", "logo-dark.svg", "site.webmanifest", "robots.txt",
+	}
+	for _, name := range rootFiles {
+		path := name // capture for closure
+		mux.HandleFunc("GET /"+path, func(w http.ResponseWriter, r *http.Request) {
+			r.URL.Path = "/" + path
+			http.FileServer(http.FS(mustSub(assets, "images"))).ServeHTTP(w, r)
+		})
+	}
 }
 
-// serveIndexHTML reads index.html from the embedded FS and writes it directly.
-// This avoids http.FileServer's redirect from /index.html → /.
-func serveIndexHTML(w http.ResponseWriter, assets fs.FS) {
-	data, err := fs.ReadFile(assets, "index.html")
+// serveSubDir registers a handler that serves files from a subdirectory of
+// the static filesystem under the given URL prefix.
+func serveSubDir(mux *http.ServeMux, assets fs.FS, prefix, dir string) {
+	sub := mustSub(assets, dir)
+	mux.Handle(prefix, http.StripPrefix(prefix, http.FileServer(http.FS(sub))))
+}
+
+// mustSub wraps fs.Sub and panics on error (used for embedded FS paths that
+// are guaranteed to exist at compile time).
+func mustSub(fsys fs.FS, dir string) fs.FS {
+	sub, err := fs.Sub(fsys, dir)
 	if err != nil {
-		http.Error(w, "index.html not found", http.StatusNotFound)
-		return
+		panic(fmt.Sprintf("static sub-filesystem %q: %v", dir, err))
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write(data)
+	return sub
+}
+
+// handleLiveReload serves an SSE stream for dev-mode live reload.
+// The client connects and waits; when the server restarts (via Air),
+// the connection drops and the client-side script polls until it
+// reconnects, then reloads the page.
+func handleLiveReload(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	// Flush headers immediately so the browser knows the connection is alive.
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+
+	// Block until the client disconnects or the server shuts down.
+	<-r.Context().Done()
+}
+
+// computeFileHash reads a file from the given filesystem and returns the
+// first 8 characters of its SHA-256 hash for cache busting.
+// Returns an empty string if the file cannot be read.
+func computeFileHash(assets fs.FS, path string) string {
+	data, err := fs.ReadFile(assets, path)
+	if err != nil {
+		return ""
+	}
+	h := sha256.Sum256(data)
+	return hex.EncodeToString(h[:])[:8]
 }
 
 // readDefaultRoute queries the database for the configured default route.

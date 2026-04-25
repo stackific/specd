@@ -17,7 +17,7 @@ cd "$QA_DIR"
 
 echo ""
 echo "=== Initializing project ==="
-$SPECD init --folder specd --username qa-tester --skip-skills
+$SPECD init --dir specd --username qa-tester --skip-skills
 
 echo ""
 echo "=== Creating SPEC-1: User Authentication ==="

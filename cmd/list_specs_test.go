@@ -33,7 +33,7 @@ func setupProjectWithSpecs(t *testing.T, count int) {
 	}
 	t.Cleanup(func() { _ = os.Chdir(origDir) })
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatal(err)
 	}

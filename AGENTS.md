@@ -13,18 +13,20 @@ A specification-driven development CLI tool.
 - **Formatting:** gofumpt + goimports + gci (auto-fix, never warn)
 - **Security:** gosec (static), govulncheck (deps), gitleaks (secrets)
 - **Commit linting:** [conform](https://github.com/siderolabs/conform) (conventional commits)
-- **Frontend:** [Vite](https://vite.dev/) + [Svelte 5](https://svelte.dev/) + [BeerCSS](https://www.beercss.com/) (Material Design 3), embedded in Go binary
-- **Frontend linting:** [Biome](https://biomejs.dev/) (linter + formatter)
-- **Package manager:** pnpm (always use pnpm, never npm or yarn)
+- **Frontend:** Go `html/template` + [htmx](https://htmx.org/) + [BeerCSS](https://www.beercss.com/) (Material Design 3), server-rendered, embedded in Go binary
+- **CSS build:** [Lightning CSS](https://lightningcss.dev/) (bundle + minify) + [PurgeCSS](https://purgecss.com/) (tree-shake unused classes)
+- **CSS linting:** [Stylelint](https://stylelint.io/) (standard config)
+- **Package manager:** pnpm (for CSS build/lint deps in `static/`)
 - You must write idiomatic Go and directory structure.
 - You must use 2 spaces as indentation for Non-Go code file
 
 ## Project Structure
 
 ```
-main.go              # Entrypoint (embeds skills/ and ui/dist/ via go:embed)
+main.go              # Entrypoint (embeds skills/, templates/, static/ via go:embed)
 cmd/                 # Cobra commands (root.go, subcommands)
-cmd/frontend.go      # Embedded frontend FS injection (SetFrontendFS)
+cmd/frontend.go      # Embedded FS injection (SetTemplateFS, SetStaticFS)
+cmd/templates.go     # Go template parsing, rendering (htmx-aware)
 cmd/constants.go     # All magic strings and constants (single source of truth)
 cmd/config.go        # Global (~/.specd/config.json) and project (.specd.json) config
 cmd/database.go      # SQLite initialization, ID counters, project DB helpers
@@ -40,11 +42,18 @@ cmd/list_specs.go    # specd list-specs command (paginated)
 cmd/list_tasks.go    # specd list-tasks command (paginated, filterable)
 cmd/serve.go         # specd serve command (HTTP server with SPA + REST API)
 cmd/schema.sql       # Embedded SQLite schema (dynamic CHECK constraints)
-ui/                  # Frontend (Vite + Svelte 5 + BeerCSS)
-ui/src/              # Svelte source files, CSS, router, theme
-ui/public/           # Static assets (favicons, logos, manifest)
-ui/dist/             # Built assets (gitignored, embedded in Go binary)
-ui/biome.json        # Biome linter/formatter config
+templates/           # Go HTML templates (layouts, partials, pages)
+templates/layouts/   # Base layout with content block
+templates/partials/  # Shared partials (nav, footer)
+templates/pages/     # Page templates (override content block)
+static/              # Static assets (embedded in Go binary)
+static/vendor/       # Vendored JS (htmx, BeerCSS, Material Dynamic Colors)
+static/fonts/        # Geist Variable font files (woff2)
+static/images/       # Favicons, logos, manifest, robots.txt
+static/css/src/      # CSS source (app.css with utilities)
+static/css/dist/     # Built CSS output (gitignored, bundled + purged + minified)
+static/js/           # Client-side JS (theme, nav, htmx config, livereload)
+static/package.json  # CSS build deps (lightningcss-cli, purgecss)
 skills/              # Embedded skills (Agent Skills Standard format)
 scripts/             # Install/uninstall scripts
 docs/internal/       # Internal setup guides
@@ -72,20 +81,19 @@ task sec             # Run all security checks
 task sec:vulncheck   # Check deps for known vulnerabilities
 task sec:gitleaks    # Scan for leaked secrets
 task deadcode        # Find unreachable code from main
-task check           # Run everything (fmt, lint, ui:lint, test, security)
+task check           # Run everything (fmt, lint, css:lint, test, security)
 task build:all       # Cross-compile for linux/darwin/windows (amd64+arm64)
 task hooks:install   # Install lefthook git hooks
-task clean           # Remove bin/, tmp/, and ui/dist/
-task ui:install      # Install frontend npm dependencies (pnpm)
-task ui:build        # Build frontend assets to ui/dist/
-task ui:dev          # Start Vite dev server with HMR
-task ui:lint         # Run Biome linter on frontend
-task ui:lint:fix     # Run Biome linter with auto-fix
+task clean           # Remove bin/, tmp/, and static/css/dist/
+task css:install      # Install CSS build/lint dependencies (pnpm)
+task css:build        # Build CSS (bundle + purge + minify)
+task css:lint         # Run Stylelint on CSS source
+task css:lint:fix     # Run Stylelint with auto-fix
 ```
 
 ## Git Hooks (via lefthook)
 
-- **pre-commit** (parallel): format (gofumpt + goimports + gci), golangci-lint --fix, gitleaks, biome (frontend)
+- **pre-commit** (parallel): format (gofumpt + goimports + gci), golangci-lint --fix, gitleaks, stylelint (CSS)
 - **commit-msg:** conform (conventional commit format required)
 - **pre-push** (parallel): tests, govulncheck
 
@@ -174,16 +182,16 @@ When committing via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`), `format.
 ## Cache Sync
 
 - **Markdown files are the ground truth.** The `.specd.cache` database is a derived cache, rebuilt by `SyncCache()` which runs in `PersistentPreRunE` before every non-exempt command.
-- Sync walks `<specd-folder>/specs/*/spec.md` and `<specd-folder>/specs/*/TASK-*.md`, parses frontmatter, computes SHA-256 of the **full file** (frontmatter + body), and reconciles: insert new, update changed (by hash), delete removed, reconcile links and criteria.
+- Sync walks `<specd-dir>/specs/*/spec.md` and `<specd-dir>/specs/*/TASK-*.md`, parses frontmatter, computes SHA-256 of the **full file** (frontmatter + body), and reconciles: insert new, update changed (by hash), delete removed, reconcile links and criteria.
 - FTS and trigram indexes are maintained automatically via database triggers — sync only touches the base tables (`specs`, `spec_links`, `spec_claims`, `tasks`, `task_links`, `task_dependencies`, `task_criteria`).
 - `update-spec` rewrites the entire spec.md from DB state via `rewriteSpecFile()` after any change, keeping the file as ground truth.
-- **Task sync** walks `<specd-folder>/specs/*/TASK-*.md`, parses frontmatter (including `linked_tasks` and `depends_on` YAML lists), extracts H1 title, extracts checkbox criteria from `## Acceptance Criteria`, and reconciles `tasks`, `task_links`, `task_dependencies`, and `task_criteria` tables. Checked state is preserved when criteria text hasn't changed.
+- **Task sync** walks `<specd-dir>/specs/*/TASK-*.md`, parses frontmatter (including `linked_tasks` and `depends_on` YAML lists), extracts H1 title, extracts checkbox criteria from `## Acceptance Criteria`, and reconciles `tasks`, `task_links`, `task_dependencies`, and `task_criteria` tables. Checked state is preserved when criteria text hasn't changed.
 - `update-task` supports `--status`, `--check`, and `--uncheck` flags. It rewrites the task file via `rewriteTaskFile()` after changes, keeping checkboxes in sync with the DB.
 - **Spec title** is the first `# Heading` in the body, NOT a frontmatter field. `extractH1Title()` parses it. `buildSpecMarkdown()` writes it as `# Title` after the `---` delimiter.
 - **Acceptance criteria** (claims) are parsed from `## Acceptance Criteria` section bullets using must/should/is/will language. Stored in `spec_claims` table with a dedicated `spec_claims_fts` FTS5 index for searching claims independently.
 - Spec frontmatter includes `id`, `type`, `summary`, `position`, `linked_specs`, `created_by`, `created_at`, `updated_at`. **No `title` field** — it's in the body.
 - Spec body must have exactly one `# Title` (H1). No other H1 headings allowed. Use `##` for top-level sections, `###`–`######` freely within sections. `## Acceptance Criteria` must be H2.
-- **Task files** live at `<specd-folder>/specs/spec-<N>/TASK-<N>.md` alongside their parent spec. Frontmatter includes `id`, `spec_id`, `status`, `summary`, `position`, `linked_tasks`, `depends_on`, `created_by`, `created_at`, `updated_at`. Title is in the body H1.
+- **Task files** live at `<specd-dir>/specs/spec-<N>/TASK-<N>.md` alongside their parent spec. Frontmatter includes `id`, `spec_id`, `status`, `summary`, `position`, `linked_tasks`, `depends_on`, `created_by`, `created_at`, `updated_at`. Title is in the body H1.
 - **Validation**: `parseSpecMarkdown` validates required fields (`id`, `title` from H1, `type`, `summary`). Invalid specs are silently skipped.
 - `update-spec` supports `--unlink-specs` and `--unlink-kb-chunks` to remove references. Response includes full summaries for linked specs and KB chunks, not just IDs.
 - **Contradiction detection**: `specd search-claims --query "..." --exclude SPEC-X` searches `spec_claims_fts` for matching claims from other specs. Both `/specd-new-spec` and `/specd-update-spec` skills use this in step 3 to find and report conflicting acceptance criteria across specs. The AI evaluates matches — no automated resolution.
@@ -192,10 +200,10 @@ When committing via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`), `format.
 
 ## File Conventions
 
-- **`.specd.json`** — project config marker at the repo root. Committed to git. Contains folder name, spec types, task stages, search settings.
-- **`<specd-folder>/`** (default: `specd/`) — contains `specs/` and `kb/` subdirectories. Committed to git.
-- **`<specd-folder>/specs/spec-<N>/`** — each spec directory holds `spec.md` and its task files (`TASK-<N>.md`).
-- **`<specd-folder>/kb/KB-<N>.md`** — KB document files.
+- **`.specd.json`** — project config marker at the repo root. Committed to git. Contains dir name, spec types, task stages, search settings.
+- **`<specd-dir>/`** (default: `specd/`) — contains `specs/` and `kb/` subdirectories. Committed to git.
+- **`<specd-dir>/specs/spec-<N>/`** — each spec directory holds `spec.md` and its task files (`TASK-<N>.md`).
+- **`<specd-dir>/kb/KB-<N>.md`** — KB document files.
 - **`.specd.cache`** — SQLite cache database at the repo root. **Gitignored.** Rebuilt from spec/task markdown files. Never committed.
 - **`~/.specd/`** — user-level config and skills. Never committed. Contains `config.json`, `skills/`, `update-check.json`, `specd.log`.
 
@@ -223,56 +231,68 @@ When committing via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`), `format.
 
 ## Web UI (Serve)
 
-- `specd serve` starts an HTTP server serving the embedded Svelte SPA and REST API.
+- `specd serve` starts an HTTP server rendering Go templates with htmx support and serving static assets.
 - Port scanning starts at `DefaultServePort` (8000) and tries up to `MaxPortAttempts` (100) ports.
 - Prints port scanning progress and the final URL to the terminal.
 - Opens the user's default browser via `open`/`xdg-open`/`rundll32` depending on OS.
-- Route `/` reads `default_route` from the `meta` table and issues a 307 redirect (default: `/tutorial`).
+- Route `/` reads `default_route` from the `meta` table and issues a 307 redirect (default: `/docs/tutorial`).
 - REST API routes live under `/api/` prefix (e.g. `/api/meta/default-route`).
-- All other paths serve the SPA's `index.html` for client-side routing (Svelte router).
-- Static assets (CSS, JS, fonts) are served from the embedded `ui/dist/` filesystem with content-hash filenames for cache busting.
+- Page routes render Go templates with htmx partial support (HX-Request header → content block only).
+- Static assets (CSS, JS, fonts, vendor libs) are served from the embedded `static/` filesystem.
+- `--dev` flag enables live reload: re-parses templates on every request and injects an SSE-based reload script.
 
-## Frontend (ui/)
+## Frontend (templates/ + static/)
 
-- **Stack**: Vite + Svelte 5 + [BeerCSS](https://www.beercss.com/) (Material Design 3) + [Biome](https://biomejs.dev/)
-- **Font**: [Geist Variable](https://vercel.com/font) via `@fontsource-variable/geist`, bundled (no CDN). Overrides BeerCSS's `--font`.
-- **Package manager**: Always use `pnpm`, never npm or yarn.
-- **BeerCSS** is imported as an npm dependency (`beercss` + `material-dynamic-colors`), NOT from CDN. Use BeerCSS components, grid, spacing, and typography classes natively — do not reinvent what BeerCSS already provides. When building layouts, study BeerCSS docs and the `ui-poc` branch templates for correct class usage.
-- **Material theme** generated from seed color `#1c4bea` via `ui("theme", "#1c4bea")` at app init.
+- **Stack**: Go `html/template` + [htmx](https://htmx.org/) v2 + [BeerCSS](https://www.beercss.com/) (Material Design 3)
+- **Font**: [Geist Variable](https://vercel.com/font) self-hosted in `static/fonts/`. Overrides BeerCSS's `--font`.
+- **BeerCSS** is vendored in `static/vendor/` (`beer.min.css`, `beer.min.js`, `material-dynamic-colors.min.js`). Use BeerCSS components, grid, spacing, and typography classes natively — do not reinvent what BeerCSS already provides.
+- **Material theme** generated from seed color `#1c4bea` via `ui("theme", "#1c4bea")` in `static/js/app.js` at page load.
 - **Light/dark mode** toggle saved in `localStorage` under key `specd-theme`. Restored on load, falls back to system `prefers-color-scheme`.
-- **Layout**: Uses `src/layouts/Layout.svelte` which owns the nav rail, mobile nav, and footer. Pages are rendered via a slot inside `<main>`. Desktop uses BeerCSS nav rail (`<nav class="left l">`), mobile uses top bar + dialog menu.
-- **Router**: Minimal History API router in `src/lib/router.svelte.js`. Exports `router` (a `$state` object with `.path`) and `navigate()`. Clean URLs, no hash routing. `App.svelte` handles route switching. **Important**: Svelte 5 cannot track `$state` reads through opaque function calls — always export reactive state as an object property (e.g. `router.path`), never hide it behind a getter function like `getPath()`.
+
+### Template Layout System
+
+- **Layouts**: Two layout templates in `templates/layouts/`:
+  - `base.html` — full page shell (`<html>`, `<head>`, `<body>`). Renders `<title>`, meta tags, nav, footer, and the `{{block "content" .}}` slot. Used on initial page load.
+  - `partial.html` — lightweight wrapper for htmx partial responses. Renders `<title>` (htmx natively processes `<title>` tags in responses to update `document.title`) followed by `{{block "content" .}}`. Used on htmx navigation so page metadata updates without a full reload.
+- **Partials**: `templates/partials/nav.html` (desktop sidebar + mobile top bar + mobile drawer), `templates/partials/footer.html`.
+- **Pages**: `templates/pages/*.html` — each defines `{{define "content"}}...{{end}}` to override the content block. Current pages: `welcome`, `tasks`, `specs`, `kb`, `search`, `settings`, `docs`, `tutorial`.
+- **PageData struct** (`cmd/templates.go`): `Title`, `Active` (nav highlighting), `DevMode`, `Data` (page-specific payload).
+- **htmx-aware rendering**: `renderPage()` checks the `HX-Request` header. Full page load → renders via `base.html`. htmx navigation → renders via `partial` (content + metadata). This keeps metadata in the layout layer — to add per-page metadata (e.g. description, OG tags), add it to `PageData` and render in both `base.html` and `partial.html`.
+- **Template FuncMap**: `isActive` — used in nav partials for highlighting the active section.
+- **Navigation**: All nav links use `hx-get`, `hx-target="#main-content"`, `hx-swap="innerHTML"`, `hx-push-url="true"` for SPA-like navigation with clean URLs. Nav link sub-templates (`nav-links`, `nav-links-mobile`) are shared between desktop and mobile to avoid duplication.
+- **Nav structure**: Tasks (`task_alt`), Specs (`description`), KB (`menu_book`), Search (`search`) at top → `.max` spacer → Settings (`settings`), Docs (`article`), theme toggle at bottom.
+- **Desktop sidebar toggle**: Hamburger toggles `max` class on the nav via `toggleSidebar()` in `static/js/app.js`. Persisted in `localStorage` under `specd-sidebar`.
+- **Mobile drawer**: `<dialog class="left no-padding">` containing `<nav class="left max surface-container">`. BeerCSS handles the slide-in animation and overlay. Custom CSS (`#mobile-menu > nav`) overrides `position: static` and `block-size: 100%` so the inner nav fills the dialog.
 
 ### Styling
 
-**All frontend styling work — writing markup for new pages, adding a rule, adjusting spacing, overriding a BeerCSS default — must follow [`docs/internal/css-conventions.md`](docs/internal/css-conventions.md).** That document is the single source of truth and is organized in two parts:
-
-- **Part 1 — Building UI**: how to lay out pages, apply spacing, toggle dark mode, and write component styles *using the existing class and layout system* (BeerCSS components + our directional utility classes). Read this before writing any template.
-- **Part 2 — Extending the system**: how to add a CSS variable, a new spacing size/direction/breakpoint, or a new class when Part 1 genuinely can't cover the case. New additions are rare by design.
-
-Non-negotiables enforced by that document (summarised here so tooling picks them up):
-
 - **Use BeerCSS classes natively** for grid (`grid`, `s12`, `l6`), alignment (`top-align`, `center-align`), typography (`large-text`, `bold`), and components. Do not reinvent what BeerCSS ships.
-- **All project-level styles live in `ui/src/app.scss`.** Compiled by Vite's built-in Sass support (`sass` dev dep; no Vite plugin). `<style lang="scss">` in Svelte components works via `vitePreprocess()`.
+- **All project-level styles live in `static/css/src/app.css`.** Plain CSS — no SCSS preprocessor.
 - **Every tunable value is a CSS variable** on `:root`. Never hardcode sizes, spacing, or colors in rule bodies.
-- **Logical properties by default** (`margin-block-start`, `padding-inline`). Physical only when exactly mirroring a BeerCSS rule that uses physical (see `no-space` mixin).
-- **Directional spacing uses utility classes** (`mb-s`, `px-l`, `m:mt-m`, …) in markup, or `@include space($dir, $size)` in SCSS. Do not hand-write `margin-block-end: var(--space-m) !important`.
-- **Scope BeerCSS overrides to their containing element.** Keep footer-specific overrides under `footer ul`, `footer nav`, etc. — never publish a naked `ul { … }` or `nav { … }` rule that leaks into every component.
-- **Never copy CSS from `ui-poc` verbatim.** Reference-only; re-derive through the conventions.
+- **Logical properties by default** (`margin-block-start`, `padding-inline`).
+- **Directional spacing uses utility classes** (`mb-s`, `px-l`, `m:mt-m`, …) in markup. All utilities are pre-generated in `app.css`.
+- **Scope BeerCSS overrides to their containing element.** Keep footer-specific overrides under `footer ul`, `footer nav`, etc.
+
+### CSS Build
+
+- **Pipeline**: Lightning CSS (bundle + minify) → PurgeCSS (strip unused BeerCSS classes by scanning `templates/**/*.html`).
+- **Source**: `static/css/src/app.css` — font-face declarations, design tokens, utility classes, overrides.
+- **Output**: `static/css/dist/app.css` — single bundled, purged, minified CSS file.
+- **Build command**: `task css:build` (or `cd static && pnpm run build:css`).
+- **`static/css/dist/.gitkeep`**: Required so `go:embed` works before first CSS build. The `css/dist/` directory is gitignored, but `.gitkeep` is force-tracked.
+- **Package manager**: pnpm for CSS build deps only (`lightningcss-cli`, `purgecss`).
 
 ### Build & Embedding
 
-- **Build output**: `ui/dist/` — single CSS and single JS bundle with content-hash filenames for cache busting. Vite tree-shakes unused code.
-- **Embedding**: `ui/dist/` is embedded in the Go binary via `go:embed ui/dist` in `main.go`. `fs.Sub` strips the prefix. `cmd/frontend.go` holds the `frontendFS` variable.
-- **`ui/dist/.gitkeep`**: Required so `go:embed` works before first build. The dist/ directory is gitignored, but `.gitkeep` is force-tracked via `!ui/dist/.gitkeep` in `.gitignore`.
-- **Dev workflow**: Use `task qa` — initializes a fresh `tmp/qa/` project, starts Vite (HMR on port 5173) and Air (Go live reload on port 8000) in parallel. Open `localhost:5173`. Vite proxies `/api` to Go. The QA project is re-created on each run to pick up constant/schema changes.
+- **Embedding**: `templates/` and `static/` are embedded in the Go binary via `go:embed` in `main.go`. `fs.Sub` strips the prefixes. `cmd/frontend.go` holds `templateFS` and `staticFS` variables.
+- **Dev workflow**: Use `task qa` — initializes a fresh `tmp/qa/` project, builds CSS, starts Air (Go live reload on port 8000 with `--dev` flag). Open `localhost:8000`. Templates are re-parsed on every request in dev mode. Air watches `.go`, `.html`, `.css`, `.js` files.
+- **Live reload**: `--dev` flag on `specd serve` injects `livereload.js` which connects via SSE. When the server restarts (Air rebuild), the browser auto-reloads.
 - **`specd serve --no-open`**: Suppresses browser auto-open and startup message. Used by Air in QA mode to avoid opening the browser on every Go rebuild.
 
 ### Code Standards
 
 - **HTML**: Must be semantic, accessible, and SEO-friendly. Use `<article>`, `<nav>`, `<main>`, `<header>`, `<footer>`, proper heading hierarchy, `aria-label`, `role` attributes where needed.
-- **Biome config**: `ui/biome.json` — 2-space indent, double quotes, semicolons, trailing commas. `noImportantStyles` is off (CSS utility overrides need `!important`). Svelte overrides disable `noUnusedVariables`, `noUnusedImports`, `useConst`, `useImportType` (false positives from template usage).
-- **Indentation**: 2 spaces for all frontend files (JS, Svelte, CSS, JSON, HTML).
+- **Indentation**: 2 spaces for all frontend files (HTML, CSS, JS, JSON).
 
 ## Project Guard
 

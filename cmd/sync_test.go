@@ -29,7 +29,7 @@ func setupSyncProject(t *testing.T) (projDir string, openDB func() *sql.DB) {
 
 	// Create project config.
 	if err := SaveProjectConfig(projDir, &ProjectConfig{
-		Folder:           "specd",
+		Dir:              "specd",
 		SpecTypes:        specTypes,
 		TaskStages:       taskStages,
 		TopSearchResults: 5,

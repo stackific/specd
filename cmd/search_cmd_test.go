@@ -36,7 +36,7 @@ func TestSearchCmdFindsSpecs(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(origDir) }()
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +109,7 @@ func TestSearchCmdAllKinds(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(origDir) }()
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +168,7 @@ func TestSearchCmdRespectsLimit(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(origDir) }()
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -232,7 +232,7 @@ func TestSearchCmdNegativeCase(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(origDir) }()
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -289,7 +289,7 @@ func TestSearchCmdNoResults(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(origDir) }()
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatal(err)
 	}

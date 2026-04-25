@@ -1,0 +1,16 @@
+{{define "content"}}
+<section class="container">
+  <h3>Documentation</h3>
+  <div class="space"></div>
+  <nav aria-label="Documentation pages">
+    <a href="/docs/tutorial" class="link"
+       hx-get="/docs/tutorial"
+       hx-target="#main-content"
+       hx-swap="innerHTML"
+       hx-push-url="true">
+      <i aria-hidden="true">school</i>
+      <span>Tutorial</span>
+    </a>
+  </nav>
+</section>
+{{end}}

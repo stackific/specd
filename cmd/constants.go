@@ -27,7 +27,7 @@ const (
 
 	// Skills directories.
 	SkillsDir      = "skills" // subdirectory under InstallDir for canonical skills
-	DefaultFolder  = "specd"  // default name for the specd project folder
+	DefaultDir     = "specd"  // default name for the specd project directory
 	EmbedSkillsDir = "skills" // directory name inside the embedded filesystem
 
 	// Provider display names shown in interactive prompts.
@@ -81,6 +81,9 @@ const (
 
 	// Default route for the Web UI root redirect.
 	DefaultRoute = "/docs/tutorial"
+
+	// Theme seed color for Material Design 3 dynamic color generation.
+	ThemeSeedColor = "#1c4bea"
 
 	// API prefix for REST endpoints.
 	APIPrefix = "/api/"

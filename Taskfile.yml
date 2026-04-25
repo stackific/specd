@@ -3,6 +3,9 @@ version: "3"
 vars:
   BINARY: specd
   MODULE: github.com/stackific/specd
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
+  LDFLAGS: -X {{.MODULE}}/cmd.Version={{.VERSION}}
 
 env:
   CGO_ENABLED: "0"
@@ -14,28 +17,28 @@ tasks:
       - task --list-all
 
   build:
-    desc: Build the binary (frontend + Go)
-    deps: [ui:build]
+    desc: Build the binary (CSS + Go)
+    deps: [css:build]
     cmds:
-      - go build -o bin/{{.BINARY}} .
-      - echo "Built bin/{{.BINARY}}"
+      - go build -ldflags '{{.LDFLAGS}}' -o bin/{{.BINARY}} .
+      - echo "Built bin/{{.BINARY}} ({{.VERSION}})"
 
   run:
     desc: Build and run
-    deps: [ui:build]
+    deps: [css:build]
     cmds:
-      - go run .
+      - go run -ldflags '{{.LDFLAGS}}' .
 
   dev:
     desc: Live reload during development (Go only)
     cmds:
       - air
 
-  # --- Frontend ---
+  # --- CSS Build ---
 
-  ui:install:
-    desc: Install frontend dependencies
-    dir: ui
+  css:install:
+    desc: Install CSS build dependencies
+    dir: static
     cmds:
       - pnpm install
     sources:
@@ -44,63 +47,50 @@ tasks:
     generates:
       - node_modules/.pnpm/lock.yaml
 
-  ui:build:
-    desc: Build frontend assets to ui/dist/
-    dir: ui
-    deps: [ui:install]
+  css:lint:
+    desc: Run Stylelint on CSS source
+    dir: static
     cmds:
-      - pnpm run build
+      - pnpm run lint
+
+  css:lint:fix:
+    desc: Run Stylelint with auto-fix
+    dir: static
+    cmds:
+      - pnpm run lint:fix
+
+  css:build:
+    desc: Build CSS (bundle + purge + minify)
+    dir: static
+    deps: [css:install]
+    cmds:
+      - pnpm run build:css
     sources:
-      - src/**/*
-      - index.html
-      - vite.config.js
-      - svelte.config.js
+      - css/src/**/*
+      - ../templates/**/*.html
       - package.json
     generates:
-      - dist/index.html
-
-  ui:dev:
-    desc: Start Vite dev server with HMR
-    dir: ui
-    deps: [ui:install]
-    cmds:
-      - pnpm run dev
+      - css/dist/app.css
 
   qa:
-    desc: Init tmp project, Vite HMR + Go live reload — open localhost:5173
-    deps: [ui:install]
+    desc: Init tmp project, Go live reload with dev mode — open localhost:8000
     cmds:
       - |
         # Build Go once so specd init can run.
+        task css:build
         CGO_ENABLED=0 go build -o tmp/specd .
 
         # Always re-create QA project so it picks up current constants/schema.
         rm -rf tmp/qa
         mkdir -p tmp/qa
-        (cd tmp/qa && ../../tmp/specd init --folder specd --username qa --skip-skills)
+        (cd tmp/qa && ../../tmp/specd init --dir specd --username qa --skip-skills)
 
         echo ""
-        echo "  Open http://localhost:5173 (Vite HMR)"
-        echo "  API  http://localhost:8000 (Go)"
+        echo "  Open http://localhost:8000 (Go + live reload)"
         echo ""
 
-        # Vite serves UI with HMR, Air watches Go and restarts serve.
-        trap 'kill 0' EXIT
-        (cd ui && pnpm dev) &
-        air -c .air-qa.toml &
-        wait
-
-  ui:lint:
-    desc: Run Biome linter on frontend
-    dir: ui
-    cmds:
-      - pnpm run lint
-
-  ui:lint:fix:
-    desc: Run Biome linter with auto-fix
-    dir: ui
-    cmds:
-      - pnpm run lint:fix
+        # Air watches Go + templates + CSS and restarts serve with --dev.
+        air -c .air-qa.toml
 
   test:
     desc: Run tests with pass/fail counts
@@ -179,11 +169,11 @@ tasks:
   # --- Quality gate (runs everything) ---
 
   check:
-    desc: Run all checks (fmt, lint, test, security, frontend)
+    desc: Run all checks (fmt, lint, test, security, CSS)
     cmds:
       - task: fmt:check
       - task: lint
-      - task: ui:lint
+      - task: css:lint
       - task: test
       - task: sec
 
@@ -204,7 +194,7 @@ tasks:
   clean:
     desc: Remove build artifacts
     cmds:
-      - rm -rf bin/ tmp/ ui/dist/
+      - rm -rf bin/ tmp/ static/css/dist/app.css
 
   # --- Cross-compilation ---
 
@@ -220,24 +210,24 @@ tasks:
 
   build:linux-amd64:
     cmds:
-      - GOOS=linux GOARCH=amd64 go build -o bin/{{.BINARY}}-linux-amd64 .
+      - GOOS=linux GOARCH=amd64 go build -ldflags '{{.LDFLAGS}}' -o bin/{{.BINARY}}-linux-amd64 .
 
   build:linux-arm64:
     cmds:
-      - GOOS=linux GOARCH=arm64 go build -o bin/{{.BINARY}}-linux-arm64 .
+      - GOOS=linux GOARCH=arm64 go build -ldflags '{{.LDFLAGS}}' -o bin/{{.BINARY}}-linux-arm64 .
 
   build:darwin-amd64:
     cmds:
-      - GOOS=darwin GOARCH=amd64 go build -o bin/{{.BINARY}}-darwin-amd64 .
+      - GOOS=darwin GOARCH=amd64 go build -ldflags '{{.LDFLAGS}}' -o bin/{{.BINARY}}-darwin-amd64 .
 
   build:darwin-arm64:
     cmds:
-      - GOOS=darwin GOARCH=arm64 go build -o bin/{{.BINARY}}-darwin-arm64 .
+      - GOOS=darwin GOARCH=arm64 go build -ldflags '{{.LDFLAGS}}' -o bin/{{.BINARY}}-darwin-arm64 .
 
   build:windows-amd64:
     cmds:
-      - GOOS=windows GOARCH=amd64 go build -o bin/{{.BINARY}}-windows-amd64.exe .
+      - GOOS=windows GOARCH=amd64 go build -ldflags '{{.LDFLAGS}}' -o bin/{{.BINARY}}-windows-amd64.exe .
 
   build:windows-arm64:
     cmds:
-      - GOOS=windows GOARCH=arm64 go build -o bin/{{.BINARY}}-windows-arm64.exe .
+      - GOOS=windows GOARCH=arm64 go build -ldflags '{{.LDFLAGS}}' -o bin/{{.BINARY}}-windows-arm64.exe .

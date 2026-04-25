@@ -28,7 +28,7 @@ specd init [project-path] [flags]
 
 | Flag | Type | Default | Description |
 |---|---|---|---|
-| `--folder` | string | `specd` | Folder name for specd project files |
+| `--dir` | string | `specd` | Directory name for specd project files |
 | `--username` | string | | Your username (prompts interactively if omitted) |
 | `--skip-skills` | bool | `false` | Skip AI skills installation prompt |
 
@@ -36,15 +36,15 @@ specd init [project-path] [flags]
 
 - `.specd.json` — project config marker (commit to VCS)
 - `.specd.cache` — SQLite cache database (add to `.gitignore`)
-- `<folder>/specs/` — directory for spec and task files
-- `<folder>/kb/` — directory for knowledge base documents
+- `<dir>/specs/` — directory for spec and task files
+- `<dir>/kb/` — directory for knowledge base documents
 - `~/.specd/config.json` — global username config (first run only)
 
 ### Interactive Prompts
 
-When `--folder` and `--username` are both omitted, init runs interactively:
+When `--dir` and `--username` are both omitted, init runs interactively:
 
-1. Folder name (default: `specd`)
+1. Directory name (default: `specd`)
 2. Username (tries to detect from global config or `git config user.name`)
 3. Spec types — select from defaults or add custom types
 4. Task stages — select from required + optional stages

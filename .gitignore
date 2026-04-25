@@ -3,7 +3,9 @@ tmp/
 .task/
 *.exe
 .DS_Store
-node_modules/
-ui/dist/
-!ui/dist/.gitkeep
+static/node_modules/
+static/.pnpm-store/
+static/css/dist/
+!static/css/dist/.gitkeep
 ui-poc
+.playwright-mcp

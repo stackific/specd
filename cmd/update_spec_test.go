@@ -42,7 +42,7 @@ func TestUpdateSpecChangesType(t *testing.T) {
 	defer func() { _ = os.Chdir(origDir) }()
 
 	// Init + create spec.
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("init: %v", err)
 	}
@@ -103,7 +103,7 @@ func TestUpdateSpecLinksSpecs(t *testing.T) {
 	defer func() { _ = os.Chdir(origDir) }()
 
 	// Init + create two specs.
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("init: %v", err)
 	}
@@ -159,7 +159,7 @@ func TestUpdateSpecRewritesLinkedSpecsInFile(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(origDir) }()
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("init: %v", err)
 	}
@@ -232,7 +232,7 @@ func TestUpdateSpecUnlinkSpecs(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(origDir) }()
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -314,7 +314,7 @@ func TestUpdateSpecResponseIncludesSummaries(t *testing.T) {
 	}
 	defer func() { _ = os.Chdir(origDir) }()
 
-	rootCmd.SetArgs([]string{"init", "--folder", "specd", "--username", "tester", "--skip-skills"})
+	rootCmd.SetArgs([]string{"init", "--dir", "specd", "--username", "tester", "--skip-skills"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
