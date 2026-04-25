@@ -14,9 +14,9 @@ A specification-driven development CLI tool.
 - **Security:** gosec (static), govulncheck (deps), gitleaks (secrets)
 - **Commit linting:** [conform](https://github.com/siderolabs/conform) (conventional commits)
 - **Frontend:** Go `html/template` + [htmx](https://htmx.org/) + [BeerCSS](https://www.beercss.com/) (Material Design 3), server-rendered, embedded in Go binary
-- **CSS build:** [Lightning CSS](https://lightningcss.dev/) (bundle + minify) + [PurgeCSS](https://purgecss.com/) (tree-shake unused classes)
-- **CSS linting:** [Stylelint](https://stylelint.io/) (standard config)
-- **Package manager:** pnpm (for CSS build/lint deps in `static/`)
+- **CSS build:** [Sass](https://sass-lang.com/) (SCSS → CSS) + [Lightning CSS](https://lightningcss.dev/) (bundle + minify) + [PurgeCSS](https://purgecss.com/) (tree-shake unused classes)
+- **CSS linting:** [Stylelint](https://stylelint.io/) (standard SCSS config)
+- **Package manager:** pnpm (always use pnpm, never npm or yarn)
 - You must write idiomatic Go and directory structure.
 - You must use 2 spaces as indentation for Non-Go code file
 
@@ -40,7 +40,7 @@ cmd/update_spec.go   # specd update-spec command
 cmd/update_task.go   # specd update-task command (status change, criteria toggle)
 cmd/list_specs.go    # specd list-specs command (paginated)
 cmd/list_tasks.go    # specd list-tasks command (paginated, filterable)
-cmd/serve.go         # specd serve command (HTTP server with SPA + REST API)
+cmd/serve.go         # specd serve command (HTTP server with htmx + REST API)
 cmd/schema.sql       # Embedded SQLite schema (dynamic CHECK constraints)
 templates/           # Go HTML templates (layouts, partials, pages)
 templates/layouts/   # Base layout with content block
@@ -50,7 +50,7 @@ static/              # Static assets (embedded in Go binary)
 static/vendor/       # Vendored JS (htmx, BeerCSS, Material Dynamic Colors)
 static/fonts/        # Geist Variable font files (woff2)
 static/images/       # Favicons, logos, manifest, robots.txt
-static/css/src/      # CSS source (app.css with utilities)
+static/css/src/      # SCSS source (app.scss with maps, mixins, utility generators)
 static/css/dist/     # Built CSS output (gitignored, bundled + purged + minified)
 static/js/           # Client-side JS (theme, nav, htmx config, livereload)
 static/package.json  # CSS build deps (lightningcss-cli, purgecss)
@@ -151,7 +151,7 @@ When committing via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`), `format.
 - **All tunables and magic strings go in `cmd/constants.go`.** Never hardcode values (search weights, thresholds, directory names, file names) in function bodies or SQL strings. If a value might be tuned, it belongs in constants.
 - **Spec acceptance criteria use plain list items** (`- criteria text`), never checkbox syntax. **Task acceptance criteria use checkbox syntax** (`- [ ] text` / `- [x] text`) — checked state is stored as an integer (`0`/`1`) in `task_criteria.checked` and synced bidirectionally between the markdown file and the database.
 - **When the codebase outgrows `cmd/`** (~20+ files), extract domain logic into `internal/` packages. For now `cmd/` is fine for a Cobra CLI.
-- **Frontend conventions** are documented in the "Frontend (ui/)" section below.
+- **Frontend conventions** are documented in the "Frontend (templates/ + static/)" section below.
 
 ## Skills
 
@@ -200,7 +200,7 @@ When committing via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`), `format.
 
 ## File Conventions
 
-- **`.specd.json`** — project config marker at the repo root. Committed to git. Contains dir name, spec types, task stages, search settings.
+- **`.specd.json`** — project config marker at the repo root. Committed to git. Contains directory name, spec types, task stages, search settings.
 - **`<specd-dir>/`** (default: `specd/`) — contains `specs/` and `kb/` subdirectories. Committed to git.
 - **`<specd-dir>/specs/spec-<N>/`** — each spec directory holds `spec.md` and its task files (`TASK-<N>.md`).
 - **`<specd-dir>/kb/KB-<N>.md`** — KB document files.
@@ -244,8 +244,9 @@ When committing via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`), `format.
 ## Frontend (templates/ + static/)
 
 - **Stack**: Go `html/template` + [htmx](https://htmx.org/) v2 + [BeerCSS](https://www.beercss.com/) (Material Design 3)
-- **Font**: [Geist Variable](https://vercel.com/font) self-hosted in `static/fonts/`. Overrides BeerCSS's `--font`.
-- **BeerCSS** is vendored in `static/vendor/` (`beer.min.css`, `beer.min.js`, `material-dynamic-colors.min.js`). Use BeerCSS components, grid, spacing, and typography classes natively — do not reinvent what BeerCSS already provides.
+- **Font**: [Geist Variable](https://vercel.com/font) via `@fontsource-variable/geist` (woff2 files copied to `static/fonts/` at build time). Overrides BeerCSS's `--font`.
+- **Package manager**: Always use `pnpm`, never npm or yarn.
+- **BeerCSS** is vendored in `static/vendor/` (`beer.min.css`, `beer.min.js`, `material-dynamic-colors.min.js`). Use BeerCSS components, grid, spacing, and typography classes natively — do not reinvent what BeerCSS already provides. When building layouts, study BeerCSS docs for correct class usage.
 - **Material theme** generated from seed color `#1c4bea` via `ui("theme", "#1c4bea")` in `static/js/app.js` at page load.
 - **Light/dark mode** toggle saved in `localStorage` under key `specd-theme`. Restored on load, falls back to system `prefers-color-scheme`.
 
@@ -256,31 +257,40 @@ When committing via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`), `format.
   - `partial.html` — lightweight wrapper for htmx partial responses. Renders `<title>` (htmx natively processes `<title>` tags in responses to update `document.title`) followed by `{{block "content" .}}`. Used on htmx navigation so page metadata updates without a full reload.
 - **Partials**: `templates/partials/nav.html` (desktop sidebar + mobile top bar + mobile drawer), `templates/partials/footer.html`.
 - **Pages**: `templates/pages/*.html` — each defines `{{define "content"}}...{{end}}` to override the content block. Current pages: `welcome`, `tasks`, `specs`, `kb`, `search`, `settings`, `docs`, `tutorial`.
-- **PageData struct** (`cmd/templates.go`): `Title`, `Active` (nav highlighting), `DevMode`, `Data` (page-specific payload).
+- **PageData struct** (`cmd/templates.go`): `Title`, `Active` (nav highlighting), `DevMode`, `CSSHash`, `JSHash`, `Data` (page-specific payload).
 - **htmx-aware rendering**: `renderPage()` checks the `HX-Request` header. Full page load → renders via `base.html`. htmx navigation → renders via `partial` (content + metadata). This keeps metadata in the layout layer — to add per-page metadata (e.g. description, OG tags), add it to `PageData` and render in both `base.html` and `partial.html`.
 - **Template FuncMap**: `isActive` — used in nav partials for highlighting the active section.
 - **Navigation**: All nav links use `hx-get`, `hx-target="#main-content"`, `hx-swap="innerHTML"`, `hx-push-url="true"` for SPA-like navigation with clean URLs. Nav link sub-templates (`nav-links`, `nav-links-mobile`) are shared between desktop and mobile to avoid duplication.
-- **Nav structure**: Tasks (`task_alt`), Specs (`description`), KB (`menu_book`), Search (`search`) at top → `.max` spacer → Settings (`settings`), Docs (`article`), theme toggle at bottom.
 - **Desktop sidebar toggle**: Hamburger toggles `max` class on the nav via `toggleSidebar()` in `static/js/app.js`. Persisted in `localStorage` under `specd-sidebar`.
 - **Mobile drawer**: `<dialog class="left no-padding">` containing `<nav class="left max surface-container">`. BeerCSS handles the slide-in animation and overlay. Custom CSS (`#mobile-menu > nav`) overrides `position: static` and `block-size: 100%` so the inner nav fills the dialog.
 
 ### Styling
 
+**All frontend styling work — writing markup for new pages, adding a rule, adjusting spacing, overriding a BeerCSS default — must follow [`docs/internal/css-conventions.md`](docs/internal/css-conventions.md).** That document is the single source of truth and is organized in two parts:
+
+- **Part 1 — Building UI**: how to lay out pages, apply spacing, toggle dark mode, and write component styles *using the existing class and layout system* (BeerCSS components + our directional utility classes). Read this before writing any template.
+- **Part 2 — Extending the system**: how to add a CSS variable, a new spacing size/direction/breakpoint, or a new class when Part 1 genuinely can't cover the case. New additions are rare by design.
+
+Non-negotiables enforced by that document (summarised here so tooling picks them up):
+
 - **Use BeerCSS classes natively** for grid (`grid`, `s12`, `l6`), alignment (`top-align`, `center-align`), typography (`large-text`, `bold`), and components. Do not reinvent what BeerCSS ships.
-- **All project-level styles live in `static/css/src/app.css`.** Plain CSS — no SCSS preprocessor.
+- **All project-level styles live in `static/css/src/app.scss`.** SCSS with variables, maps, mixins, and `@each` loops.
+- **Spacing utilities are generated** from `$breakpoints`, `$size-keys`, and `$dirs` maps via `@include spacing-utilities($bp)`. Never hand-write utility classes — add to the maps instead.
+- **Use the `space()` and `no-space()` mixins** in component selectors (e.g. `footer nav { @include space(mt, m); }`) to apply the same values the utility classes provide.
 - **Every tunable value is a CSS variable** on `:root`. Never hardcode sizes, spacing, or colors in rule bodies.
-- **Logical properties by default** (`margin-block-start`, `padding-inline`).
-- **Directional spacing uses utility classes** (`mb-s`, `px-l`, `m:mt-m`, …) in markup. All utilities are pre-generated in `app.css`.
-- **Scope BeerCSS overrides to their containing element.** Keep footer-specific overrides under `footer ul`, `footer nav`, etc.
+- **Logical properties by default** (`margin-block-start`, `padding-inline`). Physical only when exactly mirroring a BeerCSS rule that uses physical (see `no-space` mixin).
+- **Directional spacing uses utility classes** (`mb-s`, `px-l`, `m:mt-m`, …) in markup, or `@include space($dir, $size)` in SCSS. Do not hand-write `margin-block-end: var(--space-m) !important`.
+- **Scope BeerCSS overrides to their containing element.** Keep footer-specific overrides under `footer ul`, `footer nav`, etc. — never publish a naked `ul { … }` or `nav { … }` rule that leaks into every component.
 
 ### CSS Build
 
-- **Pipeline**: Lightning CSS (bundle + minify) → PurgeCSS (strip unused BeerCSS classes by scanning `templates/**/*.html`).
-- **Source**: `static/css/src/app.css` — font-face declarations, design tokens, utility classes, overrides.
-- **Output**: `static/css/dist/app.css` — single bundled, purged, minified CSS file.
+- **Pipeline**: Sass (compile SCSS) → Lightning CSS (bundle + minify) → PurgeCSS (strip unused custom classes by scanning `templates/**/*.html`) → concatenate with BeerCSS.
+- **Source**: `static/css/src/app.scss` — design tokens, SCSS maps/mixins, utility class generators, overrides.
+- **Output**: `static/css/dist/app.css` — single bundled, purged, minified CSS file (BeerCSS + custom).
 - **Build command**: `task css:build` (or `cd static && pnpm run build:css`).
 - **`static/css/dist/.gitkeep`**: Required so `go:embed` works before first CSS build. The `css/dist/` directory is gitignored, but `.gitkeep` is force-tracked.
-- **Package manager**: pnpm for CSS build deps only (`lightningcss-cli`, `purgecss`).
+- **Package manager**: pnpm for CSS build deps only (`sass`, `lightningcss-cli`, `purgecss`).
+- **CSS linting**: Stylelint with `stylelint-config-standard-scss`. Run `task css:lint` or `cd static && pnpm run lint`.
 
 ### Build & Embedding
 
