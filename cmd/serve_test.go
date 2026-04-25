@@ -153,11 +153,17 @@ func TestInitDBSeedsDefaultRoute(t *testing.T) {
 func testTemplateFS() fstest.MapFS {
 	return fstest.MapFS{
 		"layouts/base.html": {Data: []byte(
-			`{{define "base.html"}}<!DOCTYPE html><html><body>` +
+			`{{define "base.html"}}<!DOCTYPE html><html><head>` +
+				`<title>{{.Title}} — specd</title>` +
+				`</head><body>` +
 				`{{template "nav" .}}` +
 				`<main>{{block "content" .}}{{end}}</main>` +
 				`{{template "footer" .}}` +
 				`</body></html>{{end}}`,
+		)},
+		"layouts/partial.html": {Data: []byte(
+			`{{define "partial"}}<title>{{.Title}} — specd</title>` +
+				`{{block "content" .}}{{end}}{{end}}`,
 		)},
 		"partials/nav.html":    {Data: []byte(`{{define "nav"}}<nav>{{if isActive .Active "docs"}}docs-active{{end}}</nav>{{end}}`)},
 		"partials/footer.html": {Data: []byte(`{{define "footer"}}<footer>footer</footer>{{end}}`)},
@@ -224,6 +230,9 @@ func TestRenderPageHtmxPartial(t *testing.T) {
 	body := w.Body.String()
 	if strings.Contains(body, "<!DOCTYPE html>") {
 		t.Error("htmx partial should not include full HTML document")
+	}
+	if !strings.Contains(body, "<title>Tutorial — specd</title>") {
+		t.Error("expected title in partial for htmx to update document.title")
 	}
 	if !strings.Contains(body, "<h1>Tutorial</h1>") {
 		t.Error("expected tutorial content in partial")

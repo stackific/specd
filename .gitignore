@@ -3,8 +3,8 @@ tmp/
 .task/
 *.exe
 .DS_Store
+.pnpm-store
 static/node_modules/
-static/.pnpm-store/
 static/css/dist/
 !static/css/dist/.gitkeep
 ui-poc
