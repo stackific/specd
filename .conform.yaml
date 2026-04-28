@@ -20,4 +20,6 @@ policies:
           - ci
           - chore
           - revert
-        scopes: ["*"]
+        # Conform compiles each entry as a regexp; "*" panics because it's not
+        # a valid pattern. Use ".*" to match any scope (the original intent).
+        scopes: [".*"]
