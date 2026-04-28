@@ -147,7 +147,7 @@ func Search(db *sql.DB, query, kind string, limit int, excludeID string, weights
 		KB:    []SearchResult{},
 	}
 
-	slog.Debug("search", "kind", kind, "limit", limit, "bm25_query", bm25Query, "trigram_query", trigramQuery)
+	slog.Debug("search", "kind", kind, "limit", limit, "bm25_query", bm25Query, "trigram_query", trigramQuery) //nolint:gosec // queries are sanitized via sanitizeBM25/sanitizeTrigram before reaching this point
 
 	// Search each requested kind using the shared searchByKind function.
 	if kind == KindAll || kind == KindSpec {

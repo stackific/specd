@@ -12,4 +12,7 @@ tmp_dir = "tmp"
   delay = 500
 
 [misc]
-  clean_on_exit = true
+  # Do NOT clean on exit: tmp/ contains tmp/qa (the seeded QA project)
+  # alongside the built binary. clean_on_exit = true would delete tmp/
+  # wholesale on every Air shutdown and erase the QA data.
+  clean_on_exit = false

@@ -581,7 +581,7 @@ func writeTaskFile(t *testing.T, projDir, specDirName, id, specID, title, status
 		t.Fatal(err)
 	}
 
-	md := buildTaskMarkdown(id, specID, title, summary, status, "sync-tester", "2025-01-01T00:00:00Z", nil, nil, body)
+	md := buildTaskMarkdown(id, specID, title, summary, status, "sync-tester", "2025-01-01T00:00:00Z", 0, nil, nil, body)
 	if err := os.WriteFile(filepath.Join(dir, id+".md"), []byte(md), 0o644); err != nil { //nolint:gosec // test file
 		t.Fatal(err)
 	}

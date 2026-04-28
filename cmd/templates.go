@@ -25,6 +25,25 @@ var templateFuncMap = template.FuncMap{
 	"isActive": func(active, section string) bool {
 		return active == section
 	},
+	"searchResultHref":        searchResultHref,
+	"fromSlug":                FromSlug,
+	"markdown":                RenderMarkdown,
+	"stripAcceptanceCriteria": StripAcceptanceCriteria,
+}
+
+// searchResultHref returns the page URL for a search result of the given kind
+// and ID. Each kind has its own detail page at /<kind>/{id}.
+func searchResultHref(kind, id string) string {
+	switch kind {
+	case KindSpec:
+		return "/specs/" + id
+	case KindTask:
+		return "/tasks/" + id
+	case KindKB:
+		return "/kb/" + id
+	default:
+		return "/search"
+	}
 }
 
 // parseTemplates parses all templates from the given filesystem and returns
@@ -72,6 +91,11 @@ func parseTemplates(fsys fs.FS) (map[string]*template.Template, error) {
 // has the HX-Request header (htmx navigation), only the "content" block is
 // rendered for a partial swap. Otherwise the full page via "base.html" is
 // rendered.
+//
+// History restores (browser back/forward when htmx's history cache misses)
+// arrive with HX-Request: true AND HX-History-Restore-Request: true. They
+// need the full page back, otherwise the nav rail and other shell elements
+// disappear from the restored DOM.
 func renderPage(w http.ResponseWriter, r *http.Request, pages map[string]*template.Template, name string, data *PageData) {
 	tmpl, ok := pages[name]
 	if !ok {
@@ -83,7 +107,7 @@ func renderPage(w http.ResponseWriter, r *http.Request, pages map[string]*templa
 	// "partial" wraps the content block with a <title> tag so htmx
 	// can update document.title on navigation.
 	target := "base.html"
-	if r.Header.Get("HX-Request") == "true" {
+	if r.Header.Get("HX-Request") == "true" && r.Header.Get("HX-History-Restore-Request") != "true" {
 		target = "partial"
 	}
 

@@ -80,10 +80,16 @@ tasks:
         task css:build
         CGO_ENABLED=0 go build -o tmp/specd .
 
-        # Always re-create QA project so it picks up current constants/schema.
-        rm -rf tmp/qa
-        mkdir -p tmp/qa
-        (cd tmp/qa && ../../tmp/specd init --dir specd --username qa --skip-skills)
+        # Initialize the QA project on first run; preserve existing data on
+        # subsequent runs so seeded specs/tasks/KB survive across restarts.
+        # To force a clean slate, run: rm -rf tmp/qa
+        if [ ! -f tmp/qa/.specd.json ]; then
+          rm -rf tmp/qa
+          mkdir -p tmp/qa
+          (cd tmp/qa && ../../tmp/specd init --dir specd --username qa --skip-skills)
+        else
+          echo "  Reusing existing tmp/qa project (delete it to re-init)"
+        fi
 
         echo ""
         echo "  Open http://localhost:8000 (Go + live reload)"

@@ -1,0 +1,129 @@
+{{define "task-criteria-article"}}
+{{$task := .Task}}
+<article id="task-criteria-article" class="tile surface border no-margin">
+  <nav class="row no-padding no-margin tile-meta">
+    <span class="bold max">Acceptance criteria</span>
+    <span class="chip tiny">{{.CompletedCount}} / {{.TotalCriteria}}</span>
+  </nav>
+  <ul class="list border no-margin">
+    {{range $task.Criteria}}
+    <li>
+      <button class="row max no-padding transparent task-criteria-toggle"
+              type="button"
+              hx-post="/api/tasks/{{$task.ID}}/criteria/{{.Position}}/toggle"
+              hx-target="#task-criteria-article"
+              hx-swap="outerHTML"
+              aria-pressed="{{if eq .Checked 1}}true{{else}}false{{end}}"
+              aria-label="Toggle: {{.Text}}">
+        <i>{{if eq .Checked 1}}check_box{{else}}check_box_outline_blank{{end}}</i>
+        <span class="max left-align">{{.Text}}</span>
+      </button>
+    </li>
+    {{end}}
+  </ul>
+</article>
+{{end}}
+
+{{define "content"}}
+{{with .Data}}
+{{$task := .Task}}
+<section class="container padding">
+  <nav class="row top-align wrap">
+    <a class="chip tiny no-margin"
+       href="/tasks"
+       hx-get="/tasks"
+       hx-target="#main-content"
+       hx-swap="innerHTML"
+       hx-push-url="true">
+      <i>arrow_back</i>
+      <span>Tasks</span>
+    </a>
+    {{if .ParentSpec}}
+    <a class="chip tiny no-margin"
+       href="/specs/{{.ParentSpec.ID}}"
+       hx-get="/specs/{{.ParentSpec.ID}}"
+       hx-target="#main-content"
+       hx-swap="innerHTML"
+       hx-push-url="true">
+      <i>description</i>
+      <span>{{.ParentSpec.ID}}</span>
+    </a>
+    {{end}}
+  </nav>
+  <div class="space"></div>
+
+  <article class="tile surface border no-margin">
+    <nav class="row no-padding no-margin tile-meta">
+      <span class="chip tiny primary-container">{{$task.ID}}</span>
+      <span class="chip tiny">{{.StatusLabel}}</span>
+    </nav>
+    <h5 class="no-margin">{{$task.Title}}</h5>
+    {{if $task.Summary}}
+    <p class="large-text secondary-text no-margin">{{$task.Summary}}</p>
+    {{end}}
+    {{if .BodyClean}}
+    <div class="spec-body">{{markdown .BodyClean}}</div>
+    {{end}}
+  </article>
+
+  {{if gt .TotalCriteria 0}}
+  <div class="space"></div>
+  {{template "task-criteria-article" .}}
+  {{end}}
+
+  {{if or $task.LinkedTasks $task.DependsOn}}
+  <div class="space"></div>
+  <div class="grid">
+    {{if $task.DependsOn}}
+    <div class="s12 m6">
+      <article class="tile surface border no-margin">
+        <nav class="row no-padding no-margin tile-meta">
+          <span class="bold max">Blocked by</span>
+          <span class="chip tiny">{{len $task.DependsOn}}</span>
+        </nav>
+        <nav class="row wrap no-padding no-margin">
+          {{range $task.DependsOn}}
+          <a class="chip tiny"
+             href="/tasks/{{.}}"
+             hx-get="/tasks/{{.}}"
+             hx-target="#main-content"
+             hx-swap="innerHTML"
+             hx-push-url="true">{{.}}</a>
+          {{end}}
+        </nav>
+      </article>
+    </div>
+    {{end}}
+
+    {{if $task.LinkedTasks}}
+    <div class="s12 m6">
+      <article class="tile surface border no-margin">
+        <nav class="row no-padding no-margin tile-meta">
+          <span class="bold max">Linked tasks</span>
+          <span class="chip tiny">{{len $task.LinkedTasks}}</span>
+        </nav>
+        <nav class="row wrap no-padding no-margin">
+          {{range $task.LinkedTasks}}
+          <a class="chip tiny"
+             href="/tasks/{{.}}"
+             hx-get="/tasks/{{.}}"
+             hx-target="#main-content"
+             hx-swap="innerHTML"
+             hx-push-url="true">{{.}}</a>
+          {{end}}
+        </nav>
+      </article>
+    </div>
+    {{end}}
+  </div>
+  {{end}}
+
+  <div class="space"></div>
+  <p class="secondary-text small-text no-margin">
+    Created {{$task.CreatedAt}}{{if $task.CreatedBy}} by {{$task.CreatedBy}}{{end}}
+    &middot;
+    Updated {{$task.UpdatedAt}}{{if $task.UpdatedBy}} by {{$task.UpdatedBy}}{{end}}
+  </p>
+</section>
+{{end}}
+{{end}}

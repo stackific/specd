@@ -93,6 +93,21 @@ $dirs: (
   --space-s: 0.5rem;
   --space-m: 1rem;
   --space-l: 1.5rem;
+
+  // Scale factor applied to BeerCSS h1–h6 sizes when headings appear inside
+  // body content (.spec-body, etc.). 1 = no change, 0.55 ≈ tame the giant
+  // page-heading sizes down to in-body weights.
+  --markdown-heading-scale: 0.55;
+
+  // Per-level multipliers — match BeerCSS's h1–h6 font-size scale so we can
+  // re-derive any heading's in-body size by tweaking either this multiplier
+  // or the global --markdown-heading-scale.
+  --markdown-h1-mult: 3.5625;
+  --markdown-h2-mult: 2.8125;
+  --markdown-h3-mult: 2.25;
+  --markdown-h4-mult: 2;
+  --markdown-h5-mult: 1.75;
+  --markdown-h6-mult: 1.5;
 }
 
 @media (width >= 601px) {
@@ -113,8 +128,25 @@ body {
   letter-spacing: var(--letter-spacing);
 }
 
+// Articles host user content (titles, summaries, IDs) where long
+// unbroken tokens would otherwise overflow the rounded card edge.
+// Default `overflow-wrap: normal` keeps "Service-Communication-Layer"
+// glued together; `anywhere` wraps it at any character when needed.
+article {
+  overflow-wrap: anywhere;
+}
+
 #main-content {
   font-size: var(--body-font-size);
+}
+
+// When a page opts into `responsive max` (e.g. /tasks for the kanban),
+// BeerCSS removes the 75rem cap. Center child blocks horizontally so
+// content narrower than the viewport stays aligned in the middle.
+#main-content.responsive.max {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 // -- Container ---------------------------------------------------
@@ -136,6 +168,13 @@ nav:is(.left, .right) {
   // only when the rail is expanded.
   &.max > button {
     margin-inline-start: 0.5rem;
+  }
+
+  // Breathe room between adjacent rail links when the rail is expanded
+  // (mobile drawer always uses .max; desktop rail picks it up via the
+  // hamburger toggle). Collapsed desktop rail keeps BeerCSS defaults.
+  &.max > a[data-nav-link] {
+    @include space(my, t);
   }
 }
 
@@ -196,6 +235,243 @@ footer nav .grid > div {
     @media (min-width: $min) {
       @include spacing-utilities($bp);
     }
+  }
+}
+
+// -- Chip size: tiny --------------------------------------------
+// BeerCSS ships .medium / .large for chips but no smaller-than-default
+// modifier. .tiny extends the same `--_size` / `--_padding` pattern.
+
+.chip.tiny {
+  --_size: 1.5rem;
+  --_padding: 0.5rem;
+
+  font-size: 0.75rem;
+}
+
+// -- Kanban board ------------------------------------------------
+
+:root {
+  --kanban-column-min: 13rem;
+  --kanban-column-max: 15rem;
+  --kanban-cards-min-h: 6rem;
+}
+
+.tasks-page {
+  // Shrink to the kanban's natural width and center within the viewport,
+  // so the page header lines up with the kanban's left edge on wide screens.
+  inline-size: max-content;
+  max-inline-size: 100%;
+  margin-inline: auto;
+}
+
+.tasks-page-header {
+  @include space(mb, m);
+}
+
+.kanban-root {
+  width: 100%;
+}
+
+.kanban {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: var(--space-m);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-block-end: var(--space-s);
+}
+
+.kanban-column {
+  flex: 0 0 auto;
+  min-inline-size: var(--kanban-column-min);
+  max-inline-size: var(--kanban-column-max);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  scroll-snap-align: start;
+
+  @include no-space;
+}
+
+.kanban-column-header {
+  align-items: center;
+  gap: var(--space-s);
+  flex: 0 0 auto;
+  min-block-size: 0;
+
+  @include no-space;
+}
+
+.kanban-collapse-btn {
+  flex: 0 0 auto;
+}
+
+.kanban-collapse-btn > i {
+  transition: transform 150ms ease-in-out;
+}
+
+.kanban-column.collapsed {
+  min-inline-size: 2.5rem;
+  max-inline-size: 2.5rem;
+}
+
+.kanban-column.collapsed .kanban-cards {
+  display: none;
+}
+
+.kanban-column.collapsed .kanban-column-header {
+  flex-direction: column;
+  gap: var(--space-t);
+}
+
+.kanban-column.collapsed .kanban-collapse-btn {
+  order: -1;
+}
+
+.kanban-column.collapsed .kanban-column-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+
+  @include space(my, s);
+}
+
+.kanban-column.collapsed .kanban-collapse-btn > i {
+  transform: rotate(180deg);
+}
+
+.kanban-cards {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+  min-block-size: var(--kanban-cards-min-h);
+}
+
+.kanban-cards.drop-target {
+  outline: 2px dashed var(--primary);
+  outline-offset: -4px;
+}
+
+// Shared content tile look — used by kanban cards on /tasks and spec/search
+// cards on /specs and /search. Visual only: tight column layout with the
+// project's small padding/gap. Drag-specific concerns stay scoped to
+// .kanban-card below.
+.tile,
+.kanban-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-t);
+
+  @include space(py, s);
+  @include space(px, s);
+}
+
+.tile p,
+.kanban-card p {
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+.tile-meta {
+  gap: var(--space-t);
+  align-items: center;
+}
+
+.kanban-card {
+  cursor: grab;
+}
+
+.kanban-card:active {
+  cursor: grabbing;
+}
+
+.kanban-card.dragging {
+  opacity: 0.4;
+}
+
+// The TASK-N chip on a kanban card is the only click affordance for opening
+// the detail page. The card itself stays drag-only.
+.kanban-card-link {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.kanban-placeholder {
+  block-size: 2.5rem;
+  border: 2px dashed var(--primary);
+  border-radius: var(--space-s);
+  background: var(--surface-variant);
+  opacity: 0.5;
+}
+
+.kanban-empty {
+  opacity: 0.6;
+}
+
+// -- Search results ---------------------------------------------
+
+.search-result-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.search-result-card {
+  cursor: pointer;
+  transition: background-color 120ms ease-in-out;
+}
+
+.search-result-link:hover .search-result-card,
+.search-result-link:focus-visible .search-result-card {
+  background-color: var(--surface-variant);
+}
+
+// -- Spec acceptance criteria ------------------------------------
+
+// Reuse BeerCSS `.list.border` for the bordered row layout, but neutralise
+// the interactive affordances (pointer cursor + hover/focus surface) — these
+// rows are read-only data, not menu items.
+.spec-claims > li,
+.spec-claims > li > details > summary {
+  cursor: default;
+}
+
+.spec-claims > li:hover,
+.spec-claims > li:focus-visible {
+  background-color: transparent;
+}
+
+// -- Spec/task body ----------------------------------------------
+
+// Container for goldmark-rendered markdown HTML. Goldmark emits standard
+// tags (h1–h6, p, ul/ol, code, pre, blockquote, table) which BeerCSS already
+// styles; this rule only adds wrapping for long tokens (URLs, identifiers).
+.spec-body {
+  overflow-wrap: anywhere;
+
+  // BeerCSS gives <h1>..<h6> page-heading sizes (h1 = 3.56rem). Inside body
+  // content they're section sub-headings — scale them down. Both the global
+  // scale and each level's multiplier are CSS variables so callers can tune
+  // any of them without editing this rule.
+  h1, h2, h3, h4, h5, h6 {
+    margin-block-start: var(--space-m);
+    font-size: calc(1em * var(--markdown-heading-scale) * var(--_h-mult));
+    line-height: 1.2;
+  }
+  h1 { --_h-mult: var(--markdown-h1-mult); }
+  h2 { --_h-mult: var(--markdown-h2-mult); }
+  h3 { --_h-mult: var(--markdown-h3-mult); }
+  h4 { --_h-mult: var(--markdown-h4-mult); }
+  h5 { --_h-mult: var(--markdown-h5-mult); }
+  h6 { --_h-mult: var(--markdown-h6-mult); }
+
+  // Tighten paragraph spacing — BeerCSS uses 1rem; the reading flow looks
+  // better with the project's medium space.
+  p {
+    margin-block: var(--space-s);
   }
 }
 

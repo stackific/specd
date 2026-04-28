@@ -1,0 +1,47 @@
+{{define "board"}}
+<div class="kanban">
+  {{range .Columns}}
+  <article class="kanban-column surface-container border no-round no-padding" data-status="{{.Status}}">
+    <header class="row no-margin small-margin kanban-column-header">
+      <span class="max bold kanban-column-label">{{.Label}}</span>
+      <span class="chip tiny kanban-column-count">{{len .Tasks}}</span>
+      <button type="button"
+              class="circle tiny transparent kanban-collapse-btn"
+              aria-label="Toggle column"
+              aria-expanded="true">
+        <i>chevron_left</i>
+      </button>
+    </header>
+    <div class="kanban-cards mt-t tiny-padding scroll no-round" data-status="{{.Status}}">
+      {{range .Tasks}}
+      <article class="tile kanban-card surface border no-margin" draggable="true"
+               data-task-id="{{.ID}}" data-position="{{.Position}}">
+        <nav class="row no-padding no-margin tile-meta">
+          <a class="chip tiny primary-container kanban-card-link"
+             href="/tasks/{{.ID}}"
+             hx-get="/tasks/{{.ID}}"
+             hx-target="#main-content"
+             hx-swap="innerHTML"
+             hx-push-url="true"
+             aria-label="Open {{.ID}}"
+             draggable="false">{{.ID}}</a>
+          <a class="chip tiny kanban-card-link"
+             href="/specs/{{.SpecID}}"
+             hx-get="/specs/{{.SpecID}}"
+             hx-target="#main-content"
+             hx-swap="innerHTML"
+             hx-push-url="true"
+             aria-label="Open {{.SpecID}}"
+             draggable="false">{{.SpecID}}</a>
+        </nav>
+        <h6 class="small no-margin">{{.Title}}</h6>
+        {{if .Summary}}<p class="small-text no-margin">{{.Summary}}</p>{{end}}
+      </article>
+      {{else}}
+      <p class="small-text italic kanban-empty center-align">No tasks</p>
+      {{end}}
+    </div>
+  </article>
+  {{end}}
+</div>
+{{end}}

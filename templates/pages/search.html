@@ -1,7 +1,176 @@
 {{define "content"}}
-<section class="container">
-  <h3>Search</h3>
+<section class="container padding">
+  <h3 class="no-margin">Search</h3>
   <div class="space"></div>
-  <p>Search coming soon.</p>
+
+  {{with .Data}}
+  <form
+    hx-get="/search"
+    hx-target="#search-results"
+    hx-select="#search-results"
+    hx-swap="outerHTML"
+    hx-push-url="true"
+    hx-trigger="submit, change from:select[name='kind']"
+  >
+    <div class="grid">
+      <div class="field label prefix border round s12 m9">
+        <i>search</i>
+        <input
+          type="search"
+          name="q"
+          value="{{.Query}}"
+          autocomplete="off"
+          autofocus
+        >
+        <label>Search specs, tasks, and KB</label>
+      </div>
+      <div class="field label suffix border round s12 m3">
+        <select name="kind">
+          <option value="all"  {{if eq .Kind "all"}}selected{{end}}>All</option>
+          <option value="spec" {{if eq .Kind "spec"}}selected{{end}}>Specs</option>
+          <option value="task" {{if eq .Kind "task"}}selected{{end}}>Tasks</option>
+          <option value="kb"   {{if eq .Kind "kb"}}selected{{end}}>KB</option>
+        </select>
+        <label>Filter</label>
+        <i>arrow_drop_down</i>
+      </div>
+    </div>
+    <div class="space"></div>
+    <nav>
+      <button type="submit" class="responsive">
+        <i>search</i>
+        <span>Search</span>
+      </button>
+    </nav>
+  </form>
+
+  <div class="space"></div>
+
+  <div id="search-results">
+    {{if .HasRun}}
+      {{if eq .TotalCount 0}}
+        <article class="border round">
+          <div class="row">
+            <i class="extra">search_off</i>
+            <div class="max">
+              <h6 class="small">No results</h6>
+              <p class="no-margin secondary-text">No matches for &ldquo;{{.Query}}&rdquo;.</p>
+            </div>
+          </div>
+        </article>
+      {{else}}
+        <nav class="row">
+          <p class="max no-margin secondary-text">
+            {{.TotalCount}} result{{if ne .TotalCount 1}}s{{end}} &middot;
+            page {{.Page}} of {{.TotalPages}}
+          </p>
+        </nav>
+        <div class="space"></div>
+
+        {{if .PageSpecs}}
+          <h6 class="no-margin">Specs <span class="chip tiny no-margin">{{len .PageSpecs}}</span></h5>
+          <div class="space"></div>
+          <div class="grid">
+            {{range .PageSpecs}}
+              {{template "search-result-card" .}}
+            {{end}}
+          </div>
+          <div class="medium-space"></div>
+        {{end}}
+
+        {{if .PageTasks}}
+          <h6 class="no-margin">Tasks <span class="chip tiny no-margin">{{len .PageTasks}}</span></h6>
+          <div class="space"></div>
+          <div class="grid">
+            {{range .PageTasks}}
+              {{template "search-result-card" .}}
+            {{end}}
+          </div>
+          <div class="medium-space"></div>
+        {{end}}
+
+        {{if .PageKB}}
+          <h6 class="no-margin">Knowledge base <span class="chip tiny no-margin">{{len .PageKB}}</span></h6>
+          <div class="space"></div>
+          <div class="grid">
+            {{range .PageKB}}
+              {{template "search-result-card" .}}
+            {{end}}
+          </div>
+          <div class="medium-space"></div>
+        {{end}}
+
+        {{if gt .TotalPages 1}}
+          <div class="space"></div>
+          <nav class="center-align">
+            {{if .HasPrev}}
+              <button class="border circle small"
+                      hx-get="/search?q={{$.Data.Query}}&kind={{$.Data.Kind}}&page={{.PrevPage}}&page_size={{$.Data.PageSize}}"
+                      hx-target="#search-results"
+                      hx-select="#search-results"
+                      hx-swap="outerHTML"
+                      hx-push-url="true"
+                      aria-label="Previous page">
+                <i>chevron_left</i>
+              </button>
+            {{else}}
+              <button class="border circle small" disabled aria-label="Previous page">
+                <i>chevron_left</i>
+              </button>
+            {{end}}
+
+            {{range .PageNums}}
+              {{if eq . $.Data.Page}}
+                <button class="circle small fill primary" aria-current="page" aria-label="Page {{.}}">{{.}}</button>
+              {{else}}
+                <button class="border circle small"
+                        hx-get="/search?q={{$.Data.Query}}&kind={{$.Data.Kind}}&page={{.}}&page_size={{$.Data.PageSize}}"
+                        hx-target="#search-results"
+                        hx-select="#search-results"
+                        hx-swap="outerHTML"
+                        hx-push-url="true"
+                        aria-label="Page {{.}}">{{.}}</button>
+              {{end}}
+            {{end}}
+
+            {{if .HasNext}}
+              <button class="border circle small"
+                      hx-get="/search?q={{$.Data.Query}}&kind={{$.Data.Kind}}&page={{.NextPage}}&page_size={{$.Data.PageSize}}"
+                      hx-target="#search-results"
+                      hx-select="#search-results"
+                      hx-swap="outerHTML"
+                      hx-push-url="true"
+                      aria-label="Next page">
+                <i>chevron_right</i>
+              </button>
+            {{else}}
+              <button class="border circle small" disabled aria-label="Next page">
+                <i>chevron_right</i>
+              </button>
+            {{end}}
+          </nav>
+        {{end}}
+      {{end}}
+    {{end}}
+  </div>
+  {{end}}
 </section>
+{{end}}
+
+{{define "search-result-card"}}
+<a class="s12 m6 l4 search-result-link"
+   href="{{searchResultHref .Kind .ID}}"
+   hx-get="{{searchResultHref .Kind .ID}}"
+   hx-target="#main-content"
+   hx-swap="innerHTML"
+   hx-push-url="true">
+  <article class="tile surface border no-margin search-result-card">
+    <nav class="row no-padding no-margin tile-meta">
+      <span class="chip tiny primary-container">{{.ID}}</span>
+      <span class="chip tiny">{{.MatchType}}</span>
+    </nav>
+    <h6 class="small no-margin">{{.Title}}</h6>
+    {{if .Summary}}<p class="small-text no-margin">{{.Summary}}</p>{{end}}
+  </article>
+</a>
 {{end}}

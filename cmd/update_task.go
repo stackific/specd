@@ -198,11 +198,12 @@ func loadUpdateTaskCriteria(db *sql.DB, taskID string) ([]UpdateTaskCriterion, e
 // This ensures the file stays the ground truth after DB-side changes.
 func rewriteTaskFile(db *sql.DB, taskID string) error {
 	var id, specID, title, status, summary, body, path, createdBy, createdAt, updatedAt string
+	var position int
 	err := db.QueryRow(`
-		SELECT id, spec_id, title, status, summary, body, path,
+		SELECT id, spec_id, title, status, summary, body, path, position,
 		       created_by, created_at, updated_at
 		FROM tasks WHERE id = ?`, taskID).Scan(
-		&id, &specID, &title, &status, &summary, &body, &path,
+		&id, &specID, &title, &status, &summary, &body, &path, &position,
 		&createdBy, &createdAt, &updatedAt,
 	)
 	if err != nil {
@@ -243,7 +244,7 @@ func rewriteTaskFile(db *sql.DB, taskID string) error {
 	// Rebuild the body with updated checkbox states in Acceptance Criteria.
 	rebuiltBody := rebuildTaskBody(body, criteria)
 
-	md := buildTaskMarkdown(id, specID, title, summary, status, createdBy, updatedAt, linkedTasks, dependsOn, rebuiltBody)
+	md := buildTaskMarkdown(id, specID, title, summary, status, createdBy, updatedAt, position, linkedTasks, dependsOn, rebuiltBody)
 
 	if err := os.WriteFile(path, []byte(md), 0o644); err != nil { //nolint:gosec // task file is committed to VCS
 		return fmt.Errorf("writing task file: %w", err)

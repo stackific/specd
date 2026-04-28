@@ -1,7 +1,35 @@
 {{define "content"}}
-<section class="container">
-  <h3>Tasks</h3>
-  <div class="space"></div>
-  <p>Task management coming soon.</p>
+{{with .Data}}
+<section class="container padding tasks-page">
+  <form
+    class="tasks-page-header"
+    hx-get="/tasks"
+    hx-target="#main-content"
+    hx-swap="innerHTML"
+    hx-push-url="true"
+    hx-trigger="change">
+    <div class="grid">
+      <div class="s12 m9 l9">
+        <h3 class="no-margin">Tasks</h3>
+      </div>
+      <div class="field label suffix border round s12 m3 l3">
+        <select name="filter" aria-label="Task filter">
+          <option value="all"        {{if eq .Filter "all"}}selected{{end}}>All tasks</option>
+          <option value="incomplete" {{if eq .Filter "incomplete"}}selected{{end}}>Incomplete</option>
+        </select>
+        <label>Filter</label>
+        <i>arrow_drop_down</i>
+      </div>
+    </div>
+  </form>
+  <div id="kanban-root"
+       class="kanban-root"
+       data-filter="{{.Filter}}"
+       hx-get="/api/tasks/board?filter={{.Filter}}"
+       hx-trigger="load"
+       hx-swap="innerHTML">
+    <progress class="circle"></progress>
+  </div>
 </section>
+{{end}}
 {{end}}

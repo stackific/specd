@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/fs"
 	"log/slog"
 	"mime"
@@ -84,41 +85,36 @@ func runServe(c *cobra.Command, _ []string) error {
 	// API endpoints.
 	mux.HandleFunc("GET /api/meta/default-route", handleGetDefaultRoute)
 
+	// Settings actions (server-rendered HTML responses, not REST).
+	mux.HandleFunc("POST /settings/default-route", handleSetDefaultRoute)
+
+	// Kanban board endpoints — partial-rendering responses for htmx swaps.
+	freshPages := makeFreshPages(devMode, pages)
+	mux.HandleFunc("GET /api/tasks/board", func(w http.ResponseWriter, r *http.Request) {
+		handleGetTasksBoard(freshPages())(w, r)
+	})
+	mux.HandleFunc("POST /api/tasks/{id}/criteria/{position}/toggle", makeTaskCriteriaToggleHandler(freshPages))
+	mux.HandleFunc("POST /api/tasks/move", func(w http.ResponseWriter, r *http.Request) {
+		handleMoveTask(freshPages())(w, r)
+	})
+
 	// Dev-mode live reload SSE endpoint.
 	if devMode {
 		mux.HandleFunc("GET /api/dev/livereload", handleLiveReload)
 	}
 
 	// Page routes — each renders a Go template with htmx partial support.
-	pageHandler := func(name, title, active string) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			p := pages
-			if devMode {
-				// Re-parse templates on every request for live reload.
-				fresh, err := parseTemplates(templateFS)
-				if err != nil {
-					http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
-					return
-				}
-				p = fresh
-			}
-			renderPage(w, r, p, name, &PageData{
-				Title:   title,
-				Active:  active,
-				DevMode: devMode,
-				CSSHash: cssHash,
-				JSHash:  jsHash,
-			})
-		}
-	}
-
-	mux.HandleFunc("GET /docs/tutorial", pageHandler("tutorial", "Tutorial", "docs"))
-	mux.HandleFunc("GET /docs", pageHandler("docs", "Documentation", "docs"))
-	mux.HandleFunc("GET /tasks", pageHandler("tasks", "Tasks", "tasks"))
-	mux.HandleFunc("GET /specs", pageHandler("specs", "Specs", "specs"))
-	mux.HandleFunc("GET /kb", pageHandler("kb", "Knowledge Base", "kb"))
-	mux.HandleFunc("GET /search", pageHandler("search", "Search", "search"))
-	mux.HandleFunc("GET /settings", pageHandler("settings", "Settings", "settings"))
+	page := makePageHandler(freshPages, devMode, cssHash, jsHash)
+	mux.HandleFunc("GET /docs/tutorial", page("tutorial", "Tutorial", "docs"))
+	mux.HandleFunc("GET /docs", page("docs", "Documentation", "docs"))
+	mux.HandleFunc("GET /tasks", makeTasksHandler(freshPages, devMode, cssHash, jsHash))
+	mux.HandleFunc("GET /tasks/{id}", makeTaskDetailHandler(freshPages, devMode, cssHash, jsHash))
+	mux.HandleFunc("GET /specs", makeSpecsHandler(freshPages, devMode, cssHash, jsHash))
+	mux.HandleFunc("GET /specs/{id}", makeSpecDetailHandler(freshPages, devMode, cssHash, jsHash))
+	mux.HandleFunc("GET /kb", page("kb", "Knowledge Base", "kb"))
+	mux.HandleFunc("GET /kb/{id}", makeKBDetailHandler(freshPages, devMode, cssHash, jsHash))
+	mux.HandleFunc("GET /search", makeSearchHandler(freshPages, devMode, cssHash, jsHash))
+	mux.HandleFunc("GET /settings", handleSettingsPage(freshPages, devMode, cssHash, jsHash))
 
 	// Root redirect to default route.
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
@@ -145,6 +141,39 @@ func runServe(c *cobra.Command, _ []string) error {
 	}
 
 	return nil
+}
+
+// makePageHandler returns a builder that produces page http.HandlerFuncs for
+// generic pages with no per-page data. Each call captures (name, title, active)
+// for one route.
+func makePageHandler(freshPages func() map[string]*template.Template, devMode bool, cssHash, jsHash string) func(name, title, active string) http.HandlerFunc {
+	return func(name, title, active string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			renderPage(w, r, freshPages(), name, &PageData{
+				Title:   title,
+				Active:  active,
+				DevMode: devMode,
+				CSSHash: cssHash,
+				JSHash:  jsHash,
+			})
+		}
+	}
+}
+
+// makeFreshPages returns a closure that yields the templates map. In dev mode
+// templates are re-parsed on every call so changes are picked up live; in
+// production it returns the same cached map every call.
+func makeFreshPages(devMode bool, cached map[string]*template.Template) func() map[string]*template.Template {
+	if !devMode {
+		return func() map[string]*template.Template { return cached }
+	}
+	return func() map[string]*template.Template {
+		p, err := parseTemplates(templateFS)
+		if err != nil {
+			return cached
+		}
+		return p
+	}
 }
 
 // registerStaticRoutes sets up file serving routes for embedded static assets.
@@ -234,6 +263,78 @@ func readDefaultRoute() string {
 	return route
 }
 
+// SettingsData is passed to the settings page template.
+type SettingsData struct {
+	CurrentRoute     string
+	StartpageChoices []StartpageChoice
+}
+
+// handleSettingsPage renders /settings with the current default route and
+// the available startpage choices.
+func handleSettingsPage(freshPages func() map[string]*template.Template, devMode bool, cssHash, jsHash string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		renderPage(w, r, freshPages(), "settings", &PageData{
+			Title:   "Settings",
+			Active:  "settings",
+			DevMode: devMode,
+			CSSHash: cssHash,
+			JSHash:  jsHash,
+			Data: SettingsData{
+				CurrentRoute:     readDefaultRoute(),
+				StartpageChoices: StartpageChoices,
+			},
+		})
+	}
+}
+
+// handleSetDefaultRoute updates meta.default_route from a form POST submitted
+// by the settings page. Validates the value against StartpageChoices and
+// returns a small HTML fragment for htmx to swap into a status element.
+func handleSetDefaultRoute(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, MaxSettingsFormBytes)
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "invalid form", http.StatusBadRequest)
+		return
+	}
+	// Resolve the submitted value to a canonical route from StartpageChoices
+	// so all subsequent uses (DB write, log) operate on a value from a fixed
+	// allowlist, not raw user input.
+	canonical, ok := lookupStartpageRoute(r.PostForm.Get("default_route"))
+	if !ok {
+		http.Error(w, "invalid default_route", http.StatusBadRequest)
+		return
+	}
+
+	db, _, err := OpenProjectDB()
+	if err != nil {
+		http.Error(w, "database unavailable", http.StatusInternalServerError)
+		return
+	}
+	defer func() { _ = db.Close() }()
+
+	if err := WriteMeta(db, MetaDefaultRoute, canonical); err != nil {
+		slog.Error("write default_route", "error", err)
+		http.Error(w, "failed to save", http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("settings.default_route", "route", canonical)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = fmt.Fprint(w, `<span class="primary-text">Saved</span>`)
+}
+
+// lookupStartpageRoute returns the canonical route from StartpageChoices
+// matching the given input. The second return reports whether a match was
+// found.
+func lookupStartpageRoute(route string) (string, bool) {
+	for _, c := range StartpageChoices {
+		if c.Route == route {
+			return c.Route, true
+		}
+	}
+	return "", false
+}
+
 // handleGetDefaultRoute returns the configured default route as JSON.
 func handleGetDefaultRoute(w http.ResponseWriter, _ *http.Request) {
 	route := readDefaultRoute()
@@ -250,6 +351,19 @@ func ReadMeta(db *sql.DB, key string) (string, error) {
 		return "", fmt.Errorf("reading meta %s: %w", key, err)
 	}
 	return value, nil
+}
+
+// WriteMeta upserts a key/value pair in the meta table.
+func WriteMeta(db *sql.DB, key, value string) error {
+	_, err := db.Exec(
+		`INSERT INTO meta (key, value) VALUES (?, ?)
+		 ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+		key, value,
+	)
+	if err != nil {
+		return fmt.Errorf("writing meta %s: %w", key, err)
+	}
+	return nil
 }
 
 // findAvailablePort tries ports starting from startPort, returning the first

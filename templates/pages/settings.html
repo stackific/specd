@@ -1,7 +1,55 @@
 {{define "content"}}
 <section class="container">
   <h3>Settings</h3>
+
+  {{with .Data}}
+  <article aria-labelledby="settings-startpage-heading">
+    <h5 id="settings-startpage-heading">Startpage</h5>
+    <p>Select the page you want to see when you open the app.</p>
+
+    <form
+      hx-post="/settings/default-route"
+      hx-trigger="change"
+      hx-swap="none"
+      hx-on::after-request="if (event.detail.successful) ui('#settings-saved')"
+    >
+      <fieldset class="no-border" aria-labelledby="settings-startpage-heading">
+        {{range .StartpageChoices}}
+        <label class="radio">
+          <input
+            type="radio"
+            name="default_route"
+            value="{{.Route}}"
+            {{if eq .Route $.Data.CurrentRoute}}checked{{end}}
+          >
+          <span>{{.Label}}</span>
+        </label>
+        <div class="space"></div>
+        {{end}}
+      </fieldset>
+    </form>
+  </article>
+
   <div class="space"></div>
-  <p>Settings coming soon.</p>
+
+  <article aria-labelledby="settings-theme-heading">
+    <h5 id="settings-theme-heading">Appearance</h5>
+    <p>Switch between light and dark themes. Your choice is saved on this device.</p>
+
+    <fieldset class="no-border" aria-labelledby="settings-theme-heading">
+      <label class="radio">
+        <input type="radio" name="specd-theme" value="light" onchange="setTheme(this.value); ui('#settings-saved')">
+        <span>Light</span>
+      </label>
+      <div class="space"></div>
+      <label class="radio">
+        <input type="radio" name="specd-theme" value="dark" onchange="setTheme(this.value); ui('#settings-saved')">
+        <span>Dark</span>
+      </label>
+    </fieldset>
+  </article>
+
+  <div id="settings-saved" class="snackbar">Saved</div>
+  {{end}}
 </section>
 {{end}}

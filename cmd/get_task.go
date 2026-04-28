@@ -61,31 +61,8 @@ func runGetTask(c *cobra.Command, _ []string) error {
 	}
 	defer func() { _ = db.Close() }()
 
-	var resp GetTaskResponse
-	var updatedBy *string
-	err = db.QueryRow(`
-		SELECT id, spec_id, title, status, summary, body, path, position,
-		       created_by, updated_by, content_hash, created_at, updated_at
-		FROM tasks WHERE id = ?`, taskID).Scan(
-		&resp.ID, &resp.SpecID, &resp.Title, &resp.Status, &resp.Summary,
-		&resp.Body, &resp.Path, &resp.Position,
-		&resp.CreatedBy, &updatedBy, &resp.ContentHash,
-		&resp.CreatedAt, &resp.UpdatedAt,
-	)
+	resp, err := LoadTaskDetail(db, taskID)
 	if err != nil {
-		return fmt.Errorf("task %s not found: %w", taskID, err)
-	}
-	if updatedBy != nil {
-		resp.UpdatedBy = *updatedBy
-	}
-
-	if resp.LinkedTasks, err = loadLinkedTasks(db, taskID); err != nil {
-		return err
-	}
-	if resp.DependsOn, err = loadTaskDependsOn(db, taskID); err != nil {
-		return err
-	}
-	if resp.Criteria, err = loadGetTaskCriteria(db, taskID); err != nil {
 		return err
 	}
 

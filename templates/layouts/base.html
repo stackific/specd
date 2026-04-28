@@ -17,7 +17,7 @@
 <body class="surface">
   {{template "nav" .}}
 
-  <main class="responsive mt-l" id="main-content">
+  <main class="{{if eq .Active "tasks"}}responsive max{{else}}responsive{{end}} mt-l" id="main-content">
     {{block "content" .}}{{end}}
   </main>
 
@@ -25,6 +25,7 @@
 
   <script src="/vendor/htmx.min.js"></script>
   <script src="/js/app.js?v={{.JSHash}}"></script>
+  <script src="/js/tasks.js?v={{.JSHash}}"></script>
   {{if .DevMode}}<script src="/js/livereload.js"></script>{{end}}
 </body>
 </html>

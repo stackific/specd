@@ -18,23 +18,27 @@
       var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       ui("mode", prefersDark ? "dark" : "light");
     }
-    syncThemeIcons();
+    syncThemeRadios();
   }
 
-  function toggleTheme() {
-    var isDark = document.body.classList.contains("dark");
-    var next = isDark ? "light" : "dark";
-    ui("mode", next);
-    localStorage.setItem(THEME_KEY, next);
-    syncThemeIcons();
-  }
-
-  function syncThemeIcons() {
-    var isDark = document.body.classList.contains("dark");
-    var icon = isDark ? "light_mode" : "dark_mode";
-    document.querySelectorAll("[data-theme-toggle] i").forEach(function (el) {
-      el.textContent = icon;
+  // Pre-check the theme radio on the settings page if present.
+  function syncThemeRadios() {
+    var current = currentTheme();
+    document.querySelectorAll('input[name="specd-theme"]').forEach(function (el) {
+      el.checked = el.value === current;
     });
+  }
+
+  // Apply a theme value ("light" | "dark") and persist it.
+  function setTheme(value) {
+    if (value !== "light" && value !== "dark") return;
+    ui("mode", value);
+    localStorage.setItem(THEME_KEY, value);
+  }
+
+  // Return the active theme ("light" | "dark") from the body class.
+  function currentTheme() {
+    return document.body.classList.contains("dark") ? "dark" : "light";
   }
 
   // -- Navigation active state ------------------------------------
@@ -60,7 +64,7 @@
     // After every htmx swap, update nav active state and re-init theme icons.
     document.body.addEventListener("htmx:afterSwap", function () {
       syncNavActive();
-      syncThemeIcons();
+      syncThemeRadios();
     });
   }
 
@@ -99,7 +103,7 @@
   // -- Init -------------------------------------------------------
 
   // Expose toggles for onclick handlers in templates.
-  window.toggleTheme = toggleTheme;
+  window.setTheme = setTheme;
   window.toggleSidebar = toggleSidebar;
 
   document.addEventListener("DOMContentLoaded", function () {

@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -146,6 +147,138 @@ func TestInitDBSeedsDefaultRoute(t *testing.T) {
 	}
 	if value != DefaultRoute {
 		t.Errorf("expected %q, got %q", DefaultRoute, value)
+	}
+}
+
+// setupHandlerProject initializes a fresh project in a temp dir, chdirs into
+// it, and returns. Cleanup restores the original working directory.
+func setupHandlerProject(t *testing.T) {
+	t.Helper()
+	tmp := t.TempDir()
+	if err := InitDB(tmp, []string{"business"}, []string{"backlog", "done"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := SaveProjectConfig(tmp, &ProjectConfig{
+		Dir:        "specd",
+		SpecTypes:  []string{"business"},
+		TaskStages: []string{"backlog", "done"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	origDir, _ := os.Getwd()
+	if err := os.Chdir(tmp); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(origDir) })
+}
+
+// TestWriteMetaUpsert verifies WriteMeta inserts and updates values.
+func TestWriteMetaUpsert(t *testing.T) {
+	dir := t.TempDir()
+	if err := InitDB(dir, []string{"business"}, []string{"backlog", "done"}); err != nil {
+		t.Fatal(err)
+	}
+	db, err := sql.Open("sqlite", filepath.Join(dir, CacheDBFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = db.Close() }()
+
+	if err := WriteMeta(db, MetaDefaultRoute, "/specs"); err != nil {
+		t.Fatalf("first WriteMeta: %v", err)
+	}
+	v, err := ReadMeta(db, MetaDefaultRoute)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v != "/specs" {
+		t.Errorf("expected /specs, got %q", v)
+	}
+
+	// Second write of the same key should overwrite, not error.
+	if err := WriteMeta(db, MetaDefaultRoute, "/kb"); err != nil {
+		t.Fatalf("second WriteMeta: %v", err)
+	}
+	v, err = ReadMeta(db, MetaDefaultRoute)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v != "/kb" {
+		t.Errorf("expected /kb after upsert, got %q", v)
+	}
+}
+
+// TestHandleSetDefaultRouteValid verifies the POST handler persists a valid choice.
+func TestHandleSetDefaultRouteValid(t *testing.T) {
+	setupHandlerProject(t)
+
+	form := strings.NewReader("default_route=/specs")
+	req := httptest.NewRequest(http.MethodPost, "/settings/default-route", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	handleSetDefaultRoute(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d (%s)", w.Code, w.Body.String())
+	}
+	if got := readDefaultRoute(); got != "/specs" {
+		t.Errorf("expected /specs persisted, got %q", got)
+	}
+}
+
+// TestHandleSetDefaultRouteInvalid rejects values outside StartpageChoices.
+func TestHandleSetDefaultRouteInvalid(t *testing.T) {
+	setupHandlerProject(t)
+
+	form := strings.NewReader("default_route=/evil")
+	req := httptest.NewRequest(http.MethodPost, "/settings/default-route", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	handleSetDefaultRoute(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", w.Code)
+	}
+	if got := readDefaultRoute(); got != DefaultRoute {
+		t.Errorf("expected unchanged default %q, got %q", DefaultRoute, got)
+	}
+}
+
+// TestHandleSetDefaultRouteAllChoices ensures every advertised choice round-trips.
+func TestHandleSetDefaultRouteAllChoices(t *testing.T) {
+	setupHandlerProject(t)
+
+	for _, c := range StartpageChoices {
+		form := strings.NewReader("default_route=" + c.Route)
+		req := httptest.NewRequest(http.MethodPost, "/settings/default-route", form)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := httptest.NewRecorder()
+
+		handleSetDefaultRoute(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("%s: expected 200, got %d", c.Label, w.Code)
+			continue
+		}
+		if got := readDefaultRoute(); got != c.Route {
+			t.Errorf("%s: expected %q, got %q", c.Label, c.Route, got)
+		}
+	}
+}
+
+// TestIsValidStartpageRoute covers the validator helper.
+func TestIsValidStartpageRoute(t *testing.T) {
+	for _, c := range StartpageChoices {
+		if !IsValidStartpageRoute(c.Route) {
+			t.Errorf("expected %q to be valid", c.Route)
+		}
+	}
+	for _, bad := range []string{"", "/", "/evil", "/docs", "/specs/"} {
+		if IsValidStartpageRoute(bad) {
+			t.Errorf("expected %q to be invalid", bad)
+		}
 	}
 }
 

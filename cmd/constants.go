@@ -58,8 +58,9 @@ const (
 	DefaultPageSize = 20 // default results per page for list commands
 
 	// Serve tunables.
-	DefaultServePort = 8000 // starting port for specd serve
-	MaxPortAttempts  = 100  // max ports to try before giving up
+	DefaultServePort     = 8000 // starting port for specd serve
+	MaxPortAttempts      = 100  // max ports to try before giving up
+	MaxSettingsFormBytes = 4096 // upper bound on settings POST bodies
 
 	// BM25 column weights: title matches are most important, body least.
 	// FTS columns are ordered (title, summary, body) in specs_fts and tasks_fts.
@@ -107,6 +108,33 @@ var DefaultSpecTypes = []string{"Business", "Functional", "Non-functional"}
 
 // RequiredTaskStages are always included and cannot be deselected.
 var RequiredTaskStages = []string{"Backlog", "Todo", "In progress", "Done"}
+
+// StartpageChoice is a selectable startpage option exposed on /settings.
+type StartpageChoice struct {
+	Label string
+	Route string
+}
+
+// StartpageChoices lists the routes a user may pick as the Web UI startpage
+// (the page `/` redirects to). Order is the order shown in the UI.
+var StartpageChoices = []StartpageChoice{
+	{Label: "Tutorial", Route: "/docs/tutorial"},
+	{Label: "Tasks", Route: "/tasks"},
+	{Label: "Specs", Route: "/specs"},
+	{Label: "KB", Route: "/kb"},
+	{Label: "Search", Route: "/search"},
+}
+
+// IsValidStartpageRoute reports whether route is one of the allowed
+// startpage routes in StartpageChoices.
+func IsValidStartpageRoute(route string) bool {
+	for _, c := range StartpageChoices {
+		if c.Route == route {
+			return true
+		}
+	}
+	return false
+}
 
 // OptionalTaskStages can be toggled on or off during init (all on by default).
 var OptionalTaskStages = []string{"Blocked", "Pending Verification", "Cancelled", "Wont Fix"}

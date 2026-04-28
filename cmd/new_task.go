@@ -97,7 +97,7 @@ func runNewTask(c *cobra.Command, _ []string) error {
 	taskFile := filepath.Join(specDir, fmt.Sprintf("%s%d.md", IDPrefixTask, num))
 
 	// Write the task markdown file with frontmatter.
-	md := buildTaskMarkdown(taskID, specID, title, summary, defaultStatus, username, now, nil, nil, body)
+	md := buildTaskMarkdown(taskID, specID, title, summary, defaultStatus, username, now, 0, nil, nil, body)
 	contentHash := fmt.Sprintf("%x", sha256.Sum256([]byte(md)))
 	if err := os.WriteFile(taskFile, []byte(md), 0o644); err != nil { //nolint:gosec // task file is committed to VCS
 		return fmt.Errorf("writing task file: %w", err)
@@ -141,14 +141,14 @@ func runNewTask(c *cobra.Command, _ []string) error {
 
 // buildTaskMarkdown generates task.md with YAML frontmatter and H1 title.
 // The title is NOT in frontmatter — the H1 heading IS the title.
-func buildTaskMarkdown(id, specID, title, summary, status, createdBy, timestamp string, linkedTasks, dependsOn []string, body string) string {
+func buildTaskMarkdown(id, specID, title, summary, status, createdBy, timestamp string, position int, linkedTasks, dependsOn []string, body string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "---\n")
 	fmt.Fprintf(&b, "id: %s\n", id)
 	fmt.Fprintf(&b, "spec_id: %s\n", specID)
 	fmt.Fprintf(&b, "status: %s\n", status)
 	fmt.Fprintf(&b, "summary: %s\n", summary)
-	fmt.Fprintf(&b, "position: 0\n")
+	fmt.Fprintf(&b, "position: %d\n", position)
 	if len(linkedTasks) > 0 {
 		fmt.Fprintf(&b, "linked_tasks:\n")
 		for _, lt := range linkedTasks {

@@ -60,6 +60,71 @@ All nav links use `hx-get`, `hx-target="#main-content"`, `hx-swap="innerHTML"`, 
 
 Breakpoints: `s` < 601px, `m` ≥ 601px, `l` ≥ 993px. Column counts sum to 12 at each breakpoint. `.grid` is forced `align-items: start` so cards top-align by default — opt back into center alignment with `center-align`.
 
+### Cards (the canonical `tile` recipe)
+
+**Every card-shaped container in specd uses the same recipe — copy-paste it, do not invent a new one.** Three production views all use this pattern: kanban tasks (`templates/partials/board.html`), spec cards view (`templates/pages/specs.html` → `specs-cards-group`), and search results (`templates/pages/search.html` → `search-result-card`). Detail-page articles reuse it for nested lists.
+
+**Markup — clickable card in a grid**:
+
+```html
+<div class="grid">
+  <a class="s12 m6 l4 search-result-link"
+     href="/specs/{{.ID}}"
+     hx-get="/specs/{{.ID}}"
+     hx-target="#main-content"
+     hx-swap="innerHTML"
+     hx-push-url="true">
+    <article class="tile surface border no-margin search-result-card">
+      <nav class="row no-padding no-margin tile-meta">
+        <span class="chip tiny primary-container">{{.ID}}</span>
+        <span class="chip tiny">{{fromSlug .Type}}</span>
+      </nav>
+      <h6 class="small no-margin">{{.Title}}</h6>
+      {{if .Summary}}<p class="small-text no-margin">{{.Summary}}</p>{{end}}
+    </article>
+  </a>
+</div>
+```
+
+**Class glossary** (every class above pulls its weight — none is decorative):
+
+| Class | Role |
+|---|---|
+| `s12 m6 l4` | Grid responsive columns. **Goes on the anchor**, not the article. |
+| `search-result-link` | Anchor becomes a block, drops underline + colour, hover/focus paints the inner card. |
+| `search-result-card` | Cursor + 120ms `background-color` transition for the affordance. |
+| `tile` | `display: flex; flex-direction: column; gap: var(--space-t); padding: var(--space-s); margin: 0;` |
+| `surface` | BeerCSS material surface fill. |
+| `border` | 1px stroke. |
+| `no-margin` | Cancels BeerCSS's default `<article>` `margin-top: 1rem` on non-first siblings. **Required**, or rows of cards misalign. |
+| `tile-meta` | The chip row inside a card: `gap: var(--space-t); align-items: center;` |
+| `chip tiny` | Smaller-than-default chip (`--_size: 1.5rem`, `--_padding: 0.5rem`). |
+| `chip tiny primary-container` | Same, with the seed-coloured fill — used for the primary identifier (ID). |
+
+**Heading sizes inside cards** — match what the working templates use:
+
+- List / grid / kanban cards → `<h6 class="small no-margin">{{.Title}}</h6>`
+- Detail-page hero article (`/specs/{id}`) → `<h3 class="no-margin">{{.Title}}</h3>`
+- Detail-page hero article (`/tasks/{id}`) → `<h5 class="no-margin">{{$task.Title}}</h5>`
+
+Body / summary text:
+
+- Card list → `<p class="small-text no-margin">`
+- Detail hero summary → `<p class="large-text secondary-text no-margin">`
+
+**Detail-page hero variant** — when the card is the page subject, not a list item, drop `tile` and let BeerCSS render a default article (or scope a single modifier as needed). See `templates/pages/spec_detail.html` for the bare `<article class="round">` form.
+
+**Don't**:
+
+- Don't add custom `padding` / `margin` inside `<article>` — `.tile` handles spacing. Reach for `space()` / utility classes only on the wrapper.
+- Don't put grid responsive columns (`s12`, `m6`, `l4`) on the `<article>`; they belong on the anchor wrapper that owns the click target.
+- Don't use `<header>` for the card title — it has a 4rem floor that wastes space; use `<h6>` / `<h5>` / `<h3>` directly inside the article.
+- Don't gild a bare `<article>` with `class="border round no-elevate"` — that strips the surface fill and you get a faint ghost outline. Render the bare element first and subtract only what you need.
+- Don't omit `no-margin`; BeerCSS adds `margin-top: 1rem` to non-first article siblings, which produces a staggered row of cards in flex layouts.
+- Don't redefine `.tile` or `.search-result-link` per page — they are project-wide. Reuse them.
+
+**Where the SCSS lives**: `static/css/src/app.scss` — `.tile`, `.tile-meta`, `.chip.tiny`, `.search-result-link`, `.search-result-card`, and the project-wide `article { overflow-wrap: anywhere; }` rule that keeps long IDs / titles inside the rounded edge.
+
 ### Container
 
 ```html
@@ -153,6 +218,35 @@ Max-width utilities using CSS variables. BeerCSS has `small-width`/`medium-width
 <dialog class="padding max-w-dialog">…</dialog>
 <article class="max-w-md">Narrow reading column</article>
 ```
+
+## Segmented button groups (view / filter toggles)
+
+The project's convention for "switch between views" or "switch between filters" controls is a horizontal button group, not BeerCSS's `<nav class="tabs">`. Reference: the view picker on `/specs` (`templates/pages/specs.html`) and the filter on `/tasks` (`templates/pages/tasks.html`).
+
+Pattern:
+
+```html
+<nav class="no-space" role="tablist" aria-label="View mode">
+  <button
+    class="border left-round{{if eq .View "a"}} fill primary{{end}}"
+    hx-get="/page?view=a"
+    hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true"
+    aria-pressed="{{if eq .View "a"}}true{{else}}false{{end}}"
+    aria-label="View A">
+    <i>icon_name</i>
+  </button>
+  <button class="border no-round{{if eq .View "b"}} fill primary{{end}}" …>…</button>
+  <button class="border right-round{{if eq .View "c"}} fill primary{{end}}" …>…</button>
+</nav>
+```
+
+Rules:
+
+- **`border` + `left-round` / `no-round` / `right-round`** chains the buttons into a single pill; only the outer two get rounded ends.
+- **Active button gets `fill primary`** (filled chip on the seed colour). Inactive stays bordered.
+- **Use a Material icon** (`<i>icon_name</i>`) when one fits — matches the iconographic style of the rest of the UI. Text labels are fine when meaning isn't obvious from an icon.
+- **State is URL-driven** (see AGENTS.md "URL-driven view state vs. localStorage"). Each button's `hx-get` includes the new query value; `hx-push-url="true"` keeps the URL bookmarkable.
+- **`aria-pressed`** mirrors active state for screen readers. Wrap the group in `<nav role="tablist" aria-label="…">`.
 
 ## Dark mode
 
@@ -368,7 +462,16 @@ Any override should target the narrowest selector that works. Use `!important` o
 - **Hardcoded values are a smell.** If you're typing `1rem`, `#1c4bea`, or `0.5rem`, there's a variable (or a place one should live).
 - **`!important` on custom properties.** We use `--font: "Geist Variable", … !important;` to win the cascade against BeerCSS's own `--font` declaration. This is an intentional exception — most variables shouldn't need `!important`.
 - **Global `.grid` override.** Pre-existing. Don't treat it as the norm; scope new overrides.
-- **PurgeCSS strips JS-only classes.** If a CSS class is only referenced in JavaScript (not in templates), PurgeCSS will strip it. Add to the safelist in `static/purgecss.config.cjs`.
+- **PurgeCSS strips JS-only classes.** If a CSS class is only referenced in JavaScript (not in templates), PurgeCSS will strip it. Add to the safelist in `static/purgecss.config.cjs`. Templates content scanning happens at build time — runtime-toggled classes (`dragging`, `drop-target`, `collapsed`, …) **must** be safelisted.
+
+### BeerCSS element defaults that bite
+
+These BeerCSS rules apply to bare elements and silently affect any custom component that uses them. Either pick a different element or scope an override.
+
+- **`<header>`** has `display: grid`, `align-content: center`, **`min-block-size: 4rem`**. Used as a card title strip it forces a 64-px floor. Either use `<div class="row">` or override `min-block-size: 0` and `@include no-space` on the wrapper.
+- **`<article>`** has `margin-top: 1rem` applied to non-first siblings. When stacking articles in a flex row (e.g. kanban columns), the first item lands at top=0 and the rest at top=16 — visually misaligned. Apply `@include no-space` on the article wrapper.
+- **`round` class** sets `border-radius` plus an implicit clipping behaviour that intersects with children at the rounded corners. If a scrollable child would touch the corner, give the child its own `overflow: hidden` or add `padding-block-start` so content stays inside the curve.
+- **Chips** ship `.medium` / `.large` (bigger) but no smaller-than-default modifier; we add `.chip.tiny` (`--_size: 1.5rem`, `--_padding: 0.5rem`, `font-size: 0.75rem`) following the same `--_size` / `--_padding` pattern. Use `tiny` for in-card metadata badges (TASK-N, SPEC-N, count chips).
 
 ## Debugging
 

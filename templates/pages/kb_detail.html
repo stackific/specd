@@ -1,0 +1,66 @@
+{{define "content"}}
+<section class="container padding">
+  {{with .Data}}
+  <nav class="row top-align wrap">
+    <a class="chip tiny no-margin"
+       href="/kb"
+       hx-get="/kb"
+       hx-target="#main-content"
+       hx-swap="innerHTML"
+       hx-push-url="true">
+      <i>arrow_back</i>
+      <span>Knowledge base</span>
+    </a>
+  </nav>
+  <div class="space"></div>
+
+  {{with .Doc}}
+  <article class="round">
+    <nav class="row no-padding no-margin tile-meta wrap">
+      <span class="chip tiny primary-container">{{.ID}}</span>
+      <span class="chip tiny">{{.SourceType}}</span>
+    </nav>
+    <h3 class="no-margin">{{.Title}}</h3>
+    {{if .Summary}}
+    <p class="large-text secondary-text no-margin">{{.Summary}}</p>
+    {{end}}
+    <div class="space"></div>
+    <p class="small-text secondary-text no-margin">
+      <code>{{.Path}}</code>
+    </p>
+  </article>
+  <div class="medium-space"></div>
+  {{end}}
+
+  <article class="round">
+    <nav class="row top-align wrap no-padding no-margin">
+      <h6 class="no-margin max">Chunks</h6>
+      <span class="chip tiny no-margin">{{len .Chunks}}</span>
+    </nav>
+    <div class="space"></div>
+    {{if .Chunks}}
+    <ul class="list border">
+      {{range .Chunks}}
+      <li>
+        <span class="chip tiny no-margin">#{{.Position}}</span>
+        <div class="max">
+          {{if .Summary}}<div class="bold">{{.Summary}}</div>{{end}}
+          <div class="small-text secondary-text">{{.Text}}</div>
+        </div>
+      </li>
+      {{end}}
+    </ul>
+    {{else}}
+    <p class="secondary-text no-margin">No chunks.</p>
+    {{end}}
+  </article>
+  <div class="medium-space"></div>
+
+  {{with .Doc}}
+  <p class="secondary-text small-text no-margin">
+    Added {{.AddedAt}}{{if .AddedBy}} by {{.AddedBy}}{{end}}
+  </p>
+  {{end}}
+  {{end}}
+</section>
+{{end}}

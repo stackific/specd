@@ -76,32 +76,8 @@ func runGetSpec(c *cobra.Command, _ []string) error {
 	}
 	defer func() { _ = db.Close() }()
 
-	// Read the spec row.
-	var resp GetSpecResponse
-	var updatedBy *string
-	err = db.QueryRow(`
-		SELECT id, title, type, summary, body, path, position,
-		       created_by, updated_by, content_hash, created_at, updated_at
-		FROM specs WHERE id = ?`, specID).Scan(
-		&resp.ID, &resp.Title, &resp.Type, &resp.Summary,
-		&resp.Body, &resp.Path, &resp.Position,
-		&resp.CreatedBy, &updatedBy, &resp.ContentHash,
-		&resp.CreatedAt, &resp.UpdatedAt,
-	)
+	resp, err := LoadSpecDetail(db, specID)
 	if err != nil {
-		return fmt.Errorf("spec %s not found: %w", specID, err)
-	}
-	if updatedBy != nil {
-		resp.UpdatedBy = *updatedBy
-	}
-
-	if resp.LinkedSpecs, err = loadLinkedSpecs(db, specID); err != nil {
-		return err
-	}
-	if resp.Claims, err = loadSpecClaims(db, specID); err != nil {
-		return err
-	}
-	if resp.Tasks, err = loadSpecTasks(db, specID); err != nil {
 		return err
 	}
 
@@ -112,6 +88,40 @@ func runGetSpec(c *cobra.Command, _ []string) error {
 	fmt.Println(string(out))
 
 	return nil
+}
+
+// LoadSpecDetail reads a single spec by ID along with its claims, linked
+// specs, and tasks (with criteria). Used by both the `get-spec` command and
+// the /specs/{id} web detail page.
+func LoadSpecDetail(db *sql.DB, specID string) (*GetSpecResponse, error) {
+	var resp GetSpecResponse
+	var updatedBy *string
+	err := db.QueryRow(`
+		SELECT id, title, type, summary, body, path, position,
+		       created_by, updated_by, content_hash, created_at, updated_at
+		FROM specs WHERE id = ?`, specID).Scan(
+		&resp.ID, &resp.Title, &resp.Type, &resp.Summary,
+		&resp.Body, &resp.Path, &resp.Position,
+		&resp.CreatedBy, &updatedBy, &resp.ContentHash,
+		&resp.CreatedAt, &resp.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("spec %s not found: %w", specID, err)
+	}
+	if updatedBy != nil {
+		resp.UpdatedBy = *updatedBy
+	}
+
+	if resp.LinkedSpecs, err = loadLinkedSpecs(db, specID); err != nil {
+		return nil, err
+	}
+	if resp.Claims, err = loadSpecClaims(db, specID); err != nil {
+		return nil, err
+	}
+	if resp.Tasks, err = loadSpecTasks(db, specID); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
 // loadLinkedSpecs reads spec link IDs for the given spec.
