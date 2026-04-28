@@ -76,7 +76,14 @@ func SyncCache() error {
 }
 
 // reconcileSpecs inserts new, updates changed, and deletes removed specs.
+//
+// Specs are inserted/updated in a first pass before any link/claim sync runs.
+// Otherwise a spec whose linked_specs references a peer that hasn't been
+// inserted yet (Go map iteration order is random) trips the spec_links
+// FOREIGN KEY constraint.
 func reconcileSpecs(db *sql.DB, diskSpecs map[string]diskSpec, dbSpecs map[string]string, username, now string) error {
+	toLink := make([]string, 0, len(diskSpecs))
+
 	for id := range diskSpecs {
 		ds := diskSpecs[id]
 		dbHash, exists := dbSpecs[id]
@@ -87,23 +94,27 @@ func reconcileSpecs(db *sql.DB, diskSpecs map[string]diskSpec, dbSpecs map[strin
 			if err := insertSpecFromDisk(db, &ds, username, now); err != nil {
 				return fmt.Errorf("inserting spec %s: %w", id, err)
 			}
+			toLink = append(toLink, id)
 		case dbHash != ds.ContentHash:
 			slog.Info("sync: updating changed spec", "id", id, "path", ds.Path)
 			if err := updateSpecFromDisk(db, &ds, username, now); err != nil {
 				return fmt.Errorf("updating spec %s: %w", id, err)
 			}
+			toLink = append(toLink, id)
 		default:
-			delete(dbSpecs, id)
-			continue // unchanged — skip link sync
+			// Unchanged — skip link/claim sync.
 		}
+		delete(dbSpecs, id)
+	}
 
+	for _, id := range toLink {
+		ds := diskSpecs[id]
 		if err := syncSpecLinks(db, ds.ID, ds.LinkedSpecs); err != nil {
 			return fmt.Errorf("syncing links for %s: %w", id, err)
 		}
 		if err := syncSpecClaims(db, ds.ID, ds.Claims); err != nil {
 			return fmt.Errorf("syncing claims for %s: %w", id, err)
 		}
-		delete(dbSpecs, id)
 	}
 
 	// Remaining dbSpecs entries were not found on disk — delete them.
@@ -621,7 +632,16 @@ func loadTaskHashesFromDB(db *sql.DB) (map[string]string, error) {
 }
 
 // reconcileTasks inserts new, updates changed, and deletes removed tasks.
+//
+// Tasks are inserted/updated in a first pass before any link/dep/criterion
+// sync runs. Otherwise a task whose linked_tasks references a peer that
+// hasn't been inserted yet (Go map iteration order is random) trips the
+// task_links FOREIGN KEY constraint when syncTaskLinks writes the reverse
+// edge. With every task row present in the DB, the second pass can write
+// edges in any order safely.
 func reconcileTasks(db *sql.DB, diskTasks map[string]diskTask, dbTasks map[string]string, username, now string) error {
+	toLink := make([]string, 0, len(diskTasks))
+
 	for id := range diskTasks {
 		dt := diskTasks[id]
 		dbHash, exists := dbTasks[id]
@@ -632,16 +652,21 @@ func reconcileTasks(db *sql.DB, diskTasks map[string]diskTask, dbTasks map[strin
 			if err := insertTaskFromDisk(db, &dt, username, now); err != nil {
 				return fmt.Errorf("inserting task %s: %w", id, err)
 			}
+			toLink = append(toLink, id)
 		case dbHash != dt.ContentHash:
 			slog.Info("sync: updating changed task", "id", id, "path", dt.Path)
 			if err := updateTaskFromDisk(db, &dt, username, now); err != nil {
 				return fmt.Errorf("updating task %s: %w", id, err)
 			}
+			toLink = append(toLink, id)
 		default:
-			delete(dbTasks, id)
-			continue // unchanged — skip link/criteria sync
+			// Unchanged — skip link/criteria sync.
 		}
+		delete(dbTasks, id)
+	}
 
+	for _, id := range toLink {
+		dt := diskTasks[id]
 		if err := syncTaskLinks(db, dt.ID, dt.LinkedTasks); err != nil {
 			return fmt.Errorf("syncing task links for %s: %w", id, err)
 		}
@@ -651,7 +676,6 @@ func reconcileTasks(db *sql.DB, diskTasks map[string]diskTask, dbTasks map[strin
 		if err := syncTaskCriteria(db, dt.ID, dt.Criteria); err != nil {
 			return fmt.Errorf("syncing task criteria for %s: %w", id, err)
 		}
-		delete(dbTasks, id)
 	}
 
 	// Remaining dbTasks entries were not found on disk — delete them.

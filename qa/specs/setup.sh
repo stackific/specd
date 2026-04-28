@@ -1096,6 +1096,51 @@ $SPECD update-task --id "TASK-55" --status "in_progress" || true
 $SPECD update-task --id "TASK-60" --status "blocked" || true
 
 echo ""
+echo "=== Adding task dependencies ==="
+# CLI lacks a --depends-on flag, so write the depends_on block directly into
+# task frontmatter and let SyncCache (triggered by the next non-exempt
+# command) populate task_dependencies. Must happen AFTER status updates —
+# update-task rebuilds the file from DB state, so any depends_on added
+# beforehand would be wiped while task_dependencies is still empty.
+add_task_deps() {
+  BLOCKED="$1"; shift
+  FILE=$(grep -lE "^id: ${BLOCKED}\$" specd/specs/*/TASK-*.md | head -1)
+  if [ -z "$FILE" ]; then
+    echo "warn: $BLOCKED not found, skipping deps"
+    return
+  fi
+  TMP=$(mktemp)
+  awk -v deps="$*" '
+    BEGIN { added = 0; n = split(deps, arr, " ") }
+    /^---$/ {
+      if (!added && NR > 1) {
+        print "depends_on:"
+        for (i = 1; i <= n; i++) print "  - " arr[i]
+        added = 1
+      }
+      print
+      next
+    }
+    { print }
+  ' "$FILE" > "$TMP"
+  mv "$TMP" "$FILE"
+  echo "-- $BLOCKED depends on: $*"
+}
+
+# Single dependency, same spec.
+add_task_deps TASK-2 TASK-1
+# Multiple dependencies, same spec.
+add_task_deps TASK-3 TASK-1 TASK-2
+# Cross-spec dependency (RBAC middleware blocked by JWT issuance).
+add_task_deps TASK-7 TASK-3
+# Audit-log UI waits on its emitter.
+add_task_deps TASK-10 TASK-9
+
+echo ""
+echo "-- Triggering sync to load task_dependencies into the cache"
+$SPECD list-tasks --page-size 1 >/dev/null
+
+echo ""
 echo "=== Seeding KB documents ==="
 # KB sync from markdown is not yet implemented, so insert directly into the
 # cache DB. Search and the Web UI both read from these tables, so this

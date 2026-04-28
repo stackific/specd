@@ -17,15 +17,14 @@ tasks:
       - task --list-all
 
   build:
-    desc: Build the binary (CSS + Go)
-    deps: [css:build]
+    desc: Build the binary (UI + Go)
+    deps: [ui:build]
     cmds:
       - go build -ldflags '{{.LDFLAGS}}' -o bin/{{.BINARY}} .
       - echo "Built bin/{{.BINARY}} ({{.VERSION}})"
 
   run:
     desc: Build and run
-    deps: [css:build]
     cmds:
       - go run -ldflags '{{.LDFLAGS}}' .
 
@@ -34,69 +33,54 @@ tasks:
     cmds:
       - air
 
-  # --- CSS Build ---
+  qa:
+    desc: Init tmp project, Vite dev + Go --spa-proxy live reload — open localhost:8000
+    # Implementation lives in scripts/qa.sh because Task's embedded shell
+    # (mvdan/sh) rejects bare signal names like INT/TERM in the trap
+    # builtin, breaking the cleanup-on-exit handler this task depends on.
+    cmds:
+      - bash scripts/qa.sh
 
-  css:install:
-    desc: Install CSS build dependencies
-    dir: static
+  ui:install:
+    desc: Install frontend (TanStack Start/React/shadcn) deps
+    dir: frontend
     cmds:
       - pnpm install
     sources:
       - package.json
       - pnpm-lock.yaml
-    generates:
-      - node_modules/.pnpm/lock.yaml
 
-  css:lint:
-    desc: Run Stylelint on CSS source
-    dir: static
+  ui:dev:
+    desc: Run Vite dev server only (no Go) on localhost:5173
+    dir: frontend
     cmds:
-      - pnpm run lint
+      - pnpm dev
 
-  css:lint:fix:
-    desc: Run Stylelint with auto-fix
-    dir: static
+  ui:build:
+    desc: Build frontend SPA into frontend/dist
+    dir: frontend
+    deps: [ui:install]
     cmds:
-      - pnpm run lint:fix
-
-  css:build:
-    desc: Build CSS (bundle + purge + minify)
-    dir: static
-    deps: [css:install]
-    cmds:
-      - pnpm run build:css
+      - pnpm build
     sources:
-      - css/src/**/*.scss
-      - ../templates/**/*.html
+      - src/**/*
       - package.json
+      - vite.config.ts
+      - tsconfig.json
     generates:
-      - css/dist/app.css
+      - dist/index.html
 
-  qa:
-    desc: Init tmp project, Go live reload with dev mode — open localhost:8000
+  ui:typecheck:
+    desc: Run tsc --noEmit on frontend
+    dir: frontend
     cmds:
-      - |
-        # Build Go once so specd init can run.
-        task css:build
-        CGO_ENABLED=0 go build -o tmp/specd .
+      - pnpm typecheck
 
-        # Initialize the QA project on first run; preserve existing data on
-        # subsequent runs so seeded specs/tasks/KB survive across restarts.
-        # To force a clean slate, run: rm -rf tmp/qa
-        if [ ! -f tmp/qa/.specd.json ]; then
-          rm -rf tmp/qa
-          mkdir -p tmp/qa
-          (cd tmp/qa && ../../tmp/specd init --dir specd --username qa --skip-skills)
-        else
-          echo "  Reusing existing tmp/qa project (delete it to re-init)"
-        fi
-
-        echo ""
-        echo "  Open http://localhost:8000 (Go + live reload)"
-        echo ""
-
-        # Air watches Go + templates + CSS and restarts serve with --dev.
-        air -c .air-qa.toml
+  ui:lint:
+    desc: Run eslint on frontend
+    dir: frontend
+    cmds:
+      - pnpm lint
 
   test:
     desc: Run tests with pass/fail counts
@@ -175,11 +159,12 @@ tasks:
   # --- Quality gate (runs everything) ---
 
   check:
-    desc: Run all checks (fmt, lint, test, security, CSS)
+    desc: Run all checks (fmt, lint, test, security, ui)
     cmds:
       - task: fmt:check
       - task: lint
-      - task: css:lint
+      - task: ui:lint
+      - task: ui:typecheck
       - task: test
       - task: sec
 
@@ -200,7 +185,7 @@ tasks:
   clean:
     desc: Remove build artifacts
     cmds:
-      - rm -rf bin/ tmp/ static/css/dist/app.css
+      - rm -rf bin/ tmp/ frontend/dist/*
 
   # --- Cross-compilation ---
 

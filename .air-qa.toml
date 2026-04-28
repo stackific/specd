@@ -1,14 +1,16 @@
-# Air config for QA mode (task qa)
-# Watches Go + template + static files, restarts with --dev for live reload
+# Air config for QA mode (task qa).
+# Watches Go files only — UI changes are picked up by Vite HMR via the
+# --spa-proxy at http://127.0.0.1:5173. The binary runs from tmp/qa so the
+# seeded QA project (specs, tasks, KB, .specd.cache) is its working dir.
 
 root = "."
 tmp_dir = "tmp"
 
 [build]
-  cmd = "cd static && pnpm run build:css && cd .. && CGO_ENABLED=0 go build -o tmp/specd ."
-  full_bin = "cd tmp/qa && ../../tmp/specd serve --dev --no-open"
-  include_ext = ["go", "sql", "html", "css", "scss", "js"]
-  exclude_dir = ["bin", "tmp", "static/node_modules", "static/css/dist"]
+  cmd = "CGO_ENABLED=0 go build -o tmp/specd ."
+  full_bin = "cd tmp/qa && ../../tmp/specd serve --no-open --spa-proxy http://127.0.0.1:5173"
+  include_ext = ["go", "sql"]
+  exclude_dir = ["bin", "tmp", "frontend"]
   delay = 500
 
 [misc]

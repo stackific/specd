@@ -4,8 +4,11 @@ tmp/
 *.exe
 .DS_Store
 .pnpm-store
-static/node_modules/
-static/css/dist/
-!static/css/dist/.gitkeep
 ui-poc
+frontend/dist/
+!frontend/dist/.gitkeep
+frontend/node_modules/
+frontend/.tanstack/
 .playwright-mcp
+# Stray Playwright/MCP screenshots dropped at the repo root.
+/*.png

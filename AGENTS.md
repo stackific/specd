@@ -13,20 +13,25 @@ A specification-driven development CLI tool.
 - **Formatting:** gofumpt + goimports + gci (auto-fix, never warn)
 - **Security:** gosec (static), govulncheck (deps), gitleaks (secrets)
 - **Commit linting:** [conform](https://github.com/siderolabs/conform) (conventional commits)
-- **Frontend:** Go `html/template` + [htmx](https://htmx.org/) + [BeerCSS](https://www.beercss.com/) (Material Design 3), server-rendered, embedded in Go binary
-- **CSS build:** [Sass](https://sass-lang.com/) (SCSS → CSS) + [Lightning CSS](https://lightningcss.dev/) (bundle + minify) + [PurgeCSS](https://purgecss.com/) (tree-shake unused classes)
-- **CSS linting:** [Stylelint](https://stylelint.io/) (standard SCSS config)
+- **Frontend:** Vite + React 19 + [TanStack Router](https://tanstack.com/router) (file-based, CSR) + [shadcn/ui](https://ui.shadcn.com/) + [Tailwind v4](https://tailwindcss.com/) + [nanostores](https://github.com/nanostores/nanostores) + [lucide-react](https://lucide.dev/) + [react-markdown](https://github.com/remarkjs/react-markdown). Built to a static `frontend/dist/` and embedded in the Go binary.
 - **Package manager:** pnpm (always use pnpm, never npm or yarn)
 - You must write idiomatic Go and directory structure.
-- You must use 2 spaces as indentation for Non-Go code file
+- You must use 2 spaces as indentation for non-Go code files.
 
 ## Project Structure
 
 ```
-main.go              # Entrypoint (embeds skills/, templates/, static/ via go:embed)
+main.go              # Entrypoint (embeds skills/, frontend/dist/ via go:embed)
 cmd/                 # Cobra commands (root.go, subcommands)
-cmd/frontend.go      # Embedded FS injection (SetTemplateFS, SetStaticFS)
-cmd/templates.go     # Go template parsing, rendering (htmx-aware)
+cmd/api.go           # RegisterAPI + JSON helpers (writeJSON/decodeJSON) — thin facade
+cmd/api_meta.go      # GET /api/meta — project + startpage choices for SPA boot
+cmd/api_specs.go     # GET /api/specs, /api/specs/{id} — read-only spec endpoints
+cmd/api_tasks.go     # /api/tasks/* — list, board, detail, move, toggle, depends_on, delete
+cmd/api_kb.go        # GET /api/kb, /api/kb/{id} — read-only KB endpoints
+cmd/api_search.go    # GET /api/search — hybrid search wrapper
+cmd/api_stats.go     # GET /api/stats — dashboard tile counts
+cmd/api_settings.go  # POST /api/settings/* — UI-state mutations (default route, …)
+cmd/spa_proxy.go     # Reverse proxy to Vite dev server in --spa-proxy mode
 cmd/constants.go     # All magic strings and constants (single source of truth)
 cmd/config.go        # Global (~/.specd/config.json) and project (.specd.json) config
 cmd/database.go      # SQLite initialization, ID counters, project DB helpers
@@ -40,20 +45,26 @@ cmd/update_spec.go   # specd update-spec command
 cmd/update_task.go   # specd update-task command (status change, criteria toggle)
 cmd/list_specs.go    # specd list-specs command (paginated)
 cmd/list_tasks.go    # specd list-tasks command (paginated, filterable)
-cmd/serve.go         # specd serve command (HTTP server with htmx + REST API)
+cmd/serve.go         # specd serve command (HTTP server: JSON API + embedded SPA, --spa-proxy in dev)
 cmd/schema.sql       # Embedded SQLite schema (dynamic CHECK constraints)
-templates/           # Go HTML templates (layouts, partials, pages)
-templates/layouts/   # Base layout with content block
-templates/partials/  # Shared partials (nav, footer)
-templates/pages/     # Page templates (override content block)
-static/              # Static assets (embedded in Go binary)
-static/vendor/       # Vendored JS (htmx, BeerCSS, Material Dynamic Colors)
-static/fonts/        # Geist Variable font files (woff2)
-static/images/       # Favicons, logos, manifest, robots.txt
-static/css/src/      # SCSS source (app.scss with maps, mixins, utility generators)
-static/css/dist/     # Built CSS output (gitignored, bundled + purged + minified)
-static/js/           # Client-side JS (theme, nav, htmx config, livereload)
-static/package.json  # CSS build deps (lightningcss-cli, purgecss)
+
+frontend/                       # CSR SPA (Vite + React + TanStack Router + shadcn + Tailwind)
+frontend/index.html             # static shell, mounts /src/main.tsx into #root
+frontend/vite.config.ts         # vite + react + tailwind + tanstack-router plugins
+frontend/src/main.tsx           # createRoot + RouterProvider entry
+frontend/src/styles.css         # Tailwind v4 + shadcn tokens
+frontend/src/routes/            # file-based routes (auto-generates routeTree.gen.ts)
+frontend/src/components/ui/     # shadcn primitives (installed via shadcn CLI)
+frontend/src/components/shell/  # AppShell, AppSidebar, PageHeader, RouteContextPane (Quick Search pane)
+frontend/src/components/common/ # shared widgets
+frontend/src/lib/api/           # one file per resource (specs, tasks, kb, search, meta, settings)
+frontend/src/lib/api.ts         # fetchJSON helper
+frontend/src/lib/stores/        # nanostores ($theme, $sidebarOpen, $searchOpen)
+frontend/src/lib/nav.ts         # NAV_ITEMS, UTILITY_NAV_ITEMS, activeNavItem
+frontend/src/content/           # static markdown (tutorial)
+frontend/dist/                  # build output (gitignored except .gitkeep, embedded in Go binary)
+frontend/public/                # favicons, manifest, robots
+
 skills/              # Embedded skills (Agent Skills Standard format)
 scripts/             # Install/uninstall scripts
 docs/internal/       # Internal setup guides
@@ -69,9 +80,10 @@ lefthook.yml         # Git hook definitions
 ## Commands
 
 ```sh
-task build           # Build binary to bin/
+task build           # Build binary to bin/ (runs ui:build first so dist/ is fresh)
 task run             # Build and run
 task dev             # Live reload (uses air)
+task qa              # Vite dev (5173) + Go --spa-proxy (8000) for full-stack QA
 task test            # Run tests
 task fmt             # Format all Go files (gofumpt + goimports + gci)
 task fmt:check       # Check formatting without writing
@@ -81,19 +93,21 @@ task sec             # Run all security checks
 task sec:vulncheck   # Check deps for known vulnerabilities
 task sec:gitleaks    # Scan for leaked secrets
 task deadcode        # Find unreachable code from main
-task check           # Run everything (fmt, lint, css:lint, test, security)
+task check           # Run everything (fmt, lint, ui:lint, ui:typecheck, test, security)
 task build:all       # Cross-compile for linux/darwin/windows (amd64+arm64)
 task hooks:install   # Install lefthook git hooks
-task clean           # Remove bin/, tmp/, and static/css/dist/
-task css:install      # Install CSS build/lint dependencies (pnpm)
-task css:build        # Build CSS (bundle + purge + minify)
-task css:lint         # Run Stylelint on CSS source
-task css:lint:fix     # Run Stylelint with auto-fix
+task clean           # Remove bin/, tmp/, and frontend/dist/
+
+task ui:install      # pnpm install in frontend/
+task ui:dev          # vite dev server (5173) only
+task ui:build        # vite build → frontend/dist/
+task ui:typecheck    # tsc --noEmit
+task ui:lint         # eslint
 ```
 
 ## Git Hooks (via lefthook)
 
-- **pre-commit** (parallel): format (gofumpt + goimports + gci), golangci-lint --fix, gitleaks, stylelint (CSS)
+- **pre-commit** (parallel): format (gofumpt + goimports + gci), golangci-lint --fix, gitleaks. Frontend lint/typecheck is run via `task ui:lint` / `task ui:typecheck` (or `task check`), not from a hook.
 - **commit-msg:** conform (conventional commit format required)
 - **pre-push** (parallel): tests, govulncheck
 
@@ -150,8 +164,9 @@ When committing via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`), `format.
 - **Never pass user input raw to FTS5 MATCH.** Always sanitize through `sanitizeBM25` or `sanitizeTrigram`. Never pass through FTS5 operators (AND, OR, NOT, NEAR) from user input — this is an injection vector.
 - **All tunables and magic strings go in `cmd/constants.go`.** Never hardcode values (search weights, thresholds, directory names, file names) in function bodies or SQL strings. If a value might be tuned, it belongs in constants.
 - **Spec acceptance criteria use plain list items** (`- criteria text`), never checkbox syntax. **Task acceptance criteria use checkbox syntax** (`- [ ] text` / `- [x] text`) — checked state is stored as an integer (`0`/`1`) in `task_criteria.checked` and synced bidirectionally between the markdown file and the database.
+- **Acceptance criteria language**: claims use must / should / is / will. Avoid may / might.
 - **When the codebase outgrows `cmd/`** (~20+ files), extract domain logic into `internal/` packages. For now `cmd/` is fine for a Cobra CLI.
-- **Frontend conventions** are documented in the "Frontend (templates/ + static/)" section below.
+- **Frontend conventions** are documented in the "Frontend (frontend/)" section below.
 
 ## Skills
 
@@ -231,126 +246,220 @@ When committing via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`), `format.
 
 ## Web UI (Serve)
 
-- `specd serve` starts an HTTP server rendering Go templates with htmx support and serving static assets.
+- `specd serve` starts an HTTP server exposing a JSON API under `/api/*` and serving the embedded SPA from `frontend/dist/`.
 - Port scanning starts at `DefaultServePort` (8000) and tries up to `MaxPortAttempts` (100) ports.
 - Prints port scanning progress and the final URL to the terminal.
 - Opens the user's default browser via `open`/`xdg-open`/`rundll32` depending on OS.
-- Route `/` reads `default_route` from the `meta` table **server-side** and issues a 307 redirect (default: `/docs/tutorial`). Never replace this with a client-side fetch + redirect — keep the redirect in Go so the URL the user typed is the URL their browser navigates to.
-- REST API routes live under `/api/` prefix (e.g. `/api/meta/default-route`). Settings-page actions that mutate state and return HTML fragments (not JSON) live under `/settings/` (e.g. `POST /settings/default-route`) — pick the prefix that matches the consumer.
-- Page routes render Go templates with htmx partial support (HX-Request header → content block only).
-- Static assets (CSS, JS, fonts, vendor libs) are served from the embedded `static/` filesystem.
-- `--dev` flag enables live reload: re-parses templates on every request and injects an SSE-based reload script.
-- **Form-handling discipline:** wrap `r.Body` with `http.MaxBytesReader(w, r.Body, MaxSettingsFormBytes)` before `r.ParseForm()` (gosec G120). When a form value is constrained to an allowlist (e.g. `StartpageChoices`), resolve it to the canonical entry from the list **before** logging or persisting — this both rejects unknown values and satisfies gosec G706 taint analysis on `slog` calls.
-- **gocognit budget on `runServe`:** the function registers many routes; keep its complexity ≤ 20 by extracting per-page handlers (`makeSpecsHandler`, `makeSearchHandler`, `handleSettingsPage`) and shared helpers (`makeFreshPages`, `makePageHandler`) instead of inlining closures.
+- In production (no `--spa-proxy` flag), `cmd/serve.go` serves the embedded SPA with an SPA-fallback rule: any non-`/api/*`, non-asset path returns `index.html` so TanStack Router takes over on the client.
+- In dev (`--spa-proxy http://127.0.0.1:5173`), `cmd/spa_proxy.go` reverse-proxies all non-`/api/*` traffic to Vite. `task qa` wires this up.
+- All page state mutations go through JSON endpoints under `/api/*` (e.g. `POST /api/tasks/move`, `POST /api/settings/default-route`). Mutations return the updated entity so the SPA can re-render off the response.
+- **Form-handling discipline:** wrap `r.Body` with `http.MaxBytesReader(w, r.Body, MaxSettingsFormBytes)` before `r.ParseForm()` (gosec G120). When a value is constrained to an allowlist (e.g. `StartpageChoices`), resolve it to the canonical entry from the list **before** logging or persisting — this both rejects unknown values and satisfies gosec G706 taint analysis on `slog` calls.
 - **Persisting UI settings:** read with `ReadMeta(db, key)`, write with `WriteMeta(db, key, value)` (upserts via `ON CONFLICT(key) DO UPDATE`). Keys live in `cmd/constants.go` (e.g. `MetaDefaultRoute`).
+- **gocognit budget on `runServe`:** keep complexity ≤ 20 by extracting per-resource API handlers and shared helpers instead of inlining closures.
 
-## Frontend (templates/ + static/)
+## Frontend (frontend/)
 
-- **Stack**: Go `html/template` + [htmx](https://htmx.org/) v2 + [BeerCSS](https://www.beercss.com/) (Material Design 3)
-- **Font**: [Geist Variable](https://vercel.com/font) via `@fontsource-variable/geist` (woff2 files copied to `static/fonts/` at build time). Overrides BeerCSS's `--font`.
-- **Package manager**: Always use `pnpm`, never npm or yarn.
-- **BeerCSS** is vendored in `static/vendor/` (`beer.min.css`, `beer.min.js`, `material-dynamic-colors.min.js`). Use BeerCSS components, grid, spacing, and typography classes natively — do not reinvent what BeerCSS already provides. When building layouts, study BeerCSS docs for correct class usage.
-- **Material theme** generated from seed color `#1c4bea` via `ui("theme", "#1c4bea")` in `static/js/app.js` at page load.
-- **Light/dark mode** toggle saved in `localStorage` under key `specd-theme`. Restored on load, falls back to system `prefers-color-scheme`.
+### Stack
 
-### Template Layout System
+- Vite + React 19 + TanStack Router (file-based routes) + shadcn/ui + Tailwind v4 + nanostores + lucide-react + react-markdown.
+- **Pure CSR**, not SSR. TanStack Start was considered and rejected because Nitro emits a Node server bundle that conflicts with the embed-in-Go-binary goal.
+- Package manager: pnpm only.
 
-- **Layouts**: Two layout templates in `templates/layouts/`:
-  - `base.html` — full page shell (`<html>`, `<head>`, `<body>`). Renders `<title>`, meta tags, nav, footer, and the `{{block "content" .}}` slot. Used on initial page load.
-  - `partial.html` — lightweight wrapper for htmx partial responses. Renders `<title>` (htmx natively processes `<title>` tags in responses to update `document.title`) followed by `{{block "content" .}}`. Used on htmx navigation so page metadata updates without a full reload.
-- **Partials**: `templates/partials/nav.html` (desktop sidebar + mobile top bar + mobile drawer), `templates/partials/footer.html`.
-- **Pages**: `templates/pages/*.html` — each defines `{{define "content"}}...{{end}}` to override the content block. Current pages: `welcome`, `tasks`, `task_detail`, `specs`, `spec_detail`, `kb`, `kb_detail`, `search`, `settings`, `docs`, `tutorial`.
-- **Detail pages**: `/specs/{id}`, `/tasks/{id}`, `/kb/{id}` use Go 1.22+ `r.PathValue("id")` for routing. Each handler reuses the same loader as the corresponding CLI `get-*` command (`LoadSpecDetail` in `cmd/get_spec.go`, `LoadTaskDetail` in `cmd/handlers_task_detail.go`, `loadKBDetailPage` in `cmd/handlers_kb_detail.go`). When adding a new detail page, extract the load logic into an exported `Load<Kind>Detail(db, id)` function so the CLI and web stay in sync. Search-result links must point at these routes via `searchResultHref` (`cmd/templates.go`).
-- **PageData struct** (`cmd/templates.go`): `Title`, `Active` (nav highlighting), `DevMode`, `CSSHash`, `JSHash`, `Data` (page-specific payload).
-- **htmx-aware rendering**: `renderPage()` checks the `HX-Request` header. Full page load → renders via `base.html`. htmx navigation → renders via `partial` (content + metadata). This keeps metadata in the layout layer — to add per-page metadata (e.g. description, OG tags), add it to `PageData` and render in both `base.html` and `partial.html`.
-- **Template FuncMap** (`cmd/templates.go`): `isActive` (active-section check), `searchResultHref` (search result links), `fromSlug` (turn `non_functional` → "Non Functional" for display). Add helpers here rather than precomputing in handlers.
-- **Navigation**: All nav links use `hx-get`, `hx-target="#main-content"`, `hx-swap="innerHTML"`, `hx-push-url="true"` for SPA-like navigation with clean URLs. **Do NOT add `hx-select`** when targeting `#main-content` — the htmx partial response (`partial.html`) is just `<title>` + content block, with no `#main-content` wrapper, so `hx-select="#main-content"` matches nothing and swaps in empty. `hx-select` is only correct when scoping to a sub-region (e.g. search uses `hx-select="#search-results"`, which exists inside the content block). Nav link sub-templates (`nav-links`, `nav-links-mobile`) are shared between desktop and mobile to avoid duplication.
-- **Desktop sidebar toggle**: Hamburger toggles `max` class on the nav via `toggleSidebar()` in `static/js/app.js`. Persisted in `localStorage` under `specd-sidebar`.
-- **Mobile drawer**: `<dialog class="left no-padding">` containing `<nav class="left max surface-container">`. BeerCSS handles the slide-in animation and overlay. Custom CSS (`#mobile-menu > nav`) overrides `position: static` and `block-size: 100%` so the inner nav fills the dialog.
-- **Main width per route**: `templates/layouts/base.html` picks `<main class="responsive max">` for `/tasks` (kanban needs the full viewport) and `<main class="responsive">` (75rem cap, BeerCSS-centered) for every other route, conditioned on `.Active`. For `/tasks`, `.tasks-page` uses `inline-size: max-content; max-inline-size: 100%; margin-inline: auto` so the page header lines up with the kanban's left edge on wide screens (4K) and the kanban still scrolls horizontally when it overflows.
-- **htmx form-submit + partial swap**: When a form mutates a region of the current page, point `hx-get`/`hx-post` to the same route and add `hx-target="#region"`, `hx-select="#region"`, `hx-swap="outerHTML"`, `hx-push-url="true"`. The handler renders the **full** page; htmx extracts just the matching region from the response. One handler serves bookmarked URLs and in-page updates — no separate fragment endpoint. Canonical example: `cmd/search_page.go` + `templates/pages/search.html` (`#search-results`).
-- **Template scope inside `{{with .Data}}`**: `{{with .Data}}` rebinds `.` to the wrapped value, but `$` still refers to the **root** template context (`*PageData`), **not** the wrapped data. To reference a sibling field of the wrapped data from inside a nested `{{range}}`, save it to a local variable (`{{$kind := .Kind}}`) before entering the range, then use `$kind`. Writing `$.Kind` will silently miss because PageData has no such field — and Go templates error at execute time, not parse time, so the page renders blank or shows a 500.
-- **Grouped/paginated lists — count badges**: When grouping a paginated list by category (specs by type, tasks by stage), the per-group count badge must show the **project-wide total** for that category, not `len(.Items)` of the current page. Otherwise the chip shrinks as the user pages through. Pattern: query `SELECT category, COUNT(*) FROM table GROUP BY category` once and pass the totals map alongside the page items. See `loadSpecTypeTotals()` + `SpecsGroup.Total` in `cmd/handlers_specs_page.go`.
-- **Composable filter form**: when a page has multiple combinable filters (e.g. `/specs` view+type, `/tasks` filter), wrap them in **one form** with `hx-trigger="change"`, one `<select>` per filter, and any preserved state (`page`, `page_size`) in `<input type="hidden">`. htmx serializes the form into the URL on change so filters compose automatically (`/specs?view=cards&type=business&page=1&page_size=20`). Pagination links and other in-page navigation must spell out **every** filter dimension in their `hx-get` URL — missing one drops that filter. Canonical example: `templates/pages/specs.html`.
-- **Allowlist-driven query filters**: validate query-string filters against a runtime allowlist (e.g. `ProjectConfig.SpecTypes` for `?type=…`) before they reach SQL or the template. Use a sentinel like `"all"` for "no filter". The SQL pattern `WHERE ?1 = ?2 OR col = ?1` (with `?2 = "all"`) keeps one query covering both filtered and unfiltered cases without dynamic SQL string building. Canonical example: `loadSpecsPage()` + `isAllowedSpecType()` in `cmd/handlers_specs_page.go`.
-- **Always verify routes after template changes** — `go build`, `go test`, and the linters do not catch Go template field-resolution errors. Hit the route with `curl` or Playwright before declaring a template change done.
+### Entry
 
-### Styling
+- `frontend/index.html` is the static shell with `<div id="root">` and `<script type="module" src="/src/main.tsx">`.
+- `main.tsx` calls `createRoot(rootEl).render(<RouterProvider router={router} />)`.
+- **Do NOT add `shellComponent` to `__root.tsx`** — that pattern is TanStack Start SSR and is incompatible with this CSR setup; it caused a runtime hang. The root route uses `component: RootComponent` returning `<AppShell><Outlet/></AppShell>`. No `<html>`, `<head>`, or `<body>` inside React.
 
-**All frontend styling work — writing markup for new pages, adding a rule, adjusting spacing, overriding a BeerCSS default — must follow [`docs/internal/css-conventions.md`](docs/internal/css-conventions.md).** That document is the single source of truth and is organized in two parts:
+### Routing
 
-- **Part 1 — Building UI**: how to lay out pages, apply spacing, toggle dark mode, and write component styles *using the existing class and layout system* (BeerCSS components + our directional utility classes). Read this before writing any template.
-- **Part 2 — Extending the system**: how to add a CSS variable, a new spacing size/direction/breakpoint, or a new class when Part 1 genuinely can't cover the case. New additions are rare by design.
+- TanStack Router file-based routing in `src/routes/`. File names map to URL paths: `welcome.tsx` → `/welcome`, `specs.$id.tsx` → `/specs/:id`, `docs.tutorial.tsx` → `/docs/tutorial`.
+- The `@tanstack/router-plugin/vite` plugin auto-generates `routeTree.gen.ts` on file events. **Do not edit that file**; it's regenerated on every build/dev cycle.
+- `@/` absolute imports always — never relative paths in `frontend/`.
 
-Non-negotiables enforced by that document (summarised here so tooling picks them up):
+### App shell
 
-- **Use BeerCSS classes natively** for grid (`grid`, `s12`, `l6`), alignment (`top-align`, `center-align`), typography (`large-text`, `bold`), and components. Do not reinvent what BeerCSS ships.
-- **BeerCSS components already have a default look — don't gild them.** `<article>` ships with surface fill, elevation, padding, and `.75rem` rounded corners; adding `class="border round no-elevate"` strips the fill/shadow and produces a ghost outline that looks broken. `<header>` is `display: grid` with `min-block-size: 4rem` and `align-content: center` — using it for an inline section title makes a 64px-tall band with text floating in the middle. For inline titles use `<nav class="row">` or a plain `<h6>`.
-- **Avoid double borders.** When wrapping a `<table>` inside an `<article class="round">`, drop `class="border"` from the table — the article already provides containment.
-- **Confirmation feedback uses BeerCSS snackbars.** Place `<div id="…" class="snackbar">…</div>` in the page and trigger with the global `ui("#…")` helper (auto-fades). Wire from htmx via `hx-on::after-request="if (event.detail.successful) ui('#…')"` and let the form respond with `hx-swap="none"`. Don't invent visually-hidden classes (no `.hidden` exists in this project) — use `aria-labelledby` to link a fieldset/article to an existing heading instead.
-- **Articles wrap long tokens.** A project-wide `article { overflow-wrap: anywhere; }` rule lives in `app.scss` so user-supplied IDs/titles/URLs break at the rounded card edge instead of overflowing. Don't strip it — and any new card-shaped container outside `<article>` needs the same rule, or it will visibly bleed.
-- **Cards use the canonical `tile` recipe.** Every card in specd (kanban tasks, specs cards view, search results, linked-task lists on detail pages) uses the same anchor + `<article class="tile surface border no-margin">` + `nav.row.no-padding.no-margin.tile-meta` chip row + `<h6 class="small no-margin">` heading pattern. Grid responsive columns (`s12 m6 l4`) go on the anchor wrapper, not the article. Copy-paste from `templates/partials/board.html` or `templates/pages/search.html`; do not invent a new card shape. Full recipe with class glossary and don'ts: [`docs/internal/css-conventions.md`](docs/internal/css-conventions.md) → "Cards (the canonical `tile` recipe)".
-- **All project-level styles live in `static/css/src/app.scss`.** SCSS with variables, maps, mixins, and `@each` loops.
-- **Spacing utilities are generated** from `$breakpoints`, `$size-keys`, and `$dirs` maps via `@include spacing-utilities($bp)`. Never hand-write utility classes — add to the maps instead.
-- **Use the `space()` and `no-space()` mixins** in component selectors (e.g. `footer nav { @include space(mt, m); }`) to apply the same values the utility classes provide.
-- **Every tunable value is a CSS variable** on `:root`. Never hardcode sizes, spacing, or colors in rule bodies.
-- **Logical properties by default** (`margin-block-start`, `padding-inline`). Physical only when exactly mirroring a BeerCSS rule that uses physical (see `no-space` mixin).
-- **Directional spacing uses utility classes** (`mb-s`, `px-l`, `m:mt-m`, …) in markup, or `@include space($dir, $size)` in SCSS. Do not hand-write `margin-block-end: var(--space-m) !important`.
-- **Scope BeerCSS overrides to their containing element.** Keep footer-specific overrides under `footer ul`, `footer nav`, etc. — never publish a naked `ul { … }` or `nav { … }` rule that leaks into every component.
+- `src/components/shell/app-shell.tsx` mounts the global providers (TooltipProvider, SidebarProvider, Toaster) plus `AppSidebar` + `SidebarInset(PageHeader + Outlet)`. The Quick Search lives in pane 2 of the sidebar (`route-context-pane.tsx`); the binoculars button in `PageHeader` toggles the sidebar to expose it.
+- **Sidebar layout** is based on the shadcn `sidebar-09` block (two panes — icon rail + context pane).
+  - Rail body: Tasks, Specs, Knowledge.
+  - Rail footer: Docs, Settings.
+  - Pane 2 hosts a live search view (`route-context-pane.tsx`) that hits `/api/search`. Pane 2 is hidden on mobile (`md:flex` only).
 
-### CSS Build
+### State
 
-- **Pipeline**: Sass (compile SCSS) → Lightning CSS (bundle + minify) → PurgeCSS (strip unused custom classes by scanning `templates/**/*.html`) → concatenate with BeerCSS. **PurgeCSS only touches our compiled SCSS**; BeerCSS is appended after, so vendor classes like `snackbar`, `active`, `chip`, `round` are never purged and never need a safelist. Only custom classes added dynamically by JS need safelisting (see `static/purgecss.config.cjs`).
-- **Source**: `static/css/src/app.scss` — design tokens, SCSS maps/mixins, utility class generators, overrides.
-- **Output**: `static/css/dist/app.css` — single bundled, purged, minified CSS file (BeerCSS + custom).
-- **Build command**: `task css:build` (or `cd static && pnpm run build:css`).
-- **`static/css/dist/.gitkeep`**: Required so `go:embed` works before first CSS build. The `css/dist/` directory is gitignored, but `.gitkeep` is force-tracked.
-- **Package manager**: pnpm for CSS build deps only (`sass`, `lightningcss-cli`, `purgecss`).
-- **CSS linting**: Stylelint with `stylelint-config-standard-scss`. Run `task css:lint` or `cd static && pnpm run lint`.
+- nanostores by concern. `$theme` (`light|dark|system`), `$sidebarOpen`, `$searchOpen`. Persisted with the `specd-` localStorage prefix.
+- **Theme application happens in a single `useEffect` in `app-shell.tsx`.** Do NOT also toggle the DOM class from the store subscription — duplicating it caused a render storm. The subscription only writes localStorage; the effect is the sole DOM toggler.
+- Dark mode is applied by adding `class="dark"` to the `<html>` element from that effect.
 
-### Build & Embedding
+### Components
 
-- **Embedding**: `templates/` and `static/` are embedded in the Go binary via `go:embed` in `main.go`. `fs.Sub` strips the prefixes. `cmd/frontend.go` holds `templateFS` and `staticFS` variables.
-- **Dev workflow**: Use `task qa` — initializes `tmp/qa/` on first run, then **reuses existing data** on subsequent runs so seeded specs/tasks/KB survive restarts. Delete `tmp/qa/` to force re-init. Builds CSS, starts Air (Go live reload on port 8000 with `--dev` flag). Open `localhost:8000`. Templates are re-parsed on every request in dev mode. Air watches `.go`, `.html`, `.css`, `.js` files.
-- **Air `clean_on_exit` is `false`** in `.air-qa.toml`. With `tmp_dir = "tmp"` and `clean_on_exit = true`, Air would delete the **entire** `tmp/` directory on shutdown — including `tmp/qa/`. Keep this `false`; if you ever change `tmp_dir`, audit again.
-- **Seed data**: `qa/specs/setup.sh` builds a realistic project at `/tmp/specd-qa/` — currently 68 specs (24 business / 22 functional / 22 nonfunctional, all categories paginate at default page size 20), 65 tasks across stages, 6 KB docs. Copy `/tmp/specd-qa/specd/`, `/tmp/specd-qa/.specd.json`, and `/tmp/specd-qa/.specd.cache` into `tmp/qa/` to populate the QA project (KB sync from markdown is not yet implemented, so KB rows must be inserted via SQL — the script does this). The script uses `make_spec` (5th arg = type) and `make_task` shell helpers so adding more rows is a one-line append.
-- **`new-spec` defaults the type to `business`.** It does **not** accept a `--type` flag. To create non-business specs (in tests or seed scripts), call `update-spec --id SPEC-N --type functional|nonfunctional` immediately after `new-spec`. The `make_spec` helper in `qa/specs/setup.sh` does this automatically when given a type argument.
-- **Live reload**: `--dev` flag on `specd serve` injects `livereload.js` which connects via SSE. When the server restarts (Air rebuild), the browser auto-reloads.
-- **`specd serve --no-open`**: Suppresses browser auto-open and startup message. Used by Air in QA mode to avoid opening the browser on every Go rebuild.
+- All shadcn primitives live in `src/components/ui/`. **Don't hand-roll anything shadcn already provides.** Run `pnpm dlx shadcn@latest add <name>` if a needed primitive isn't there yet.
+- **`frontend/src/components/ui/` is off-limits for manual file editing.** Files in this directory are managed exclusively by the shadcn CLI (`pnpm dlx shadcn@latest add <name>` to add, `pnpm dlx shadcn@latest update` to upgrade). Do not hand-edit existing files there, do not hand-write new ones, do not “fix” a file by patching it. If a primitive is missing or buggy, fix it through the CLI; if a wrapper or composition is needed, build it in `src/components/` (outside `ui/`) and import the shadcn primitive into it.
+- The list of installed components is whatever's currently in `src/components/ui/`.
+- Icons come from `lucide-react` only. No Material Symbols. No inline SVGs unless Lucide genuinely lacks the icon.
 
-### Code Standards
+### Theming
 
-- **HTML**: Must be semantic, accessible, and SEO-friendly. Use `<article>`, `<nav>`, `<main>`, `<header>`, `<footer>`, proper heading hierarchy, `aria-label`, `role` attributes where needed.
-- **Indentation**: 2 spaces for all frontend files (HTML, CSS, JS, JSON).
+- shadcn CSS variables + Tailwind v4 in `src/styles.css`. No SCSS, no per-component CSS files.
+- New design tokens go in `@theme` blocks in `styles.css`, not in ad-hoc stylesheets.
 
-### Server-rendered htmx partials with client state
+### Data fetching
 
-Some pages mix server-rendered htmx swaps with client-side interactivity (drag/drop, collapse toggles, theme/sidebar). The kanban board at `/tasks` is the reference implementation. When you build similar features:
+- Plain `useEffect` + `AbortController` keyed on URL search params. **No TanStack Query, no SWR.**
+- Resource wrappers in `src/lib/api/<resource>.ts` (specs, tasks, kb, search, meta, settings) use the central `fetchJSON<T>` helper from `src/lib/api.ts`.
+- Every page reads from `/api/*`. JSON shapes are defined Go-side in `cmd/api_<resource>.go` and mirrored TS-side in `src/lib/api/<resource>.ts`. Keep them in lockstep.
+- **One file per resource on the Go side.** `cmd/api.go` is the thin facade (RegisterAPI + JSON helpers); each resource lives in `cmd/api_<resource>.go`. When adding a new top-level path (e.g. `/api/foo/*`), create `cmd/api_foo.go` rather than appending to an existing file.
+- Mutations always return the updated entity so the page can re-render off the response — never hand-craft state from request inputs.
 
-- **Render partials, swap into a stable root.** Define a partial template (e.g. `templates/partials/board.html`) and serve it from a JSON-free endpoint (e.g. `GET /api/tasks/board`). The page shell wraps a single `<div id="…-root" hx-get="…" hx-trigger="load" hx-swap="innerHTML">` so the first paint and every subsequent re-render go through the same partial.
-- **State-changing endpoints return the same partial.** `POST /api/tasks/move` re-renders and returns the board partial; the client just swaps it in. The server stays authoritative.
-- **Re-bind listeners on every htmx swap.** The DOM is replaced wholesale, so listeners attached to old nodes vanish. Subscribe once on `document.body` for `htmx:afterSwap`, filter by the swap's target id, then run a `bind()` that wires drag/drop, click handlers, etc.
-- **Persist UI state in `localStorage`, restore on bind.** Examples: `specd-theme`, `specd-sidebar`, `specd-kanban-collapsed`. Keep a single key per concern; serialise as a slug list (`"todo,blocked"`) or a simple flag.
-- **JS-applied classes must be safelisted.** PurgeCSS only sees template HTML. Any class added at runtime (`dragging`, `drop-target`, `collapsed`, `kanban-placeholder`) goes into `static/purgecss.config.cjs` `safelist`.
-- **Templates need a per-request fresh map in dev.** Use the `makeFreshPages(devMode, cached)` helper in `cmd/serve.go` so partial endpoints pick up template edits via Air without a full rebuild.
+### Optimistic updates
 
-### Frontmatter ↔ DB ↔ UI sync
+- Only for kanban DnD and criterion toggles. Read-only resources don't need optimism. Revert on error.
 
-Files are ground truth, the SQLite cache is derived. When a UI action mutates state (kanban drag, criterion toggle):
+### Destructive confirmations
+
+- Use shadcn `AlertDialog` for any irreversible action (delete spec, delete task, etc.). **Never use `window.confirm`** — the native dialog isn't themed and can't show context. Reference: `routes/specs.$id.tsx` Delete-task flow.
+- The dialog state lives at the page level; the row's button only calls `onRequestDelete(item)` to open it. This keeps the click target a Button sibling of the row's Link (never nest a Button inside a Link — clicks fight).
+- The Action button calls `event.preventDefault()` so the dialog stays open while the request is in flight; close it from the success branch and disable both buttons via a `deleting` flag.
+
+### Slug-to-label formatting
+
+Statuses and types are stored as lowercase underscore slugs (`in_progress`,
+`wont_fix`, `nonfunctional`). For display, **never** rely on Tailwind's
+`capitalize` alone — it only fixes the first letter and leaves the
+underscore visible. Use:
+
+- **Frontend:** `humanizeSlug(slug)` in `src/lib/format.ts` — replaces `_`
+  and `-` with spaces and uppercases the first letter ("In progress",
+  "Wont fix"). Mirrors the Go `FromSlug` helper.
+- **Go:** `FromSlug(slug)` in `cmd/slug.go` — same semantics; use server-
+  side when emitting a pre-rendered label like `status_label` on
+  `apiTaskDetailResponse`.
+
+`humanizeSlug` is preferred over CSS class transforms because it produces
+correct output even when the slug contains multiple words and avoids
+accessibility quirks (screen readers may pronounce underscores).
+
+### Detail-route URL hygiene
+
+Detail routes (`/specs/$id`, `/tasks/$id`) must declare
+`validateSearch: () => ({})` so list-page filter state (`view=grouped&type=all&page=1&page_size=20`)
+doesn't leak into the URL when the user navigates from a list. Without it,
+TanStack Router preserves unknown search params on cross-route navigation.
+
+Pair this with `search={{}}` on every `<Link to="/specs/$id">` /
+`<Link to="/tasks/$id">` so click navigation produces a clean URL. The
+"Back to list" links in detail pages keep the full search props because
+they're navigating *to* the list and should preserve its state.
+
+### In-place feedback for low-stakes actions
+
+For frequent quiet actions (copying a hash, dismissing a row), prefer an
+inline state swap over a global toast — toasts are noise. Reference:
+`components/common/copyable-hash.tsx` toggles its own label between
+`Hash: <truncated>` and `Copied` on click and resets after ~1.4 s. Use
+toasts only for results that the user might miss visually (network errors,
+async background save outcomes that don't have a nearby UI affordance).
+
+### Markdown rendering
+
+- Use the shared `Markdown` component (`components/common/markdown.tsx`), **not** raw `ReactMarkdown` — `@tailwindcss/typography` is not installed, so the `prose` class is dead. The component owns per-tag styling.
+- For "one size smaller" body text (used on spec/task detail), wrap the call site with descendant utilities: `text-sm [&_h1]:text-2xl [&_h2]:text-xl [&_h3]:text-lg [&_h4]:text-sm [&_li]:leading-6 [&_p]:leading-6`. Don't bake size variants into the component until a third call site needs the same scaling.
+
+### Timestamps
+
+- Render every timestamp visible to a user with `formatRelativeTime(iso)` from `@/lib/format` ("3 minutes ago", "2 days ago", "in 4 hours"). It uses `Intl.RelativeTimeFormat` so plurals/locale work without manual branching.
+- Always wrap the output in a `<time>` element: `<time dateTime={iso} title={formatDateTime(iso)}>{formatRelativeTime(iso)}</time>`. `dateTime` is for assistive tech and copy-paste; `title` exposes the absolute timestamp on hover.
+- `formatRelativeTime` takes an optional `nowMs` second argument so tests can pin "now" without faking timers — see `src/lib/format.test.ts`.
+- Don't add new "absolute date only" helpers (e.g. the old `formatDate`) — those are list-density artefacts that the relative form replaces.
+
+### Search
+
+- The sidebar's pane 2 (`route-context-pane.tsx`, "Quick Search") hosts a sticky live-search input that hits `/api/search`. The page-header binoculars button toggles the sidebar to expose it.
+- The `/search` page is the full results view with filtering by kind and pagination. Search-related fetching uses the same `searchAll` helper in `lib/api/search.ts`.
+
+### URL-driven view state vs. localStorage
+
+State location is determined by whether it's shareable / bookmarkable:
+
+- **URL search params** — view mode, filter, sort, pagination, tab selection. Anything you'd reasonably want to bookmark or share. Source of truth is TanStack Router's typed search via `Route.useSearch()`. Define schemas with `validateSearch` on the route. Reference: `routes/search.tsx` for `q`/`kind`/`page`.
+- **`localStorage` (via nanostores)** — client-private UI state that should *not* affect URLs: `$theme` (`specd-theme`), `$sidebarOpen` (`specd-sidebar-open`), kanban column collapse state. Keys are namespaced `specd-<concern>`.
+
+When in doubt: if two users in the same project would expect to see the same thing after pasting the URL, it's URL state.
+
+### Frontmatter ↔ DB ↔ API sync
+
+Files are ground truth, the SQLite cache is derived. When an API mutation changes state (kanban move, criterion toggle):
 
 1. Wrap DB writes in a single transaction, renumbering any ordered set densely (`0..n-1`).
 2. After commit, call `rewriteTaskFile()` (or the analogue) for **every** entity whose persisted fields changed — not just the directly-edited one. Renumbered siblings need their `position:` frontmatter updated too.
 3. The rewriter recomputes `content_hash` from the just-written bytes so the next `SyncCache()` is a no-op.
-4. Re-render the partial from fresh DB state for the client. Don't hand-craft the response from the request inputs; round-trip through the same loader the page uses.
+4. Return the fresh entity from the loader (the same one the GET endpoint uses) — don't reconstruct response state from request inputs.
 
-### URL-driven view state vs. localStorage
+### Set-replacement endpoints for one-to-many collections
 
-Distinguish *where* state lives based on whether it's shareable / bookmarkable:
+Mutating a many-to-many or one-to-many edge (e.g. `task.depends_on`,
+`spec.linked_specs`) uses **PUT with the complete next set** rather than
+add/remove deltas:
 
-- **URL query string** — view mode, filter, sort, pagination, tab selection. Anything you'd reasonably want to bookmark, copy-paste to a colleague, or restore via browser back/forward. Source of truth is `r.URL.Query()`; the page handler reads it, threads it through `Data`, and the template renders the active state. Buttons use `hx-get="/page?param=value" hx-target="#main-content" hx-swap="innerHTML" hx-push-url="true"`. Reference: `/specs?view=` (`cmd/handlers_specs_page.go`) and `/tasks?filter=` (`cmd/handlers_tasks_page.go`). Embed the current value into nested resources via a `data-…` attribute so JS handlers (e.g. drag/drop POSTs) can read it back without re-parsing the URL.
-- **`localStorage`** — client-private UI state that should *not* affect URLs: theme (`specd-theme`), sidebar collapsed/expanded (`specd-sidebar`), per-column kanban collapse (`specd-kanban-collapsed`). Keys are namespaced `specd-<concern>`; values are the smallest serialisation that works (a flag, a slug list).
+- `PUT /api/tasks/{id}/depends_on` with `{depends_on: ["TASK-2","TASK-3"]}`.
+- `PUT /api/specs/{id}/linked_specs` with `{linked_specs: ["SPEC-2","SPEC-3"]}`.
+- Empty array clears all rows.
+- Each handler normalizes (uppercase, trim, dedupe), rejects self-references
+  and unknown ids before any write, then mutates inside a single
+  transaction. References: `apiSetTaskDependsOnHandler` in `cmd/api_tasks.go`
+  (helpers: `normalizeDependsOnInput`, `verifyTasksExist`,
+  `replaceTaskDependencies`); `apiSetLinkedSpecsHandler` in
+  `cmd/api_specs.go` (helpers: `normalizeLinkedSpecsInput`,
+  `verifySpecsExist`, `diffLinkedSpecs`, `applyLinkedSpecsDiff`).
+- Always rewrite the affected markdown file (`rewriteTaskFile`,
+  `rewriteSpecFile`) and return the freshly-loaded detail payload so the
+  SPA can drop the response into state without an extra GET. The detail-
+  payload assembly is shared with the GET handler via
+  `buildTaskDetailResponse` / `buildSpecDetailResponse`.
+- For **bidirectional** edges (e.g. `spec_links` is a from/to pair table)
+  insert/delete BOTH directions and rewrite BOTH endpoints' markdown files
+  so frontmatter stays consistent. Diff `current` vs `next` to minimise
+  row churn rather than DELETE-all + INSERT-all.
 
-When in doubt: if two users in the same project would expect to see the same thing after pasting the URL, it's URL state.
+The frontend mirrors this contract:
+
+- One TS wrapper per resource (`setTaskDependsOn` in `lib/api/tasks.ts`,
+  `setLinkedSpecs` in `lib/api/specs.ts`) accepts the *complete* list and
+  returns the updated detail response.
+- The same wrapper is reused by both the inline trash-icon "remove" (e.g.
+  `saveDependsOn(refs.filter(…).map(r => r.id))`) and the multi-select
+  picker (`onConfirm={saveDependsOn}`). One write path, one network call
+  shape.
+- For the picker UI, follow the `DependsOnPicker` /
+  `SpecLinkPicker` pattern in `components/tasks/depends-on-picker.tsx` and
+  `components/specs/spec-link-picker.tsx`: the parent owns the candidate
+  list and the API call; the dialog is network-free and emits `onConfirm`
+  with the full next set. Lazy-load candidates on first open
+  (`openLinkPicker`) so the page stays a single GET on initial load.
+- The Card containing the relationship list renders **unconditionally** so
+  the `+` affordance is always reachable; an empty-state paragraph nudges
+  the user toward the picker.
+
+### Card "+" / action slot
+
+When a card needs an action button right-aligned with the title (e.g. the
+`+` for the depends-on / linked-specs picker), use the shadcn
+`<CardAction>` primitive — NOT a flexbox override on `<CardHeader>`.
+shadcn's `CardHeader` is a CSS grid that auto-switches its columns to
+`[1fr_auto]` when a child has `data-slot="card-action"` (which `CardAction`
+sets); reaching for `flex-row justify-between` on the header fights that
+grid and produces stacked or misaligned children. Reference:
+`<LinkedSpecs>` in `routes/specs.$id.tsx` and the depends-on header in
+`routes/tasks.$id.tsx`.
+
+### Resolving id-only references in detail responses
+
+Internal models often store relationships as `[]string` IDs (`task.depends_on`, `task.linked_tasks`). The CLI is happy with that, but the SPA needs titles for human-readable UI. Pattern:
+
+1. Keep the underlying model field as-is (`[]string`) so CLI consumers don't break.
+2. Add a sibling `*_refs` field on the API detail response with `[]apiTaskRef{ID, Title}` (or analogous). Don't overload the existing field.
+3. In the handler, fan out one batch query (`SELECT id, title FROM ... WHERE id IN (?,?,…)`) — never N+1. Use `loadTaskRefs` in `cmd/api_tasks.go` as the reference implementation; preserve input order, fall back to `{ID, ""}` for missing IDs so the UI can render a broken link instead of dropping it.
+4. The frontend type adds the new field; the route reads `data.foo_refs.map(...)` and shows `{ref.id} — {ref.title}`.
 
 ### Mandatory vs. optional task stages — no hard logic on optional slugs
 
@@ -360,6 +469,31 @@ When in doubt: if two users in the same project would expect to see the same thi
 - **Good:** position-based — anything at or after `Done` in the kanban order is "completed". `Done` is mandatory. Reference: `completedStageSlugs(stages)` in `cmd/handlers_tasks_board.go`.
 
 Positional layout *preferences* for known optional stages (e.g. "Pending Verification before Done") are fine to encode by name, since they're hints that gracefully fall through when the stage is absent.
+
+### Build
+
+- `task ui:build` → `frontend/dist/` (~150 KB gz JS, code-split per route, ~15 KB gz CSS).
+- `task build` runs `ui:build` first so the Go binary embeds a fresh `dist/`.
+- `frontend/dist/.gitkeep` is force-tracked so `go:embed all:frontend/dist` works before the first build.
+
+### Dev
+
+- `task qa` runs `vite` (5173) + `specd serve --dev --spa-proxy http://127.0.0.1:5173` (8000).
+- Vite handles HMR; the Go server proxies all non-`/api/*` traffic to Vite.
+- Air watches Go files only. UI changes go through Vite HMR — no Go rebuild required.
+
+### Embed
+
+- `frontend/dist/` is embedded into the Go binary via `//go:embed all:frontend/dist` in `main.go`.
+- In production (no `--spa-proxy` flag), `cmd/serve.go` serves the embedded SPA with an SPA-fallback rule: any non-asset, non-`/api/*` path returns `index.html` so TanStack Router takes over on the client.
+
+### Code Standards
+
+- **`@/` absolute imports always**, never relative paths in `frontend/`.
+- **2-space indent** for non-Go files (TS, TSX, JSON, YAML, HTML, CSS).
+- **Semantic HTML**: real `<header>`, `<main>`, `<section>`, `<nav>`, proper heading hierarchy, `aria-label` on icon-only buttons, `aria-current="page"` on active nav, `aria-hidden="true"` on decorative icons, `aria-busy` on saving forms, `aria-live="polite"` on result regions.
+- **Responsive by default**: mobile-first; cards stack to one column under `md`; tables wrap in `overflow-x-auto`; pane 2 of the sidebar is `hidden md:flex`.
+- **Tailwind utilities + shadcn variants only.** No BeerCSS class names, no SCSS, no custom CSS files. Layout via `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3`, `flex items-center justify-between`, etc.
 
 ## Project Guard
 
@@ -371,4 +505,3 @@ Positional layout *preferences* for known optional stages (e.g. "Pending Verific
 
 - **Every skill** must include a prerequisite section telling the AI to check for `.specd.json` and ask the user to run `specd init` in their terminal if missing. Skills must NOT run init themselves. The message must say exactly "Please run `specd init` in your terminal first" — do NOT suggest shell prefixes, prompt shortcuts (`!`), or any alternative execution method.
 - Runtime-configurable values (e.g. `top_search_results`) must be read from `.specd.json` at runtime, not from build-time constants. Constants are only used as defaults during `specd init`.
-

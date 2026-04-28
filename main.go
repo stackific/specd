@@ -14,34 +14,27 @@ import (
 //go:embed skills
 var skillsFS embed.FS
 
-// templatesFS embeds the HTML templates (layouts, partials, pages) at
-// compile time for server-side rendering.
+// uiFS embeds the built SPA at compile time. The `all:` prefix is required
+// so dotfiles (e.g. frontend/dist/.gitkeep, used to keep the directory
+// present in clean clones before the first `pnpm build`) are included.
+// Without it, go:embed silently skips files starting with `_` or `.`.
 //
-//go:embed templates
-var templatesFS embed.FS
-
-// staticFS embeds static assets (vendor JS, CSS, fonts, images) at
-// compile time so the Web UI ships with no external files needed.
-//
-//go:embed static
-var staticFS embed.FS
+//go:embed all:frontend/dist
+var uiFS embed.FS
 
 func main() {
 	// Hand the embedded filesystems to the cmd package before running.
 	cmd.SetSkillsFS(skillsFS)
 
-	// Strip embed prefixes so template/static handlers see root-relative paths.
-	tFS, err := fs.Sub(templatesFS, "templates")
+	// Strip the frontend/dist prefix so SPA handlers see root-relative paths
+	// (e.g. "index.html", "assets/foo.js"). When the SPA has not yet been
+	// built, the resulting FS will only contain .gitkeep — cmd.hasSPA()
+	// detects this and `specd serve` will require --spa-proxy.
+	uFS, err := fs.Sub(uiFS, "frontend/dist")
 	if err != nil {
-		log.Fatalf("failed to create templates sub-filesystem: %v", err)
+		log.Fatalf("failed to create ui sub-filesystem: %v", err)
 	}
-	cmd.SetTemplateFS(tFS)
-
-	sFS, err := fs.Sub(staticFS, "static")
-	if err != nil {
-		log.Fatalf("failed to create static sub-filesystem: %v", err)
-	}
-	cmd.SetStaticFS(sFS)
+	cmd.SetUIFS(uFS)
 
 	cmd.Execute()
 }
